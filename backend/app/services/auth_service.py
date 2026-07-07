@@ -1,0 +1,41 @@
+from datetime import datetime, timedelta, timezone
+
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from app.config import config
+from app.database import get_db
+from app.models import Barber
+from app.repositories.barber_repository import BarberRepository
+
+security = HTTPBearer()
+pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def login(db: Session, username: str, password: str) -> str:
+    barber = BarberRepository(db).by_username(username)
+    if not barber or not pwd.verify(password, barber.password_hash):
+        raise HTTPException(status_code=401, detail="Usuario o password incorrecto")
+
+    payload = {"sub": str(barber.id), "exp": datetime.now(timezone.utc) + timedelta(hours=12)}
+    return jwt.encode(payload, config.SECRET_KEY, algorithm="HS256")
+
+
+def current_barber(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+) -> Barber:
+    try:
+        payload = jwt.decode(credentials.credentials, config.SECRET_KEY, algorithms=["HS256"])
+        barber_id = payload.get("sub")
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Token invalido") from exc
+
+    barber = BarberRepository(db).by_id(barber_id)
+    if not barber:
+        raise HTTPException(status_code=401, detail="Token invalido")
+    return barber
+
