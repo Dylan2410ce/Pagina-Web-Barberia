@@ -78,7 +78,9 @@ def stats(
     return {
         "appointments": sum(item["count"] for item in summary.values()),
         "attended": summary.get("present", {}).get("count", 0),
+        "noshow": summary.get("noshow", {}).get("count", 0),
+        "booked": summary.get("booked", {}).get("count", 0),
+        "cancelled": summary.get("cancelled", {}).get("count", 0),
         "income": summary.get("present", {}).get("income", 0),
         "summary": summary,
     }
-

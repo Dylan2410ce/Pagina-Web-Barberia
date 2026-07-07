@@ -1,14 +1,16 @@
 :root {
-  --bg: #070707;
-  --surface: rgba(18, 18, 18, .9);
-  --surface-strong: #141414;
-  --surface-soft: #1d1c19;
-  --gold: #c9a75d;
-  --gold-soft: #f0dc9a;
-  --mint: #84f5c8;
+  --bg: #06070a;
+  --surface: rgba(16, 18, 23, .9);
+  --surface-strong: #141821;
+  --surface-soft: #1b202b;
+  --gold: #ffd166;
+  --gold-soft: #ffe8a3;
+  --teal: #36f1cd;
+  --coral: #ff5c7a;
+  --blue: #65a7ff;
   --text: #f8f4ec;
-  --muted: #a49d91;
-  --line: rgba(240, 220, 154, .14);
+  --muted: #b7bfcc;
+  --line: rgba(255, 255, 255, .13);
   --danger: #ff6b6b;
   --ok: #78e7a9;
   font-family: Inter, ui-sans-serif, system-ui, Arial, sans-serif;
@@ -21,8 +23,9 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   background:
-    linear-gradient(115deg, rgba(201, 167, 93, .12), transparent 34rem),
-    linear-gradient(180deg, #090909, #050505);
+    linear-gradient(135deg, rgba(54, 241, 205, .16), transparent 30rem),
+    linear-gradient(225deg, rgba(255, 92, 122, .15), transparent 34rem),
+    linear-gradient(180deg, #0b0f16, #06070a 48rem);
 }
 button, input, select, a { font: inherit; }
 button, a {
@@ -41,7 +44,7 @@ button, a {
   transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
 }
 button:hover, a:hover, .active {
-  border-color: rgba(201, 167, 93, .72);
+  border-color: rgba(54, 241, 205, .62);
   color: var(--gold-soft);
   transform: translateY(-1px);
 }
@@ -61,8 +64,8 @@ input, select {
   outline: none;
 }
 input:focus, select:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201, 167, 93, .12);
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(54, 241, 205, .13);
 }
 label {
   display: block;
@@ -90,7 +93,7 @@ label {
   gap: 12px;
   padding: 14px clamp(16px, 5vw, 72px);
   border-bottom: 1px solid var(--line);
-  background: rgba(7, 7, 7, .78);
+  background: rgba(7, 9, 13, .78);
   backdrop-filter: blur(18px);
 }
 .brand {
@@ -143,10 +146,13 @@ label {
 }
 .hero-actions { margin-top: 24px; }
 .hero-actions a:first-child, .submit-btn {
-  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
-  color: #111;
+  background: linear-gradient(135deg, var(--teal), var(--gold));
+  color: #07100e;
   border-color: transparent;
   font-weight: 900;
+}
+.hero-actions button {
+  background: linear-gradient(135deg, rgba(101, 167, 255, .22), rgba(255, 92, 122, .18));
 }
 .hero-media {
   position: relative;
@@ -171,10 +177,10 @@ label {
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(12, 12, 12, .78);
+  background: rgba(12, 16, 22, .8);
   backdrop-filter: blur(14px);
   padding: 13px 14px;
-  color: var(--gold-soft);
+  color: var(--teal);
   font-weight: 800;
 }
 
@@ -189,7 +195,7 @@ label {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, .34);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .34), 0 0 0 1px rgba(54, 241, 205, .035);
 }
 .booking-card, .modal { padding: clamp(18px, 4vw, 32px); }
 .summary-card {
@@ -223,6 +229,12 @@ h2, h3 {
   align-items: flex-start;
   text-align: left;
   padding: 15px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .018));
+}
+.barber-card.active, .service-card.active, .pill-grid .active, .slots-grid .active {
+  background: linear-gradient(135deg, rgba(54, 241, 205, .18), rgba(255, 209, 102, .12));
+  border-color: rgba(54, 241, 205, .74);
+  color: var(--text);
 }
 .barber-card {
   display: grid;
@@ -241,7 +253,7 @@ h2, h3 {
   display: grid;
   place-items: center;
   background: #0f0f0f;
-  color: var(--gold-soft);
+  color: var(--teal);
   border: 1px solid var(--line);
   font-weight: 900;
 }
@@ -254,7 +266,7 @@ h2, h3 {
   color: var(--muted);
 }
 .service-card strong {
-  color: var(--gold-soft);
+  color: var(--teal);
   align-self: end;
 }
 .pill-grid button {
@@ -267,7 +279,7 @@ h2, h3 {
   margin-top: 16px;
 }
 .slots-grid button {
-  background: #10100f;
+  background: #101722;
   font-weight: 800;
 }
 .slot-note {
@@ -285,6 +297,12 @@ h2, h3 {
   font-weight: 800;
 }
 .message.success { color: var(--ok); }
+.field-error {
+  display: block;
+  margin-top: 7px;
+  color: var(--coral);
+  font-weight: 800;
+}
 
 .summary-card h3 {
   margin: 10px 0 16px;
@@ -301,6 +319,26 @@ h2, h3 {
   align-items: center;
   gap: 9px;
 }
+.price-breakdown {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .035);
+}
+.price-breakdown span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+.price-breakdown b {
+  color: var(--text);
+  white-space: nowrap;
+}
 .total-line {
   display: flex;
   align-items: baseline;
@@ -311,7 +349,7 @@ h2, h3 {
   border-top: 1px solid var(--line);
 }
 .total-line strong {
-  color: var(--gold-soft);
+  color: var(--teal);
   font-size: 1.55rem;
 }
 
@@ -366,7 +404,7 @@ footer {
 }
 .stats {
   display: grid;
-  grid-template-columns: 1.4fr repeat(3, 1fr);
+  grid-template-columns: 1.25fr repeat(4, 1fr);
   gap: 10px;
   margin: 18px 0;
 }
@@ -378,7 +416,7 @@ footer {
   border-radius: 10px;
   padding: 9px 12px;
   background: var(--surface-strong);
-  color: var(--gold-soft);
+  color: var(--teal);
 }
 .stats small {
   color: var(--muted);
@@ -407,7 +445,7 @@ footer {
 .appointments article.present { border-color: rgba(120, 231, 169, .42); }
 .appointments article.noshow, .appointments article.cancelled { opacity: .7; }
 .appointments time {
-  color: var(--gold-soft);
+  color: var(--gold);
   font-weight: 900;
 }
 .appointments span, .appointments small {
@@ -428,6 +466,18 @@ footer {
   border: 1px dashed var(--line);
   border-radius: 12px;
   color: var(--muted);
+}
+.ok-btn {
+  border-color: rgba(120, 231, 169, .35);
+  color: var(--ok);
+}
+.warn-btn {
+  border-color: rgba(255, 209, 102, .35);
+  color: var(--gold-soft);
+}
+.danger-btn {
+  border-color: rgba(255, 92, 122, .35);
+  color: var(--coral);
 }
 
 @keyframes pop {

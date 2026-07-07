@@ -64,18 +64,35 @@ class AppointmentService:
 
         return slots
 
+    def validate_booking_window(self, day: date, start_min: int, duration: int) -> None:
+        now = datetime.now(ZoneInfo("America/Costa_Rica"))
+        end_min = start_min + duration
+
+        if day < now.date():
+            raise HTTPException(status_code=400, detail="No se pueden reservar fechas pasadas")
+        if day.weekday() in (6, 0):
+            raise HTTPException(status_code=400, detail="Domingo y lunes permanecemos cerrados")
+        if start_min < config.OPEN_MIN or end_min > config.CLOSE_MIN:
+            raise HTTPException(status_code=400, detail="La hora esta fuera del horario de atencion")
+        if start_min < config.LUNCH_START < end_min or config.LUNCH_START <= start_min < config.LUNCH_END:
+            raise HTTPException(status_code=400, detail="Ese espacio cruza la hora de almuerzo")
+        if day == now.date() and start_min < (now.hour * 60 + now.minute + 30):
+            raise HTTPException(status_code=400, detail="Selecciona una hora con al menos 30 minutos de anticipacion")
+
     def create(self, data: AppointmentCreate) -> Appointment:
         barber = self.barbers.by_id(data.barber_id)
         if not barber:
             raise HTTPException(status_code=404, detail="Barbero no encontrado")
 
         service_name, addons, duration, total = self.get_duration_and_price(data.service_id, data.addon_ids)
+        self.validate_booking_window(data.date, data.start_min, duration)
         starts_at, ends_at = range_from_minutes(data.date, data.start_min, duration)
         lock_key = f"{data.barber_id}:{starts_at.isoformat()}"
 
         try:
             self.db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"), {"key": lock_key})
             if self.appointments.has_overlap(data.barber_id, starts_at, ends_at):
+                self.db.rollback()
                 raise HTTPException(status_code=409, detail="Ese horario ya fue tomado")
 
             appointment = Appointment(

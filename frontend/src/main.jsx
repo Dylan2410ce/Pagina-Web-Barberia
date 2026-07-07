@@ -12,7 +12,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { api, money, today } from "./lib/api";
+import { api, cleanPhone, money, normalizeData, today } from "./lib/api";
 import "./styles.css";
 
 const statusLabels = {
@@ -29,7 +29,7 @@ function App() {
   const [adminOpen, setAdminOpen] = React.useState(false);
 
   React.useEffect(() => {
-    api("/api/public/init").then(setData).catch(() => setData(false));
+    api("/api/public/init").then((response) => setData(normalizeData(response))).catch(() => setData(false));
   }, []);
 
   if (data === null) return <main className="loading">Cargando barberia...</main>;
@@ -48,9 +48,9 @@ function App() {
       <main id="top" className="page">
         <section className="hero">
           <div className="hero-copy">
-            <span className="eyebrow">Studio Premium / Esparza</span>
-            <h1>Tu corte, tu hora, cero vueltas.</h1>
-            <p>Agenda rapida para cortes frescos, horarios reales y una experiencia limpia desde el celular.</p>
+            <span className="eyebrow">Sebas Barber / Esparza</span>
+            <h1>Reserva tu flow en minutos.</h1>
+            <p>Cortes fresh, horarios reales y una agenda sin enredos para que llegues, te sientes y salgas listo.</p>
             <div className="hero-actions">
               <a href="#reservar"><CalendarDays size={18} /> Reservar ahora</a>
               <button type="button" onClick={() => setMapOpen(true)}><Navigation size={18} /> Como llegar</button>
@@ -61,7 +61,7 @@ function App() {
             <img src="/barbero.jpeg" alt="Sebas Barber" />
             <div className="hero-badge">
               <Sparkles size={17} />
-              <span>Fade, clasico, barba y color</span>
+              <span>Fade, clasico, barba, color y detalles</span>
             </div>
           </div>
         </section>
@@ -94,6 +94,7 @@ function Booking({ data }) {
   const [slotsLoading, setSlotsLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [message, setMessage] = React.useState("");
+  const [errors, setErrors] = React.useState({});
 
   const selectedBarber = data.barbers.find((item) => item.id === form.barber_id);
   const selectedService = data.services.find((item) => item.id === form.service_id);
@@ -101,6 +102,8 @@ function Booking({ data }) {
   const duration = (selectedService?.duration_min || 0) + selectedAddons.reduce((sum, item) => sum + item.duration_min, 0);
   const total = (selectedService?.price || 0) + selectedAddons.reduce((sum, item) => sum + item.price, 0);
   const selectedSlot = slots.find((slot) => String(slot.start_min) === String(form.start_min));
+  const phoneValid = /^[24678][0-9]{7}$/.test(form.client_phone);
+  const nameValid = /^[A-Za-zÀ-ÿ\s]{3,60}$/.test(form.client_name.trim());
   const canSubmit = form.barber_id && form.service_id && form.date && form.start_min && form.client_name && form.client_phone && !saving;
 
   const loadSlots = React.useCallback(async () => {
@@ -133,6 +136,18 @@ function Booking({ data }) {
     loadSlots();
   }, [loadSlots]);
 
+  React.useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") loadSlots();
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", loadSlots);
+    return () => {
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", loadSlots);
+    };
+  }, [loadSlots]);
+
   function toggleAddon(id) {
     setMessage("");
     setForm((current) => ({
@@ -145,7 +160,15 @@ function Booking({ data }) {
 
   async function submit(event) {
     event.preventDefault();
-    if (!canSubmit) return;
+    const nextErrors = {};
+    if (!nameValid) nextErrors.client_name = "Escribe un nombre real, minimo 3 letras.";
+    if (!phoneValid) nextErrors.client_phone = "Usa un numero de Costa Rica de 8 digitos.";
+    if (!form.start_min) nextErrors.start_min = "Selecciona una hora disponible.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      setMessage("Revisa los datos marcados antes de confirmar.");
+      return;
+    }
 
     setSaving(true);
     setMessage("Guardando tu cita...");
@@ -155,6 +178,7 @@ function Booking({ data }) {
         body: JSON.stringify({ ...form, start_min: Number(form.start_min) }),
       });
       setMessage("Listo. Tu cita quedo reservada.");
+      setSlots((current) => current.filter((slot) => String(slot.start_min) !== String(form.start_min)));
       setForm((current) => ({ ...current, start_min: "", client_name: "", client_phone: "" }));
       await loadSlots();
     } catch (error) {
@@ -170,7 +194,7 @@ function Booking({ data }) {
       <div className="booking-card">
         <div className="section-title">
           <span><CalendarDays size={18} /> Reserva</span>
-          <h2>Elige barbero, servicio y hora.</h2>
+          <h2>Escoge tu barbero, servicio y hora.</h2>
         </div>
 
         <form onSubmit={submit}>
@@ -244,9 +268,13 @@ function Booking({ data }) {
               <input
                 placeholder="Nombre completo"
                 value={form.client_name}
-                onChange={(event) => setForm({ ...form, client_name: event.target.value })}
+                onChange={(event) => {
+                  setErrors({ ...errors, client_name: "" });
+                  setForm({ ...form, client_name: event.target.value });
+                }}
                 required
               />
+              {errors.client_name && <small className="field-error">{errors.client_name}</small>}
             </div>
           </div>
 
@@ -267,17 +295,25 @@ function Booking({ data }) {
               </button>
             ))}
             {!slotsLoading && slots.length === 0 && (
-              <span className="slot-note">No hay espacios para esa fecha.</span>
+              <span className="slot-note">No hay espacios para esa fecha. Prueba otro dia o servicio.</span>
             )}
           </div>
+          {errors.start_min && <small className="field-error">{errors.start_min}</small>}
 
           <div className="form-grid">
-            <input
-              placeholder="Telefono: 88887777"
-              value={form.client_phone}
-              onChange={(event) => setForm({ ...form, client_phone: event.target.value })}
-              required
-            />
+            <div>
+              <input
+                placeholder="Telefono: 88887777"
+                value={form.client_phone}
+                inputMode="numeric"
+                onChange={(event) => {
+                  setErrors({ ...errors, client_phone: "" });
+                  setForm({ ...form, client_phone: cleanPhone(event.target.value) });
+                }}
+                required
+              />
+              {errors.client_phone && <small className="field-error">{errors.client_phone}</small>}
+            </div>
             <button className="submit-btn" disabled={!canSubmit}>
               <Check size={18} /> {saving ? "Reservando..." : "Confirmar cita"}
             </button>
@@ -295,11 +331,18 @@ function Booking({ data }) {
           <p><CalendarDays size={16} /> {form.date || "Fecha"} {selectedSlot ? `/ ${selectedSlot.label}` : ""}</p>
           <p><Clock3 size={16} /> {duration || 0} min</p>
         </div>
+        <div className="price-breakdown">
+          <span>{selectedService?.name || "Servicio"} <b>{money(selectedService?.price || 0)}</b></span>
+          {selectedAddons.map((addon) => (
+            <span key={addon.id}>{addon.name} <b>{money(addon.price)}</b></span>
+          ))}
+          {!selectedAddons.length && <span>Sin extras <b>{money(0)}</b></span>}
+        </div>
         <div className="total-line">
           <span>Total</span>
           <strong>{money(total)}</strong>
         </div>
-        <small>Los horarios reservados desaparecen automaticamente para otros clientes.</small>
+        <small>Si alguien toma una hora, desaparece del calendario para todos.</small>
       </aside>
     </section>
   );
@@ -388,7 +431,8 @@ function AdminPanel({ onClose }) {
               <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
               <strong>{stats?.appointments || 0}<small>citas</small></strong>
               <strong>{stats?.attended || 0}<small>asistencias</small></strong>
-              <strong>{money(stats?.income || 0)}<small>mes</small></strong>
+              <strong>{stats?.noshow || 0}<small>no vinieron</small></strong>
+              <strong>{money(stats?.income || 0)}<small>ingreso mes</small></strong>
             </div>
 
             <form className="block-form" onSubmit={createBlock}>
@@ -414,9 +458,9 @@ function AdminPanel({ onClose }) {
                     <small>{statusLabels[item.status] || item.status}</small>
                   </div>
                   <nav>
-                    <button type="button" onClick={() => changeStatus(item.id, "present")}>Asistio</button>
-                    <button type="button" onClick={() => changeStatus(item.id, "noshow")}>No vino</button>
-                    <button type="button" onClick={() => changeStatus(item.id, "cancelled")}>Cancelar</button>
+                    <button type="button" className="ok-btn" onClick={() => changeStatus(item.id, "present")}>Asistio</button>
+                    <button type="button" className="warn-btn" onClick={() => changeStatus(item.id, "noshow")}>No vino</button>
+                    <button type="button" className="danger-btn" onClick={() => changeStatus(item.id, "cancelled")}>Cancelar</button>
                   </nav>
                 </article>
               ))}
