@@ -8,6 +8,7 @@ import {
   Clock3,
   Flame,
   Lock,
+  Menu,
   MapPin,
   Navigation,
   Scissors,
@@ -39,6 +40,7 @@ function App() {
   const [data, setData] = React.useState(null);
   const [mapOpen, setMapOpen] = React.useState(false);
   const [adminOpen, setAdminOpen] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     api("/api/public/init").then((response) => setData(normalizeData(response))).catch(() => setData(false));
@@ -50,10 +52,24 @@ function App() {
   return (
     <>
       <header className="nav">
-        <a className="brand" href="#top"><Scissors size={18} /> Sebas Barber</a>
-        <nav>
-          <button type="button" onClick={() => setMapOpen(true)}><MapPin size={17} /> Ubicacion</button>
-          <button type="button" onClick={() => setAdminOpen(true)}><Lock size={17} /> Admin</button>
+        <div className="nav-top">
+          <a className="brand" href="#top" onClick={() => setMenuOpen(false)}><Scissors size={18} /> Sebas Barber</a>
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-expanded={menuOpen}
+            aria-label="Abrir menu"
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            {menuOpen ? <X size={19} /> : <Menu size={19} />}
+            <span>Menu</span>
+          </button>
+        </div>
+        <nav className={menuOpen ? "nav-links open" : "nav-links"}>
+          <a href="#servicios" onClick={() => setMenuOpen(false)}>Servicios</a>
+          <a href="#reservar" onClick={() => setMenuOpen(false)}>Reservar</a>
+          <button type="button" onClick={() => { setMapOpen(true); setMenuOpen(false); }}><MapPin size={17} /> Ubicacion</button>
+          <button type="button" onClick={() => { setAdminOpen(true); setMenuOpen(false); }}><Lock size={17} /> Admin</button>
         </nav>
       </header>
 
@@ -101,7 +117,7 @@ function HomeShowcase({ data }) {
   const minPrice = Math.min(...data.services.map((item) => item.price));
 
   return (
-    <section className="showcase">
+    <section id="servicios" className="showcase">
       <div className="metric-strip">
         <article>
           <Flame size={20} />
@@ -180,7 +196,7 @@ function Booking({ data }) {
   const total = (selectedService?.price || 0) + selectedAddons.reduce((sum, item) => sum + item.price, 0);
   const selectedSlot = slots.find((slot) => String(slot.start_min) === String(form.start_min));
   const phoneValid = /^[24678][0-9]{7}$/.test(form.client_phone);
-  const nameValid = /^[A-Za-zÀ-ÿ\s]{3,60}$/.test(form.client_name.trim());
+  const nameValid = /^[\p{L}\s]{3,60}$/u.test(form.client_name.trim());
   const canSubmit = form.barber_id && form.service_id && form.date && form.start_min && form.client_name && form.client_phone && !saving;
 
   const loadSlots = React.useCallback(async () => {

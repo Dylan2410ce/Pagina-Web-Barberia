@@ -824,3 +824,337 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* Responsive hardening */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+iframe,
+svg {
+  max-width: 100%;
+}
+
+.page,
+.booking-card,
+.summary-card,
+.modal,
+.hero-copy,
+.hero-media,
+.showcase,
+.spotlight,
+.appointments article > *,
+.service-row > * {
+  min-width: 0;
+}
+
+button,
+a,
+input,
+select {
+  max-width: 100%;
+}
+
+button,
+a {
+  white-space: normal;
+}
+
+.nav {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 10px 12px;
+}
+
+.nav-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.menu-toggle {
+  min-height: 40px;
+  padding: 8px 11px;
+  border-radius: 999px;
+}
+
+.nav-links {
+  display: none;
+  width: 100%;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.nav-links.open {
+  display: grid;
+}
+
+.nav-links a,
+.nav-links button {
+  width: 100%;
+  justify-content: center;
+  min-height: 46px;
+}
+
+@media (min-width: 769px) {
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px clamp(16px, 5vw, 72px);
+  }
+
+  .nav-top {
+    width: auto;
+  }
+
+  .menu-toggle {
+    display: none;
+  }
+
+  .nav-links,
+  .nav-links.open {
+    display: flex;
+    width: auto;
+    align-items: center;
+    gap: 10px;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .nav-links a,
+  .nav-links button {
+    width: auto;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 76px;
+  }
+
+  .page {
+    width: min(100% - 24px, 1160px);
+  }
+
+  .hero,
+  .booking-shell,
+  .spotlight,
+  .report-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    min-height: auto;
+    padding: 22px 0 18px;
+    gap: 18px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.25rem, 13vw, 4.2rem);
+    line-height: .94;
+  }
+
+  .hero p {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .hero-actions,
+  .map-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .hero-actions a,
+  .hero-actions button,
+  .map-actions a {
+    width: 100%;
+  }
+
+  .hero-media,
+  .hero-media img {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+  }
+
+  .hero-badge {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 10px 12px;
+    font-size: .88rem;
+  }
+
+  .metric-strip,
+  .barber-showcase,
+  .barber-grid,
+  .form-grid,
+  .stats,
+  .block-form,
+  .appointments article {
+    grid-template-columns: 1fr;
+  }
+
+  .service-grid,
+  .pill-grid,
+  .slots-grid,
+  .service-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-card,
+  .summary-card,
+  .modal,
+  .spotlight {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .summary-card {
+    display: block;
+    position: static;
+    order: 2;
+  }
+
+  .report-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .appointments article {
+    gap: 10px;
+  }
+
+  .appointments nav {
+    justify-content: stretch;
+  }
+
+  .appointments nav button {
+    flex: 1 1 110px;
+  }
+
+  .overlay {
+    align-items: start;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  .modal {
+    width: 100%;
+    max-height: none;
+    margin: 8px 0 18px;
+  }
+
+  .close {
+    position: sticky;
+    top: 0;
+    margin-left: auto;
+    z-index: 2;
+  }
+
+  footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding-bottom: 90px;
+  }
+
+  footer button {
+    width: 100%;
+  }
+
+  .mobile-cta {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 25;
+    display: flex;
+    min-height: 54px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--teal), var(--gold));
+    color: #07100e;
+    border: 0;
+    box-shadow: 0 12px 38px rgba(0, 0, 0, .38);
+    font-weight: 1000;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    width: min(100% - 18px, 1160px);
+  }
+
+  .brand {
+    font-size: .95rem;
+  }
+
+  .menu-toggle span {
+    display: none;
+  }
+
+  .nav-links a,
+  .nav-links button {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: .95rem;
+  }
+
+  .nav-links button svg {
+    margin: 0;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.05rem, 14vw, 3.45rem);
+  }
+
+  .eyebrow {
+    font-size: .66rem;
+    letter-spacing: .1em;
+  }
+
+  .metric-strip article,
+  .barber-showcase article,
+  .barber-card,
+  .service-card,
+  .service-tabs button,
+  .appointments article,
+  .report-cards article,
+  .mini-report {
+    padding: 12px;
+  }
+
+  .report-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .stats strong {
+    min-height: 58px;
+  }
+
+  .service-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .bars {
+    gap: 4px;
+  }
+
+  .modal iframe {
+    height: 310px;
+  }
+}
