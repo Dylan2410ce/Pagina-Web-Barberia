@@ -1,4 +1,4 @@
-export const API_URL = import.meta.env.VITE_API_URL || "https://PEGA-AQUI-TU-API-DE-RENDER.onrender.com";
+export const API_URL = import.meta.env.VITE_API_URL || "https://pagina-web-barberia.onrender.com";
 
 export async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -23,4 +23,3 @@ export function money(value) {
 export function today() {
   return new Date().toISOString().slice(0, 10);
 }
-
