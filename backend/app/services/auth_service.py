@@ -3,21 +3,20 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config import config
 from app.database import get_db
 from app.models import Barber
 from app.repositories.barber_repository import BarberRepository
+from app.services.password_service import verify_password
 
 security = HTTPBearer()
-pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def login(db: Session, username: str, password: str) -> str:
     barber = BarberRepository(db).by_username(username)
-    if not barber or not pwd.verify(password, barber.password_hash):
+    if not barber or not verify_password(password, barber.password_hash):
         raise HTTPException(status_code=401, detail="Usuario o password incorrecto")
 
     payload = {"sub": str(barber.id), "exp": datetime.now(timezone.utc) + timedelta(hours=12)}
@@ -38,4 +37,3 @@ def current_barber(
     if not barber:
         raise HTTPException(status_code=401, detail="Token invalido")
     return barber
-

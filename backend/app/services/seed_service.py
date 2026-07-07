@@ -1,10 +1,8 @@
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config import config
 from app.models import Barber, Service
-
-pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.services.password_service import hash_password
 
 SERVICES = [
     ("Corte Clasico", 45, 4000, False),
@@ -39,9 +37,8 @@ def seed_data(db: Session):
             )
 
     if db.query(Barber).count() == 0:
-        password_hash = pwd.hash(config.ADMIN_DEFAULT_PASSWORD)
+        password_hash = hash_password(config.ADMIN_DEFAULT_PASSWORD)
         for name, role, phone, username in BARBERS:
             db.add(Barber(name=name, role=role, phone=phone, username=username, password_hash=password_hash))
 
     db.commit()
-
