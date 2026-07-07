@@ -19,7 +19,6 @@ SERVICES = [
 BARBERS = [
     ("Sebastian", "Master Barber", "88887777", "sebas"),
     ("Gabriel", "Senior Barber", "66665555", "gabriel"),
-    ("Dana", "Estilista Premium", "77774444", "dana"),
 ]
 
 
@@ -36,9 +35,20 @@ def seed_data(db: Session):
                 )
             )
 
-    if db.query(Barber).count() == 0:
-        password_hash = hash_password(config.ADMIN_DEFAULT_PASSWORD)
-        for name, role, phone, username in BARBERS:
+    password_hash = hash_password(config.ADMIN_DEFAULT_PASSWORD)
+    active_usernames = {username for _, _, _, username in BARBERS}
+
+    for name, role, phone, username in BARBERS:
+        barber = db.query(Barber).filter(Barber.username == username).first()
+        if barber:
+            barber.name = name
+            barber.role = role
+            barber.phone = phone
+            barber.is_active = True
+        else:
             db.add(Barber(name=name, role=role, phone=phone, username=username, password_hash=password_hash))
+
+    for barber in db.query(Barber).filter(~Barber.username.in_(active_usernames)).all():
+        barber.is_active = False
 
     db.commit()

@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy import text
@@ -33,6 +34,10 @@ class AppointmentService:
         return service.name, [a.name for a in addons], duration, total
 
     def availability(self, barber_id: UUID, day: date, duration: int) -> list[dict]:
+        now = datetime.now(ZoneInfo("America/Costa_Rica"))
+        if day < now.date():
+            return []
+
         if day.weekday() in (6, 0):
             return []
 
@@ -42,6 +47,8 @@ class AppointmentService:
 
         for start_min in range(config.OPEN_MIN, config.CLOSE_MIN, config.SLOT_STEP):
             end_min = start_min + duration
+            if day == now.date() and start_min < (now.hour * 60 + now.minute + 30):
+                continue
             if end_min > config.CLOSE_MIN:
                 continue
             if start_min < config.LUNCH_START < end_min or config.LUNCH_START <= start_min < config.LUNCH_END:
@@ -122,4 +129,3 @@ class AppointmentService:
         self.db.commit()
         self.db.refresh(appointment)
         return appointment
-
