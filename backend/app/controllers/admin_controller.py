@@ -74,13 +74,66 @@ def stats(
         .group_by(Appointment.status)
         .all()
     )
+    services = (
+        db.query(
+            Appointment.service_name,
+            func.count(Appointment.id),
+            func.coalesce(func.sum(Appointment.total_price), 0),
+        )
+        .filter(
+            Appointment.barber_id == barber.id,
+            extract("year", Appointment.starts_at) == year,
+            extract("month", Appointment.starts_at) == month,
+            Appointment.status.in_([AppointmentStatus.booked, AppointmentStatus.present]),
+        )
+        .group_by(Appointment.service_name)
+        .order_by(func.count(Appointment.id).desc())
+        .all()
+    )
+    daily = (
+        db.query(
+            extract("day", Appointment.starts_at).label("day"),
+            func.count(Appointment.id),
+            func.coalesce(func.sum(Appointment.total_price), 0),
+        )
+        .filter(
+            Appointment.barber_id == barber.id,
+            extract("year", Appointment.starts_at) == year,
+            extract("month", Appointment.starts_at) == month,
+            Appointment.status == AppointmentStatus.present,
+        )
+        .group_by("day")
+        .order_by("day")
+        .all()
+    )
+
     summary = {status.value: {"count": count, "income": int(income)} for status, count, income in rows}
+    appointments = sum(item["count"] for item in summary.values())
+    attended = summary.get("present", {}).get("count", 0)
+    booked = summary.get("booked", {}).get("count", 0)
+    noshow = summary.get("noshow", {}).get("count", 0)
+    income = summary.get("present", {}).get("income", 0)
+    projected = summary.get("booked", {}).get("income", 0) + income
+    avg_ticket = round(income / attended) if attended else 0
+    attendance_rate = round((attended / max(attended + noshow, 1)) * 100)
+
     return {
-        "appointments": sum(item["count"] for item in summary.values()),
-        "attended": summary.get("present", {}).get("count", 0),
-        "noshow": summary.get("noshow", {}).get("count", 0),
-        "booked": summary.get("booked", {}).get("count", 0),
+        "appointments": appointments,
+        "attended": attended,
+        "noshow": noshow,
+        "booked": booked,
         "cancelled": summary.get("cancelled", {}).get("count", 0),
-        "income": summary.get("present", {}).get("income", 0),
+        "income": income,
+        "projected_income": projected,
+        "average_ticket": avg_ticket,
+        "attendance_rate": attendance_rate,
+        "service_breakdown": [
+            {"name": name, "count": count, "income": int(total)}
+            for name, count, total in services
+        ],
+        "daily_income": [
+            {"day": int(day), "count": count, "income": int(total)}
+            for day, count, total in daily
+        ],
         "summary": summary,
     }

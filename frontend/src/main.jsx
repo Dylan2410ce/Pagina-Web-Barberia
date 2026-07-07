@@ -1,14 +1,18 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import {
+  BarChart3,
+  CalendarCheck,
   CalendarDays,
   Check,
   Clock3,
+  Flame,
   Lock,
   MapPin,
   Navigation,
   Scissors,
   Sparkles,
+  TrendingUp,
   UserRound,
   X,
 } from "lucide-react";
@@ -22,6 +26,14 @@ const statusLabels = {
   cancelled: "Cancelada",
   blocked: "Bloqueo",
 };
+
+const serviceMoods = [
+  "Fresh",
+  "Clean",
+  "Sharp",
+  "Color",
+  "Glow",
+];
 
 function App() {
   const [data, setData] = React.useState(null);
@@ -66,8 +78,11 @@ function App() {
           </div>
         </section>
 
+        <HomeShowcase data={data} />
         <Booking data={data} />
       </main>
+
+      <a className="mobile-cta" href="#reservar"><CalendarDays size={17} /> Reservar</a>
 
       <footer>
         <p>{data.location.address}</p>
@@ -77,6 +92,68 @@ function App() {
       {mapOpen && <MapModal location={data.location} onClose={() => setMapOpen(false)} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
     </>
+  );
+}
+
+function HomeShowcase({ data }) {
+  const [activeService, setActiveService] = React.useState(data.services[0]?.id || "");
+  const service = data.services.find((item) => item.id === activeService) || data.services[0];
+  const minPrice = Math.min(...data.services.map((item) => item.price));
+
+  return (
+    <section className="showcase">
+      <div className="metric-strip">
+        <article>
+          <Flame size={20} />
+          <strong>{data.services.length}</strong>
+          <span>servicios</span>
+        </article>
+        <article>
+          <CalendarCheck size={20} />
+          <strong>8-7</strong>
+          <span>martes a sabado</span>
+        </article>
+        <article>
+          <Sparkles size={20} />
+          <strong>{money(minPrice)}</strong>
+          <span>desde</span>
+        </article>
+      </div>
+
+      <div className="spotlight">
+        <div>
+          <span className="eyebrow">Servicios</span>
+          <h2>{service?.name}</h2>
+          <p>{service?.duration_min} minutos / {money(service?.price)}</p>
+          <div className="mood-row">
+            {serviceMoods.map((mood) => <span key={mood}>{mood}</span>)}
+          </div>
+        </div>
+        <div className="service-tabs">
+          {data.services.map((item) => (
+            <button
+              type="button"
+              className={item.id === service?.id ? "active" : ""}
+              onClick={() => setActiveService(item.id)}
+              key={item.id}
+            >
+              <span>{item.name}</span>
+              <b>{money(item.price)}</b>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="barber-showcase">
+        {data.barbers.map((barber) => (
+          <article key={barber.id}>
+            <span>{barber.name.slice(0, 1)}</span>
+            <h3>{barber.name}</h3>
+            <p>{barber.role}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -435,6 +512,8 @@ function AdminPanel({ onClose }) {
               <strong>{money(stats?.income || 0)}<small>ingreso mes</small></strong>
             </div>
 
+            <ReportBoard stats={stats} rows={rows} />
+
             <form className="block-form" onSubmit={createBlock}>
               <select value={block.start_min} onChange={(event) => setBlock({ ...block, start_min: event.target.value })}>
                 {Array.from({ length: 15 }, (_, index) => 480 + index * 45).map((value) => (
@@ -470,6 +549,77 @@ function AdminPanel({ onClose }) {
         )}
       </section>
     </div>
+  );
+}
+
+function ReportBoard({ stats, rows }) {
+  const serviceRows = stats?.service_breakdown || [];
+  const dailyRows = stats?.daily_income || [];
+  const maxDaily = Math.max(...dailyRows.map((item) => item.income), 1);
+  const bookedToday = rows.filter((item) => item.status === "booked").length;
+  const generatedToday = rows
+    .filter((item) => item.status === "present")
+    .reduce((sum, item) => sum + item.total_price, 0);
+
+  return (
+    <section className="report-board">
+      <div className="report-cards">
+        <article>
+          <TrendingUp size={18} />
+          <span>Generado</span>
+          <strong>{money(stats?.income || 0)}</strong>
+        </article>
+        <article>
+          <BarChart3 size={18} />
+          <span>Proyectado</span>
+          <strong>{money(stats?.projected_income || 0)}</strong>
+        </article>
+        <article>
+          <CalendarCheck size={18} />
+          <span>Ticket prom.</span>
+          <strong>{money(stats?.average_ticket || 0)}</strong>
+        </article>
+        <article>
+          <Flame size={18} />
+          <span>Asistencia</span>
+          <strong>{stats?.attendance_rate || 0}%</strong>
+        </article>
+      </div>
+
+      <div className="report-grid">
+        <div className="mini-report">
+          <h3>Servicios top</h3>
+          {serviceRows.slice(0, 5).map((item) => (
+            <div className="service-row" key={item.name}>
+              <span>{item.name}</span>
+              <b>{item.count} / {money(item.income)}</b>
+            </div>
+          ))}
+          {!serviceRows.length && <p className="empty-inline">Sin datos todavia.</p>}
+        </div>
+
+        <div className="mini-report">
+          <h3>Mes visual</h3>
+          <div className="bars">
+            {dailyRows.slice(-14).map((item) => (
+              <span
+                title={`${item.day}: ${money(item.income)}`}
+                style={{ height: `${Math.max(10, (item.income / maxDaily) * 100)}%` }}
+                key={item.day}
+              />
+            ))}
+            {!dailyRows.length && <p className="empty-inline">Marca asistencias para ver ingresos.</p>}
+          </div>
+        </div>
+
+        <div className="mini-report day-pulse">
+          <h3>Hoy</h3>
+          <strong>{bookedToday}</strong>
+          <span>pendientes</span>
+          <b>{money(generatedToday)} generado</b>
+        </div>
+      </div>
+    </section>
   );
 }
 
