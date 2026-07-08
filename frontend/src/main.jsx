@@ -11,10 +11,13 @@ import {
   Menu,
   MapPin,
   Navigation,
+  Palette,
   Scissors,
   Sparkles,
+  Star,
   TrendingUp,
   UserRound,
+  Zap,
   X,
 } from "lucide-react";
 import { api, cleanPhone, money, normalizeData, today } from "./lib/api";
@@ -36,21 +39,32 @@ const serviceMoods = [
   "Glow",
 ];
 
+const themes = [
+  { id: "sunset", name: "Sunset", note: "calido" },
+  { id: "lime", name: "Lime", note: "fresh" },
+  { id: "violet", name: "Violet", note: "night" },
+];
+
 function App() {
   const [data, setData] = React.useState(null);
   const [mapOpen, setMapOpen] = React.useState(false);
   const [adminOpen, setAdminOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [theme, setTheme] = React.useState(() => localStorage.getItem("sb_theme") || "sunset");
 
   React.useEffect(() => {
     api("/api/public/init").then((response) => setData(normalizeData(response))).catch(() => setData(false));
   }, []);
 
+  React.useEffect(() => {
+    localStorage.setItem("sb_theme", theme);
+  }, [theme]);
+
   if (data === null) return <main className="loading">Cargando barberia...</main>;
   if (data === false) return <main className="loading">No se pudo conectar con la API.</main>;
 
   return (
-    <>
+    <div className={`app-shell theme-${theme}`}>
       <header className="nav">
         <div className="nav-top">
           <a className="brand" href="#top" onClick={() => setMenuOpen(false)}><Scissors size={18} /> Sebas Barber</a>
@@ -83,6 +97,7 @@ function App() {
               <a href="#reservar"><CalendarDays size={18} /> Reservar ahora</a>
               <button type="button" onClick={() => setMapOpen(true)}><Navigation size={18} /> Como llegar</button>
             </div>
+            <ThemePicker value={theme} onChange={setTheme} />
           </div>
 
           <div className="hero-media">
@@ -107,7 +122,26 @@ function App() {
 
       {mapOpen && <MapModal location={data.location} onClose={() => setMapOpen(false)} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
-    </>
+    </div>
+  );
+}
+
+function ThemePicker({ value, onChange }) {
+  return (
+    <div className="theme-picker" aria-label="Cambiar paleta visual">
+      <span><Palette size={16} /> Mood</span>
+      {themes.map((item) => (
+        <button
+          type="button"
+          className={value === item.id ? "active" : ""}
+          onClick={() => onChange(item.id)}
+          key={item.id}
+        >
+          {item.name}
+          <small>{item.note}</small>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -144,6 +178,11 @@ function HomeShowcase({ data }) {
           <div className="mood-row">
             {serviceMoods.map((mood) => <span key={mood}>{mood}</span>)}
           </div>
+          <div className="service-energy">
+            <Zap size={17} />
+            <b>Recomendado para:</b>
+            <span>{service?.duration_min > 60 ? "cambio de look" : "refresh semanal"}</span>
+          </div>
         </div>
         <div className="service-tabs">
           {data.services.map((item) => (
@@ -166,6 +205,7 @@ function HomeShowcase({ data }) {
             <span>{barber.name.slice(0, 1)}</span>
             <h3>{barber.name}</h3>
             <p>{barber.role}</p>
+            <small><Star size={14} /> Agenda activa</small>
           </article>
         ))}
       </div>
@@ -198,6 +238,12 @@ function Booking({ data }) {
   const phoneValid = /^[24678][0-9]{7}$/.test(form.client_phone);
   const nameValid = /^[\p{L}\s]{3,60}$/u.test(form.client_name.trim());
   const canSubmit = form.barber_id && form.service_id && form.date && form.start_min && form.client_name && form.client_phone && !saving;
+  const progress = [
+    Boolean(form.barber_id),
+    Boolean(form.service_id),
+    Boolean(form.date && form.start_min),
+    Boolean(nameValid && phoneValid),
+  ].filter(Boolean).length;
 
   const loadSlots = React.useCallback(async () => {
     if (!form.barber_id || !form.service_id || !form.date) return;
@@ -289,6 +335,10 @@ function Booking({ data }) {
           <span><CalendarDays size={18} /> Reserva</span>
           <h2>Escoge tu barbero, servicio y hora.</h2>
         </div>
+        <div className="booking-progress" style={{ "--progress": `${progress * 25}%` }}>
+          <span>{progress}/4 listo</span>
+          <b />
+        </div>
 
         <form onSubmit={submit}>
           <label>Barbero</label>
@@ -372,6 +422,10 @@ function Booking({ data }) {
           </div>
 
           <label>Hora disponible</label>
+          <div className="availability-line">
+            <span>{slotsLoading ? "Actualizando agenda..." : `${slots.length} espacios disponibles`}</span>
+            {selectedSlot && <b>{selectedSlot.label} seleccionado</b>}
+          </div>
           <div className="slots-grid">
             {slotsLoading && <span className="slot-note">Buscando espacios...</span>}
             {!slotsLoading && slots.map((slot) => (
