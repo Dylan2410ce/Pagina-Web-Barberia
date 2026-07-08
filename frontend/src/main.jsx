@@ -40,16 +40,31 @@ const serviceMoods = [
 ];
 
 const themes = [
-  { id: "sunset", name: "Sunset", note: "calido" },
-  { id: "lime", name: "Lime", note: "fresh" },
-  { id: "violet", name: "Violet", note: "night" },
+  { id: "sunset", name: "Coral", note: "casual" },
+  { id: "lime", name: "Mint", note: "clean" },
+  { id: "violet", name: "Neon", note: "bold" },
 ];
+
+function isClosedDay(dateValue) {
+  if (!dateValue) return false;
+  const day = new Date(`${dateValue}T12:00:00`).getDay();
+  return day === 0 || day === 1;
+}
+
+function hourFromMinutes(value) {
+  return `${Math.floor(Number(value) / 60)}:${String(Number(value) % 60).padStart(2, "0")}`;
+}
+
+function normalizeText(value) {
+  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
 function App() {
   const [data, setData] = React.useState(null);
   const [mapOpen, setMapOpen] = React.useState(false);
   const [adminOpen, setAdminOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [menuServiceId, setMenuServiceId] = React.useState("");
   const [theme, setTheme] = React.useState(() => localStorage.getItem("sb_theme") || "sunset");
 
   React.useEffect(() => {
@@ -59,6 +74,13 @@ function App() {
   React.useEffect(() => {
     localStorage.setItem("sb_theme", theme);
   }, [theme]);
+
+  function chooseMenuService(serviceId) {
+    setMenuServiceId(serviceId);
+    window.setTimeout(() => {
+      document.getElementById("reservar")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 30);
+  }
 
   if (data === null) return <main className="loading">Cargando barberia...</main>;
   if (data === false) return <main className="loading">No se pudo conectar con la API.</main>;
@@ -109,8 +131,8 @@ function App() {
           </div>
         </section>
 
-        <HomeShowcase data={data} />
-        <Booking data={data} />
+        <HomeShowcase data={data} onChooseService={chooseMenuService} />
+        <Booking data={data} selectedServiceId={menuServiceId} />
       </main>
 
       <a className="mobile-cta" href="#reservar"><CalendarDays size={17} /> Reservar</a>
@@ -145,10 +167,11 @@ function ThemePicker({ value, onChange }) {
   );
 }
 
-function HomeShowcase({ data }) {
+function HomeShowcase({ data, onChooseService }) {
   const [activeService, setActiveService] = React.useState(data.services[0]?.id || "");
   const service = data.services.find((item) => item.id === activeService) || data.services[0];
   const minPrice = Math.min(...data.services.map((item) => item.price));
+  const maxPrice = Math.max(...data.services.map((item) => item.price));
 
   return (
     <section id="servicios" className="showcase">
@@ -170,33 +193,84 @@ function HomeShowcase({ data }) {
         </article>
       </div>
 
-      <div className="spotlight">
-        <div>
-          <span className="eyebrow">Servicios</span>
-          <h2>{service?.name}</h2>
-          <p>{service?.duration_min} minutos / {money(service?.price)}</p>
-          <div className="mood-row">
-            {serviceMoods.map((mood) => <span key={mood}>{mood}</span>)}
+      <div className="menu-board">
+        <div className="menu-board-head">
+          <div>
+            <span className="eyebrow">Menu de barberia</span>
+            <h2>Precios claros, reserva rapida.</h2>
+            <p>Escoge el servicio desde el menu y la reserva baja lista con tu eleccion.</p>
           </div>
-          <div className="service-energy">
-            <Zap size={17} />
-            <b>Recomendado para:</b>
-            <span>{service?.duration_min > 60 ? "cambio de look" : "refresh semanal"}</span>
+          <div className="menu-range">
+            <small>rango</small>
+            <strong>{money(minPrice)} - {money(maxPrice)}</strong>
           </div>
         </div>
-        <div className="service-tabs">
-          {data.services.map((item) => (
-            <button
-              type="button"
-              className={item.id === service?.id ? "active" : ""}
-              onClick={() => setActiveService(item.id)}
-              key={item.id}
-            >
-              <span>{item.name}</span>
-              <b>{money(item.price)}</b>
+
+        <div className="price-menu-layout">
+          <div className="price-menu-main">
+            <div className="menu-category">
+              <span><Scissors size={17} /> Cortes y barba</span>
+              <small>Tarifas finales con el aumento incluido.</small>
+            </div>
+            <div className="price-menu-grid">
+              {data.services.map((item) => (
+                <article
+                  className={item.id === service?.id ? "price-item active" : "price-item"}
+                  onMouseEnter={() => setActiveService(item.id)}
+                  onFocus={() => setActiveService(item.id)}
+                  key={item.id}
+                >
+                  <button type="button" className="price-item-main" onClick={() => setActiveService(item.id)}>
+                    <span>{item.name}</span>
+                    <small>{item.duration_min} min / {item.duration_min > 60 ? "look completo" : "servicio express"}</small>
+                  </button>
+                  <strong>{money(item.price)}</strong>
+                  <button type="button" className="pick-service" onClick={() => onChooseService(item.id)}>
+                    Elegir
+                  </button>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <aside className="menu-preview">
+            <div className="preview-mark">
+              <Sparkles size={22} />
+            </div>
+            <span className="eyebrow">Seleccionado</span>
+            <h3>{service?.name}</h3>
+            <p>{service?.duration_min} minutos / {money(service?.price)}</p>
+            <div className="mood-row">
+              {serviceMoods.map((mood) => <span key={mood}>{mood}</span>)}
+            </div>
+            <div className="service-energy">
+              <Zap size={17} />
+              <b>Ideal para</b>
+              <span>{service?.duration_min > 60 ? "cambio de look o produccion" : "refresh semanal y salida casual"}</span>
+            </div>
+            <button type="button" onClick={() => onChooseService(service?.id)}>
+              Reservar este servicio
             </button>
-          ))}
+          </aside>
         </div>
+
+        {!!data.addons.length && (
+          <div className="addon-menu">
+            <div className="menu-category">
+              <span><Sparkles size={17} /> Extras</span>
+              <small>Se suman al tiempo y precio final.</small>
+            </div>
+            <div className="addon-menu-grid">
+              {data.addons.map((addon) => (
+                <article key={addon.id}>
+                  <span>{addon.name}</span>
+                  <small>{addon.duration_min} min</small>
+                  <b>{money(addon.price)}</b>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="barber-showcase">
@@ -213,7 +287,7 @@ function HomeShowcase({ data }) {
   );
 }
 
-function Booking({ data }) {
+function Booking({ data, selectedServiceId }) {
   const [form, setForm] = React.useState({
     barber_id: data.barbers[0]?.id || "",
     service_id: data.services[0]?.id || "",
@@ -237,16 +311,23 @@ function Booking({ data }) {
   const selectedSlot = slots.find((slot) => String(slot.start_min) === String(form.start_min));
   const phoneValid = /^[24678][0-9]{7}$/.test(form.client_phone);
   const nameValid = /^[\p{L}\s]{3,60}$/u.test(form.client_name.trim());
-  const canSubmit = form.barber_id && form.service_id && form.date && form.start_min && form.client_name && form.client_phone && !saving;
+  const closedSelectedDate = isClosedDay(form.date);
+  const canSubmit = form.barber_id && form.service_id && form.date && form.start_min && form.client_name && form.client_phone && !closedSelectedDate && !saving;
   const progress = [
     Boolean(form.barber_id),
     Boolean(form.service_id),
-    Boolean(form.date && form.start_min),
+    Boolean(form.date && form.start_min && !closedSelectedDate),
     Boolean(nameValid && phoneValid),
   ].filter(Boolean).length;
 
   const loadSlots = React.useCallback(async () => {
     if (!form.barber_id || !form.service_id || !form.date) return;
+    if (isClosedDay(form.date)) {
+      setSlotsLoading(false);
+      setSlots([]);
+      setForm((current) => ({ ...current, start_min: "" }));
+      return;
+    }
     setSlotsLoading(true);
     const params = new URLSearchParams({
       barber_id: form.barber_id,
@@ -270,6 +351,15 @@ function Booking({ data }) {
       setSlotsLoading(false);
     }
   }, [form.barber_id, form.service_id, form.date, form.addon_ids.join(",")]);
+
+  React.useEffect(() => {
+    if (!selectedServiceId || selectedServiceId === form.service_id) return;
+    const exists = data.services.some((item) => item.id === selectedServiceId);
+    if (!exists) return;
+    setMessage("Servicio seleccionado desde el menu.");
+    setErrors({});
+    setForm((current) => ({ ...current, service_id: selectedServiceId, start_min: "" }));
+  }, [selectedServiceId, data.services, form.service_id]);
 
   React.useEffect(() => {
     loadSlots();
@@ -303,6 +393,7 @@ function Booking({ data }) {
     if (!nameValid) nextErrors.client_name = "Escribe un nombre real, minimo 3 letras.";
     if (!phoneValid) nextErrors.client_phone = "Usa un numero de Costa Rica de 8 digitos.";
     if (!form.start_min) nextErrors.start_min = "Selecciona una hora disponible.";
+    if (closedSelectedDate) nextErrors.start_min = "Domingo y lunes permanecemos cerrados.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       setMessage("Revisa los datos marcados antes de confirmar.");
@@ -423,12 +514,21 @@ function Booking({ data }) {
 
           <label>Hora disponible</label>
           <div className="availability-line">
-            <span>{slotsLoading ? "Actualizando agenda..." : `${slots.length} espacios disponibles`}</span>
+            <span>
+              {closedSelectedDate
+                ? "Cerrado domingo y lunes"
+                : slotsLoading
+                  ? "Actualizando agenda..."
+                  : `${slots.length} espacios disponibles`}
+            </span>
             {selectedSlot && <b>{selectedSlot.label} seleccionado</b>}
           </div>
           <div className="slots-grid">
             {slotsLoading && <span className="slot-note">Buscando espacios...</span>}
-            {!slotsLoading && slots.map((slot) => (
+            {!slotsLoading && closedSelectedDate && (
+              <span className="slot-note">La barberia abre de martes a sabado. Elige otro dia.</span>
+            )}
+            {!slotsLoading && !closedSelectedDate && slots.map((slot) => (
               <button
                 type="button"
                 className={String(form.start_min) === String(slot.start_min) ? "active" : ""}
@@ -441,7 +541,7 @@ function Booking({ data }) {
                 <Clock3 size={15} /> {slot.label}
               </button>
             ))}
-            {!slotsLoading && slots.length === 0 && (
+            {!slotsLoading && !closedSelectedDate && slots.length === 0 && (
               <span className="slot-note">No hay espacios para esa fecha. Prueba otro dia o servicio.</span>
             )}
           </div>
@@ -503,6 +603,25 @@ function AdminPanel({ onClose }) {
   const [stats, setStats] = React.useState(null);
   const [block, setBlock] = React.useState({ start_min: 480, duration_min: 45, notes: "" });
   const [adminMsg, setAdminMsg] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [query, setQuery] = React.useState("");
+  const filteredRows = rows.filter((item) => {
+    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+    const text = normalizeText(`${item.client_name} ${item.client_phone} ${item.service_name} ${item.barber_name}`);
+    return matchesStatus && text.includes(normalizeText(query));
+  });
+  const dayIncome = rows
+    .filter((item) => item.status === "present")
+    .reduce((sum, item) => sum + item.total_price, 0);
+  const bookedCount = rows.filter((item) => item.status === "booked").length;
+  const statusOptions = [
+    ["all", "Todos"],
+    ["booked", "Reservadas"],
+    ["present", "Asistio"],
+    ["noshow", "No vino"],
+    ["cancelled", "Canceladas"],
+    ["blocked", "Bloqueos"],
+  ];
 
   React.useEffect(() => {
     if (token) load();
@@ -522,12 +641,17 @@ function AdminPanel({ onClose }) {
 
   async function load() {
     const now = new Date();
-    const [appointments, report] = await Promise.all([
-      api(`/api/admin/appointments?date=${date}`, { token }),
-      api(`/api/admin/stats?year=${now.getFullYear()}&month=${now.getMonth() + 1}`, { token }),
-    ]);
-    setRows(appointments);
-    setStats(report);
+    try {
+      const [appointments, report] = await Promise.all([
+        api(`/api/admin/appointments?date=${date}`, { token }),
+        api(`/api/admin/stats?year=${now.getFullYear()}&month=${now.getMonth() + 1}`, { token }),
+      ]);
+      setRows(appointments);
+      setStats(report);
+      setAdminMsg("");
+    } catch (error) {
+      setAdminMsg(error.message || "No se pudo cargar el panel.");
+    }
   }
 
   async function changeStatus(id, status) {
@@ -576,18 +700,38 @@ function AdminPanel({ onClose }) {
 
             <div className="stats">
               <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-              <strong>{stats?.appointments || 0}<small>citas</small></strong>
-              <strong>{stats?.attended || 0}<small>asistencias</small></strong>
-              <strong>{stats?.noshow || 0}<small>no vinieron</small></strong>
+              <strong>{rows.length}<small>citas del dia</small></strong>
+              <strong>{bookedCount}<small>pendientes</small></strong>
+              <strong>{money(dayIncome)}<small>generado hoy</small></strong>
               <strong>{money(stats?.income || 0)}<small>ingreso mes</small></strong>
             </div>
 
             <ReportBoard stats={stats} rows={rows} />
 
+            <div className="admin-toolbar">
+              <input
+                placeholder="Buscar cliente, telefono o servicio"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <div className="filter-pills">
+                {statusOptions.map(([value, label]) => (
+                  <button
+                    type="button"
+                    className={statusFilter === value ? "active" : ""}
+                    onClick={() => setStatusFilter(value)}
+                    key={value}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <form className="block-form" onSubmit={createBlock}>
               <select value={block.start_min} onChange={(event) => setBlock({ ...block, start_min: event.target.value })}>
                 {Array.from({ length: 15 }, (_, index) => 480 + index * 45).map((value) => (
-                  <option value={value} key={value}>{Math.floor(value / 60)}:{String(value % 60).padStart(2, "0")}</option>
+                  <option value={value} key={value}>{hourFromMinutes(value)}</option>
                 ))}
               </select>
               <select value={block.duration_min} onChange={(event) => setBlock({ ...block, duration_min: event.target.value })}>
@@ -598,23 +742,32 @@ function AdminPanel({ onClose }) {
             </form>
 
             <div className="appointments">
-              {rows.map((item) => (
+              {filteredRows.map((item) => (
                 <article className={item.status} key={item.id}>
                   <time>{new Date(item.starts_at).toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" })}</time>
                   <div>
                     <b>{item.client_name}</b>
                     <span>{item.service_name} / {money(item.total_price)}</span>
-                    <small>{statusLabels[item.status] || item.status}</small>
+                    <small>
+                      {statusLabels[item.status] || item.status}
+                      {item.client_phone ? ` / ${item.client_phone}` : ""}
+                    </small>
                   </div>
-                  <nav>
-                    <button type="button" className="ok-btn" onClick={() => changeStatus(item.id, "present")}>Asistio</button>
-                    <button type="button" className="warn-btn" onClick={() => changeStatus(item.id, "noshow")}>No vino</button>
-                    <button type="button" className="danger-btn" onClick={() => changeStatus(item.id, "cancelled")}>Cancelar</button>
-                  </nav>
+                  {item.status === "blocked" ? (
+                    <small className="block-chip">Bloqueo manual</small>
+                  ) : (
+                    <nav>
+                      <button type="button" className="ok-btn" disabled={item.status === "present"} onClick={() => changeStatus(item.id, "present")}>Asistio</button>
+                      <button type="button" className="warn-btn" disabled={item.status === "noshow"} onClick={() => changeStatus(item.id, "noshow")}>No vino</button>
+                      <button type="button" className="danger-btn" disabled={item.status === "cancelled"} onClick={() => changeStatus(item.id, "cancelled")}>Cancelar</button>
+                    </nav>
+                  )}
                 </article>
               ))}
               {!rows.length && <p className="empty">No hay citas para esta fecha.</p>}
+              {!!rows.length && !filteredRows.length && <p className="empty">No hay resultados con ese filtro.</p>}
             </div>
+            {adminMsg && <p className="message">{adminMsg}</p>}
           </>
         )}
       </section>
