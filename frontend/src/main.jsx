@@ -4,15 +4,20 @@ import {
   BarChart3,
   CalendarCheck,
   CalendarDays,
+  CalendarX,
   Check,
   Clock3,
+  Coffee,
   Flame,
+  KeyRound,
   Lock,
   Menu,
   MapPin,
   Navigation,
   Palette,
   Scissors,
+  ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
   Star,
   TrendingUp,
@@ -58,6 +63,17 @@ function hourFromMinutes(value) {
 function normalizeText(value) {
   return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
+
+function serviceGroup(service) {
+  const name = normalizeText(service?.name);
+  if (name.includes("barba")) return "Barba";
+  if (name.includes("color") || name.includes("ceja")) return "Color";
+  if (name.includes("fade") || name.includes("moderno")) return "Fade";
+  return "Cortes";
+}
+
+const blockReasons = ["Descanso", "Cita fuera de web", "Diligencia", "Capacitacion", "Mantenimiento"];
+const blockTimeOptions = Array.from({ length: ((19 - 8) * 4) + 1 }, (_, index) => 480 + index * 15);
 
 function App() {
   const [data, setData] = React.useState(null);
@@ -122,11 +138,41 @@ function App() {
             <ThemePicker value={theme} onChange={setTheme} />
           </div>
 
-          <div className="hero-media">
-            <img src="/barbero.jpeg" alt="Sebas Barber" />
-            <div className="hero-badge">
-              <Sparkles size={17} />
-              <span>Fade, clasico, barba, color y detalles</span>
+          <div className="hero-panel">
+            <div className="hero-panel-head">
+              <span><ShieldCheck size={18} /> Agenda protegida</span>
+              <b>sin doble reserva</b>
+            </div>
+            <div className="hero-live-grid">
+              <article>
+                <Clock3 size={19} />
+                <strong>8:00 - 7:00</strong>
+                <span>martes a sabado</span>
+              </article>
+              <article>
+                <Scissors size={19} />
+                <strong>{data.services.length}</strong>
+                <span>servicios activos</span>
+              </article>
+              <article>
+                <CalendarCheck size={19} />
+                <strong>tiempo real</strong>
+                <span>horas disponibles</span>
+              </article>
+              <article>
+                <MapPin size={19} />
+                <strong>Esparza</strong>
+                <span>Barrio Maranonal</span>
+              </article>
+            </div>
+            <div className="hero-quick">
+              <small>Servicios rapidos</small>
+              {data.services.slice(0, 3).map((service) => (
+                <button type="button" onClick={() => chooseMenuService(service.id)} key={service.id}>
+                  <span>{service.name}</span>
+                  <b>{money(service.price)}</b>
+                </button>
+              ))}
             </div>
           </div>
         </section>
@@ -169,9 +215,19 @@ function ThemePicker({ value, onChange }) {
 
 function HomeShowcase({ data, onChooseService }) {
   const [activeService, setActiveService] = React.useState(data.services[0]?.id || "");
+  const [activeGroup, setActiveGroup] = React.useState("Todos");
+  const groups = ["Todos", ...Array.from(new Set(data.services.map(serviceGroup)))];
+  const visibleServices = activeGroup === "Todos"
+    ? data.services
+    : data.services.filter((item) => serviceGroup(item) === activeGroup);
   const service = data.services.find((item) => item.id === activeService) || data.services[0];
   const minPrice = Math.min(...data.services.map((item) => item.price));
   const maxPrice = Math.max(...data.services.map((item) => item.price));
+
+  React.useEffect(() => {
+    if (visibleServices.some((item) => item.id === activeService)) return;
+    setActiveService(visibleServices[0]?.id || data.services[0]?.id || "");
+  }, [activeGroup, activeService, data.services, visibleServices]);
 
   return (
     <section id="servicios" className="showcase">
@@ -212,8 +268,21 @@ function HomeShowcase({ data, onChooseService }) {
               <span><Scissors size={17} /> Cortes y barba</span>
               <small>Tarifas finales con el aumento incluido.</small>
             </div>
+            <div className="menu-filter">
+              <span><SlidersHorizontal size={15} /> Filtrar</span>
+              {groups.map((group) => (
+                <button
+                  type="button"
+                  className={activeGroup === group ? "active" : ""}
+                  onClick={() => setActiveGroup(group)}
+                  key={group}
+                >
+                  {group}
+                </button>
+              ))}
+            </div>
             <div className="price-menu-grid">
-              {data.services.map((item) => (
+              {visibleServices.map((item) => (
                 <article
                   className={item.id === service?.id ? "price-item active" : "price-item"}
                   onMouseEnter={() => setActiveService(item.id)}
@@ -222,7 +291,7 @@ function HomeShowcase({ data, onChooseService }) {
                 >
                   <button type="button" className="price-item-main" onClick={() => setActiveService(item.id)}>
                     <span>{item.name}</span>
-                    <small>{item.duration_min} min / {item.duration_min > 60 ? "look completo" : "servicio express"}</small>
+                    <small>{serviceGroup(item)} / {item.duration_min} min / {item.duration_min > 60 ? "look completo" : "servicio express"}</small>
                   </button>
                   <strong>{money(item.price)}</strong>
                   <button type="button" className="pick-service" onClick={() => onChooseService(item.id)}>
@@ -452,22 +521,25 @@ function Booking({ data, selectedServiceId }) {
           </div>
 
           <label>Servicio</label>
-          <div className="service-grid">
-            {data.services.map((service) => (
-              <button
-                type="button"
-                className={form.service_id === service.id ? "service-card active" : "service-card"}
-                onClick={() => {
-                  setMessage("");
-                  setForm({ ...form, service_id: service.id, start_min: "" });
-                }}
-                key={service.id}
-              >
-                <span>{service.name}</span>
-                <small>{service.duration_min} min</small>
-                <strong>{money(service.price)}</strong>
-              </button>
-            ))}
+          <div className="service-select-row">
+            <select
+              value={form.service_id}
+              onChange={(event) => {
+                setMessage("");
+                setForm({ ...form, service_id: event.target.value, start_min: "" });
+              }}
+            >
+              {data.services.map((service) => (
+                <option value={service.id} key={service.id}>
+                  {service.name} / {money(service.price)} / {service.duration_min} min
+                </option>
+              ))}
+            </select>
+            <div className="selected-service-mini">
+              <span>{serviceGroup(selectedService)}</span>
+              <b>{selectedService?.name}</b>
+              <small>{selectedService?.duration_min} min / {money(selectedService?.price)}</small>
+            </div>
           </div>
 
           <label>Extras</label>
@@ -601,10 +673,13 @@ function AdminPanel({ onClose }) {
   const [date, setDate] = React.useState(today());
   const [rows, setRows] = React.useState([]);
   const [stats, setStats] = React.useState(null);
-  const [block, setBlock] = React.useState({ start_min: 480, duration_min: 45, notes: "" });
+  const [block, setBlock] = React.useState({ mode: "hours", start_min: 480, end_min: 525, notes: "" });
   const [adminMsg, setAdminMsg] = React.useState("");
+  const [recoverMode, setRecoverMode] = React.useState(false);
+  const [resetForm, setResetForm] = React.useState({ username: "sebas", master_code: "", new_password: "", confirm_password: "" });
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [query, setQuery] = React.useState("");
+  const endTimeOptions = blockTimeOptions.filter((value) => value > Number(block.start_min));
   const filteredRows = rows.filter((item) => {
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     const text = normalizeText(`${item.client_name} ${item.client_phone} ${item.service_name} ${item.barber_name}`);
@@ -639,6 +714,36 @@ function AdminPanel({ onClose }) {
     }
   }
 
+  async function resetPassword(event) {
+    event.preventDefault();
+    setAdminMsg("");
+    if (resetForm.new_password !== resetForm.confirm_password) {
+      setAdminMsg("Las contrasenas no coinciden.");
+      return;
+    }
+    if (resetForm.new_password.length < 8) {
+      setAdminMsg("La nueva contrasena debe tener minimo 8 caracteres.");
+      return;
+    }
+
+    try {
+      await api("/api/admin/reset-password", {
+        method: "POST",
+        body: JSON.stringify({
+          username: resetForm.username.trim(),
+          master_code: resetForm.master_code.trim(),
+          new_password: resetForm.new_password,
+        }),
+      });
+      setRecoverMode(false);
+      setLogin({ username: resetForm.username.trim(), password: "" });
+      setResetForm({ username: resetForm.username.trim(), master_code: "", new_password: "", confirm_password: "" });
+      setAdminMsg("Password actualizado. Ya puedes iniciar sesion.");
+    } catch (error) {
+      setAdminMsg(error.message || "No se pudo actualizar el password.");
+    }
+  }
+
   async function load() {
     const now = new Date();
     try {
@@ -661,13 +766,28 @@ function AdminPanel({ onClose }) {
 
   async function createBlock(event) {
     event.preventDefault();
+    const allDay = block.mode === "day";
+    const startMin = Number(block.start_min);
+    const endMin = Number(block.end_min);
+    if (!allDay && endMin <= startMin) {
+      setAdminMsg("La hora final debe ser mayor a la inicial.");
+      return;
+    }
+
     await api("/api/admin/blocks", {
       method: "POST",
       token,
-      body: JSON.stringify({ ...block, date, start_min: Number(block.start_min), duration_min: Number(block.duration_min) }),
+      body: JSON.stringify({
+        date,
+        start_min: allDay ? 480 : startMin,
+        end_min: allDay ? 1140 : endMin,
+        all_day: allDay,
+        notes: block.notes || (allDay ? "Dia bloqueado" : "Bloqueo manual"),
+      }),
     });
-    setBlock({ start_min: 480, duration_min: 45, notes: "" });
-    load();
+    setBlock({ mode: "hours", start_min: 480, end_min: 525, notes: "" });
+    await load();
+    setAdminMsg(allDay ? "Dia bloqueado en agenda." : "Horario bloqueado en agenda.");
   }
 
   function logout() {
@@ -680,14 +800,35 @@ function AdminPanel({ onClose }) {
       <section className="modal admin">
         <button className="close" onClick={onClose}><X /></button>
         {!token ? (
-          <form className="login" onSubmit={submitLogin}>
-            <span className="eyebrow">Privado</span>
-            <h2>Panel admin</h2>
-            <input placeholder="Usuario" value={login.username} onChange={(event) => setLogin({ ...login, username: event.target.value })} />
-            <input type="password" placeholder="Password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} />
-            <button>Entrar</button>
-            {adminMsg && <p className="message">{adminMsg}</p>}
-          </form>
+          <div className="login-shell">
+            {!recoverMode ? (
+              <form className="login" onSubmit={submitLogin}>
+                <span className="eyebrow">Privado</span>
+                <h2>Panel admin</h2>
+                <input placeholder="Usuario" value={login.username} onChange={(event) => setLogin({ ...login, username: event.target.value })} />
+                <input type="password" placeholder="Password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} />
+                <button><Lock size={17} /> Entrar</button>
+                <button type="button" className="ghost-link" onClick={() => { setRecoverMode(true); setAdminMsg(""); }}>
+                  <KeyRound size={16} /> Recuperar password
+                </button>
+                {adminMsg && <p className={adminMsg.includes("actualizado") ? "message success" : "message"}>{adminMsg}</p>}
+              </form>
+            ) : (
+              <form className="login recovery-panel" onSubmit={resetPassword}>
+                <span className="eyebrow">Codigo maestro</span>
+                <h2>Recuperar acceso</h2>
+                <input placeholder="Usuario: sebas o gabriel" value={resetForm.username} onChange={(event) => setResetForm({ ...resetForm, username: event.target.value })} />
+                <input placeholder="Codigo maestro" value={resetForm.master_code} onChange={(event) => setResetForm({ ...resetForm, master_code: event.target.value })} />
+                <input type="password" placeholder="Nueva password" value={resetForm.new_password} onChange={(event) => setResetForm({ ...resetForm, new_password: event.target.value })} />
+                <input type="password" placeholder="Confirmar password" value={resetForm.confirm_password} onChange={(event) => setResetForm({ ...resetForm, confirm_password: event.target.value })} />
+                <button><ShieldCheck size={17} /> Cambiar password</button>
+                <button type="button" className="ghost-link" onClick={() => { setRecoverMode(false); setAdminMsg(""); }}>
+                  Volver al login
+                </button>
+                {adminMsg && <p className="message">{adminMsg}</p>}
+              </form>
+            )}
+          </div>
         ) : (
           <>
             <div className="admin-head">
@@ -728,17 +869,69 @@ function AdminPanel({ onClose }) {
               </div>
             </div>
 
-            <form className="block-form" onSubmit={createBlock}>
-              <select value={block.start_min} onChange={(event) => setBlock({ ...block, start_min: event.target.value })}>
-                {Array.from({ length: 15 }, (_, index) => 480 + index * 45).map((value) => (
-                  <option value={value} key={value}>{hourFromMinutes(value)}</option>
+            <form className="block-form advanced-block" onSubmit={createBlock}>
+              <div className="block-title">
+                <span><CalendarX size={18} /> Bloquear agenda</span>
+                <small>{date}</small>
+              </div>
+              <div className="block-mode">
+                <button type="button" className={block.mode === "hours" ? "active" : ""} onClick={() => setBlock({ ...block, mode: "hours" })}>
+                  <Clock3 size={16} /> Horas
+                </button>
+                <button type="button" className={block.mode === "day" ? "active" : ""} onClick={() => setBlock({ ...block, mode: "day" })}>
+                  <Coffee size={16} /> Dia completo
+                </button>
+              </div>
+
+              {block.mode === "hours" ? (
+                <div className="block-grid">
+                  <label>
+                    Inicio
+                    <select value={block.start_min} onChange={(event) => {
+                      const start = Number(event.target.value);
+                      const nextEnd = Math.max(Number(block.end_min), start + 15);
+                      setBlock({ ...block, start_min: start, end_min: nextEnd });
+                    }}>
+                      {blockTimeOptions.slice(0, -1).map((value) => (
+                        <option value={value} key={value}>{hourFromMinutes(value)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Final
+                    <select value={block.end_min} onChange={(event) => setBlock({ ...block, end_min: Number(event.target.value) })}>
+                      {endTimeOptions.map((value) => (
+                        <option value={value} key={value}>{hourFromMinutes(value)}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <div className="day-lock-card">
+                  <CalendarX size={20} />
+                  <div>
+                    <b>Se bloquea todo el horario laboral</b>
+                    <span>8:00 a 19:00 para descanso, diligencias o cierre especial.</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="reason-pills">
+                {blockReasons.map((reason) => (
+                  <button
+                    type="button"
+                    className={block.notes === reason ? "active" : ""}
+                    onClick={() => setBlock({ ...block, notes: reason })}
+                    key={reason}
+                  >
+                    {reason}
+                  </button>
                 ))}
-              </select>
-              <select value={block.duration_min} onChange={(event) => setBlock({ ...block, duration_min: event.target.value })}>
-                {[45, 60, 90, 120, 180].map((value) => <option value={value} key={value}>{value} min</option>)}
-              </select>
-              <input placeholder="Nota del bloqueo" value={block.notes} onChange={(event) => setBlock({ ...block, notes: event.target.value })} />
-              <button>Bloquear</button>
+              </div>
+              <input placeholder="Nota personalizada opcional" value={block.notes} onChange={(event) => setBlock({ ...block, notes: event.target.value })} />
+              <button className="block-submit">
+                <CalendarX size={17} /> {block.mode === "day" ? "Bloquear dia" : "Bloquear horario"}
+              </button>
             </form>
 
             <div className="appointments">

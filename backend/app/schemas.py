@@ -59,14 +59,22 @@ class AppointmentOut(BaseModel):
 
 class BlockCreate(BaseModel):
     date: date
-    start_min: int
-    duration_min: int = Field(gt=0, le=480)
+    start_min: int = 480
+    duration_min: int | None = Field(default=None, gt=0, le=720)
+    end_min: int | None = None
+    all_day: bool = False
     notes: str | None = None
 
 
 class AppointmentUpdate(BaseModel):
     status: str | None = None
     notes: str | None = None
+
+
+class PasswordResetIn(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    master_code: str = Field(min_length=32, max_length=80, pattern=r"^[A-Za-z0-9]+$")
+    new_password: str = Field(min_length=8, max_length=80)
 
 
 class LoginIn(BaseModel):
@@ -76,4 +84,3 @@ class LoginIn(BaseModel):
 
 class TokenOut(BaseModel):
     token: str
-

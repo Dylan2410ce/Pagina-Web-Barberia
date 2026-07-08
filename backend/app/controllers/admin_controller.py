@@ -1,17 +1,21 @@
 from datetime import date
+from hmac import compare_digest
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 
+from app.config import config
 from app.database import get_db
 from app.models import Appointment, AppointmentStatus, Barber
 from app.repositories.appointment_repository import AppointmentRepository
-from app.schemas import AppointmentOut, BlockCreate, LoginIn, TokenOut
+from app.repositories.barber_repository import BarberRepository
+from app.schemas import AppointmentOut, BlockCreate, LoginIn, PasswordResetIn, TokenOut
 from app.services.appointment_service import AppointmentService
 from app.services.auth_service import current_barber, login
 from app.services.date_service import day_range
+from app.services.password_service import hash_password
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
@@ -19,6 +23,20 @@ router = APIRouter(prefix="/api/admin", tags=["Admin"])
 @router.post("/login", response_model=TokenOut)
 def admin_login(data: LoginIn, db: Session = Depends(get_db)):
     return {"token": login(db, data.username, data.password)}
+
+
+@router.post("/reset-password")
+def reset_password(data: PasswordResetIn, db: Session = Depends(get_db)):
+    if not compare_digest(data.master_code, config.MASTER_RESET_CODE):
+        raise HTTPException(status_code=401, detail="Codigo maestro invalido")
+
+    barber = BarberRepository(db).by_username(data.username)
+    if not barber:
+        raise HTTPException(status_code=404, detail="Barbero no encontrado")
+
+    barber.password_hash = hash_password(data.new_password)
+    db.commit()
+    return {"ok": True, "message": "Password actualizado"}
 
 
 @router.get("/me")

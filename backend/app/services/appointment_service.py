@@ -115,12 +115,32 @@ class AppointmentService:
             raise HTTPException(status_code=409, detail="Ese horario ya fue tomado") from exc
 
     def create_block(self, barber_id: UUID, data: BlockCreate) -> Appointment:
-        starts_at, ends_at = range_from_minutes(data.date, data.start_min, data.duration_min)
+        now = datetime.now(ZoneInfo("America/Costa_Rica"))
+        if data.date < now.date():
+            raise HTTPException(status_code=400, detail="No se pueden bloquear fechas pasadas")
+
+        if data.all_day:
+            start_min = config.OPEN_MIN
+            duration = config.CLOSE_MIN - config.OPEN_MIN
+            client_name = "Dia bloqueado"
+            service_name = "Bloqueo de dia"
+        else:
+            start_min = data.start_min
+            duration = data.end_min - data.start_min if data.end_min is not None else data.duration_min
+            client_name = "Bloqueo manual"
+            service_name = "Bloqueo"
+
+        if duration is None or duration <= 0:
+            raise HTTPException(status_code=400, detail="El bloqueo necesita una hora final mayor a la inicial")
+        if start_min < config.OPEN_MIN or start_min + duration > config.CLOSE_MIN:
+            raise HTTPException(status_code=400, detail="El bloqueo debe estar dentro del horario de atencion")
+
+        starts_at, ends_at = range_from_minutes(data.date, start_min, duration)
         block = Appointment(
             barber_id=barber_id,
-            client_name="Bloqueo manual",
+            client_name=client_name,
             client_phone="00000000",
-            service_name="Bloqueo",
+            service_name=service_name,
             addons=[],
             total_price=0,
             starts_at=starts_at,
