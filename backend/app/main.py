@@ -53,11 +53,20 @@ def health():
 @app.get("/health/calendar")
 def calendar_health():
     calendar = CalendarService()
+    client_available = calendar.is_available()
     return {
         "enabled": calendar.enabled,
         "calendar_id_configured": bool(config.GOOGLE_CALENDAR_ID),
-        "credentials_configured": bool(config.GOOGLE_CREDENTIALS_JSON or config.GOOGLE_CREDENTIALS_FILE),
-        "client_available": calendar.is_available(),
+        "credentials_configured": bool(
+            config.GOOGLE_CREDENTIALS_JSON
+            or config.GOOGLE_SERVICE_ACCOUNT_JSON
+            or config.GOOGLE_CREDENTIALS_B64
+            or config.GOOGLE_CREDENTIALS_FILE
+            or config.GOOGLE_APPLICATION_CREDENTIALS
+            or calendar.credential_source != "none"
+        ),
+        "credential_source": calendar.credential_source,
+        "client_available": client_available,
         "required": config.CALENDAR_REQUIRED,
         "timezone": "America/Costa_Rica",
     }

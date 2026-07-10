@@ -72,7 +72,22 @@ APPOINTMENT_BUFFER_MIN=0
 GOOGLE_CREDENTIALS_JSON=contenido_completo_del_json
 ```
 
-No subas el JSON al repo. En Google Calendar, comparti el calendario `sebasbarberg2021@gmail.com` con el `client_email` del service account y dale permisos para modificar eventos.
+No subas el JSON al repo. Tambien podes cargarlo en Render como Secret File con cualquiera de estos nombres:
+
+```txt
+barberiasebas-65af4656c417.json
+google-credentials.json
+google-calendar.json
+service-account.json
+```
+
+Render lo monta en `/etc/secrets` y la API lo detecta sola. En Google Calendar, comparti el calendario `sebasbarberg2021@gmail.com` con el `client_email` del service account y dale permisos para modificar eventos.
+
+Diagnostico despues del deploy:
+
+```txt
+https://pagina-web-barberia.onrender.com/health/calendar
+```
 
 ## Netlify
 

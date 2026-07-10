@@ -1,5 +1,8 @@
+import base64
+import glob
 import json
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 from zoneinfo import ZoneInfo
@@ -45,6 +48,36 @@ class CalendarError(Exception):
 class CalendarService:
     def __init__(self):
         self.enabled = config.CALENDAR_ENABLED and bool(config.GOOGLE_CALENDAR_ID)
+        self.credential_source = "none"
+
+    def _credentials_from_secret_file(self, service_account, scopes):
+        candidates = []
+        explicit_paths = [
+            config.GOOGLE_CREDENTIALS_FILE,
+            config.GOOGLE_APPLICATION_CREDENTIALS,
+            "/etc/secrets/barberiasebas-65af4656c417.json",
+            "/etc/secrets/google-credentials.json",
+            "/etc/secrets/google-calendar.json",
+            "/etc/secrets/service-account.json",
+        ]
+
+        candidates.extend([path for path in explicit_paths if path])
+        candidates.extend(glob.glob("/etc/secrets/*.json"))
+
+        seen = set()
+        for path in candidates:
+            if not path or path in seen or not os.path.exists(path):
+                continue
+            seen.add(path)
+            try:
+                with open(path, "r", encoding="utf-8") as file:
+                    payload = json.load(file)
+                if payload.get("type") == "service_account" and payload.get("client_email"):
+                    self.credential_source = f"file:{path}"
+                    return service_account.Credentials.from_service_account_info(payload, scopes=scopes)
+            except Exception as exc:
+                logger.warning("Google Calendar: no se pudo leer credencial candidata %s: %s", path, exc)
+        return None
 
     @cached_property
     def service(self):
@@ -62,22 +95,28 @@ class CalendarService:
         credentials = None
 
         try:
-            if config.GOOGLE_CREDENTIALS_JSON:
+            raw_json = config.GOOGLE_CREDENTIALS_JSON or config.GOOGLE_SERVICE_ACCOUNT_JSON
+            if config.GOOGLE_CREDENTIALS_B64:
+                raw_json = base64.b64decode(config.GOOGLE_CREDENTIALS_B64).decode("utf-8")
+
+            if raw_json:
+                self.credential_source = "env-json"
                 credentials = service_account.Credentials.from_service_account_info(
-                    json.loads(config.GOOGLE_CREDENTIALS_JSON),
+                    json.loads(raw_json),
                     scopes=scopes,
                 )
-            elif config.GOOGLE_CREDENTIALS_FILE:
-                credentials = service_account.Credentials.from_service_account_file(
-                    config.GOOGLE_CREDENTIALS_FILE,
-                    scopes=scopes,
-                )
+            else:
+                credentials = self._credentials_from_secret_file(service_account, scopes)
         except Exception as exc:
             logger.exception("Google Calendar: credenciales invalidas o mal formateadas: %s", exc)
             return None
 
         if not credentials:
-            logger.warning("Google Calendar: no hay credenciales configuradas")
+            logger.warning(
+                "Google Calendar: no hay credenciales configuradas. Usa GOOGLE_CREDENTIALS_JSON, "
+                "GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_CREDENTIALS_B64, GOOGLE_CREDENTIALS_FILE, "
+                "GOOGLE_APPLICATION_CREDENTIALS o un Secret File JSON en /etc/secrets."
+            )
             return None
 
         try:

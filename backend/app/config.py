@@ -21,6 +21,17 @@ class Config:
     GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "sebasbarberg2021@gmail.com")
     GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "")
     GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON", "")
+    GOOGLE_CREDENTIALS_B64 = os.getenv("GOOGLE_CREDENTIALS_B64", "")
+    GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+    GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    GOOGLE_ICAL_URL = os.getenv(
+        "GOOGLE_ICAL_URL",
+        "https://calendar.google.com/calendar/ical/sebasbarberg2021%40gmail.com/public/basic.ics",
+    )
+    GOOGLE_EMBED_URL = os.getenv(
+        "GOOGLE_EMBED_URL",
+        "https://calendar.google.com/calendar/embed?src=sebasbarberg2021%40gmail.com&ctz=America%2FCosta_Rica",
+    )
     CALENDAR_ENABLED = os.getenv("CALENDAR_ENABLED", "true").lower() == "true"
     APPOINTMENT_BUFFER_MIN = int(os.getenv("APPOINTMENT_BUFFER_MIN", "0"))
     CALENDAR_REQUIRED = os.getenv("CALENDAR_REQUIRED", "true").lower() == "true"
