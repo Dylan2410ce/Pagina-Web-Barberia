@@ -23,8 +23,23 @@ export default function BookingWizard({
       <div className="panel reveal">
         <div className="wizard-head">
           <span className="eyebrow">Reservar</span>
-          <h2>Elegí una hora y listo.</h2>
-          <p>Primero escogé tu servicio del menú. Después seleccioná fecha, hora y dejá tu contacto.</p>
+          <h2>Tu cita en pocos pasos.</h2>
+          <p>Escoge servicio, mira las horas libres y deja tus datos. La agenda se confirma al instante.</p>
+        </div>
+
+        <div className="booking-helper">
+          <article>
+            <span>Servicio</span>
+            <strong>{resumen.servicio?.name || "Pendiente"}</strong>
+          </article>
+          <article>
+            <span>Fecha</span>
+            <strong>{reserva.date}</strong>
+          </article>
+          <article>
+            <span>Total</span>
+            <strong>{dinero(resumen.total)}</strong>
+          </article>
         </div>
 
         <div className="pasos">
@@ -64,7 +79,7 @@ export default function BookingWizard({
           <div className="form-doble">
             <div className="campo">
               <label>WhatsApp</label>
-              <input inputMode="numeric" maxLength={8} value={reserva.client_phone} required placeholder="88887777" onChange={(event) => actualizar("client_phone", event.target.value)} />
+              <input inputMode="numeric" pattern="[0-9]{8}" maxLength={8} value={reserva.client_phone} required placeholder="88887777" onChange={(event) => actualizar("client_phone", event.target.value)} />
             </div>
             <div className="campo">
               <label>Correo opcional</label>
@@ -76,21 +91,21 @@ export default function BookingWizard({
             <input maxLength={240} value={reserva.notes} placeholder="Ej: bajo en los lados, arriba con textura" onChange={(event) => actualizar("notes", event.target.value)} />
           </div>
           <button className="btn btn-principal btn-ancho" type="submit" disabled={!resumen.servicio || reserva.start_min === null}>
-            Confirmar cita
+            {!resumen.servicio || reserva.start_min === null ? "Escoge servicio y hora" : "Confirmar cita"}
           </button>
         </form>
       </div>
 
       <aside className="panel resumen-card reveal">
         <span className="chip"><Clock size={14} />Resumen</span>
-        <h3>{resumen.servicio?.name || "Elegí un servicio"}</h3>
+        <h3>{resumen.servicio?.name || "Escoge un servicio"}</h3>
         <ul>
           <li><span>Fecha</span><strong>{reserva.date}</strong></li>
           <li><span>Hora</span><strong>{resumen.hora || "Pendiente"}</strong></li>
-          <li><span>Duración</span><strong>{resumen.duracion || 0} min</strong></li>
+          <li><span>Duracion</span><strong>{resumen.duracion || 0} min</strong></li>
           <li><span>Total</span><strong>{dinero(resumen.total)}</strong></li>
         </ul>
-        <p className="nota"><UserRound size={15} /> Consejo: guardá la hora y llegá unos minutos antes.</p>
+        <p className="nota"><UserRound size={15} /> Te recomendamos llegar unos minutos antes para entrar tranquilo.</p>
       </aside>
     </section>
   );

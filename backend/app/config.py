@@ -41,7 +41,7 @@ class Config:
     SMTP_USER = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
-    OWNER_EMAIL = os.getenv("OWNER_EMAIL", "")
+    OWNER_EMAIL = os.getenv("OWNER_EMAIL", GOOGLE_CALENDAR_ID)
 
     SHOP_NAME = "Sebas Barber"
     ADDRESS = "C. 19, Provincia de Puntarenas, Espiritu Santo, Barrio Maranonal"

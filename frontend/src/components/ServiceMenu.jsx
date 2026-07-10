@@ -5,9 +5,9 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
   return (
     <section id="servicios" className="seccion bloque">
       <div className="cabecera-seccion reveal">
-        <span className="eyebrow">Menú</span>
-        <h2>Cortes y extras sin enredo.</h2>
-        <p>Escogé el servicio principal y agregá detalles si querés salir más fino.</p>
+        <span className="eyebrow">Carta de precios</span>
+        <h2>Escoge tu corte y suma solo lo que ocupas.</h2>
+        <p>Primero el servicio principal. Despues, si quieres, agrega extras que solo cambian el total.</p>
       </div>
 
       <div className="menu-layout reveal">
@@ -17,14 +17,14 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
             {servicios.map((servicio) => (
               <article className={`servicio-card ${reserva.service_id === servicio.id ? "activo" : ""}`} key={servicio.id}>
                 <div>
-                  <span>Servicio</span>
+                  <span>Corte principal</span>
                   <h4>{servicio.name}</h4>
                   <p>{servicio.duration_min} min aprox.</p>
                 </div>
                 <strong>{dinero(servicio.price)}</strong>
-                <button className={`btn ${reserva.service_id === servicio.id ? "btn-principal" : "btn-linea"}`} type="button" onClick={() => onServicio(servicio.id)}>
+                <button className={`btn ${reserva.service_id === servicio.id ? "btn-principal" : "btn-linea"}`} type="button" aria-pressed={reserva.service_id === servicio.id} onClick={() => onServicio(servicio.id)}>
                   {reserva.service_id === servicio.id ? <Check size={17} /> : <Plus size={17} />}
-                  {reserva.service_id === servicio.id ? "Elegido" : "Elegir"}
+                  {reserva.service_id === servicio.id ? "Seleccionado" : "Elegir este"}
                 </button>
               </article>
             ))}
@@ -39,14 +39,14 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
               return (
                 <article className={`servicio-card extra ${activo ? "activo" : ""}`} key={extra.id}>
                   <div>
-                    <span>Complemento</span>
+                    <span>Extra</span>
                     <h4>{extra.name}</h4>
-                    <p>Se suma al total</p>
+                    <p>Se suma al total, no al tiempo</p>
                   </div>
                   <strong>{dinero(extra.price)}</strong>
-                  <button className={`btn ${activo ? "btn-principal" : "btn-linea"}`} type="button" onClick={() => onExtra(extra.id)}>
+                  <button className={`btn ${activo ? "btn-principal" : "btn-linea"}`} type="button" aria-pressed={activo} onClick={() => onExtra(extra.id)}>
                     {activo ? <Check size={17} /> : <Plus size={17} />}
-                    {activo ? "Agregado" : "Agregar"}
+                    {activo ? "Agregado" : "Sumar extra"}
                   </button>
                 </article>
               );

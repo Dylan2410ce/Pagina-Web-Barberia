@@ -70,6 +70,13 @@ CALENDAR_ENABLED=true
 CALENDAR_REQUIRED=true
 APPOINTMENT_BUFFER_MIN=0
 GOOGLE_CREDENTIALS_JSON=contenido_completo_del_json
+NOTIFY_EMAILS_ENABLED=true
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=correo_que_envia
+SMTP_PASSWORD=app_password_del_correo
+SMTP_FROM=correo_que_envia
+OWNER_EMAIL=sebasbarberg2021@gmail.com
 ```
 
 No subas el JSON al repo. Tambien podes cargarlo en Render como Secret File con cualquiera de estos nombres:

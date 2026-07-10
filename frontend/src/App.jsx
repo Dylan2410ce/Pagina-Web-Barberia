@@ -222,7 +222,7 @@ export default function App() {
         client_email: reserva.client_email.trim() || null,
         notes: reserva.notes.trim() || null,
       });
-      avisar("ok", "Cita lista", "Tu espacio quedo reservado con Sebastian.");
+      avisar("ok", "Cita lista", "Tu espacio quedo reservado con Sebastian. Si dejaste correo, te llega la confirmacion.");
       const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
       setReserva(limpia);
       await cargarSlots(limpia);
@@ -467,7 +467,7 @@ export default function App() {
     return (
       <main className="pantalla-carga">
         <span className="spinner grande" />
-        <p>Preparando la experiencia Sebas Barber...</p>
+        <p>Abriendo la agenda de Sebas Barber...</p>
       </main>
     );
   }
@@ -575,8 +575,8 @@ export default function App() {
         />
         <section id="ubicacion" className="seccion ubicacion">
           <div className="panel reveal">
-            <span className="eyebrow">Nos vemos en la silla</span>
-            <h2>Un espacio tranquilo en Barrio Marañonal.</h2>
+            <span className="eyebrow">Llegada facil</span>
+            <h2>Te esperamos en Barrio Marañonal.</h2>
             <p>{datos.location.address}</p>
             <div className="hero-acciones">
               <button className="btn btn-secundario" type="button" onClick={() => setModalMapa(true)}>Ver mapa</button>
@@ -587,7 +587,7 @@ export default function App() {
       </main>
       <footer className="footer">
         <strong>Sebas Barber</strong>
-        <span>Agenda privada, cortes precisos y trato relajado.</span>
+        <span>Agenda simple, cortes precisos y trato relajado.</span>
       </footer>
       <button className="cta-flotante" type="button" onClick={() => document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" })}>
         Agendar

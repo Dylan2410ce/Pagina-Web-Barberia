@@ -1,5 +1,7 @@
-import { Home, LogOut, MoveRight, Plus, ShieldCheck } from "lucide-react";
+import { CalendarDays, Home, LogOut, MoveRight, Plus, ShieldCheck, Sparkles } from "lucide-react";
 import { diasSemana, dinero, fechaCorta, fechaHumana, hoyISO, minutosAHora, textoEstado, claseEstado } from "../utils/format";
+
+const CALENDAR_EMBED_URL = "https://calendar.google.com/calendar/embed?src=sebasbarberg2021%40gmail.com&ctz=America%2FCosta_Rica";
 
 export default function AdminPanel({
   admin,
@@ -96,12 +98,29 @@ export default function AdminPanel({
 
 function Dashboard({ data }) {
   const safe = data || {};
+  const proximas = safe.upcoming || [];
   return (
-    <div className="admin-metricas reveal">
-      <article><span>Hoy</span><strong>{safe.appointments_today || 0}</strong><small>Citas activas</small></article>
-      <article><span>Completadas</span><strong>{safe.completed_today || 0}</strong><small>Asistencias</small></article>
-      <article><span>Ingresos hoy</span><strong>{dinero(safe.income_today || 0)}</strong><small>Real generado</small></article>
-      <article><span>Proyectado</span><strong>{dinero(safe.projected_today || 0)}</strong><small>Reservas del día</small></article>
+    <div className="admin-overview reveal">
+      <div className="admin-metricas">
+        <article><span>Hoy</span><strong>{safe.appointments_today || 0}</strong><small>Citas activas</small></article>
+        <article><span>Completadas</span><strong>{safe.completed_today || 0}</strong><small>Asistencias</small></article>
+        <article><span>Ingresos hoy</span><strong>{dinero(safe.income_today || 0)}</strong><small>Real generado</small></article>
+        <article><span>Proyectado</span><strong>{dinero(safe.projected_today || 0)}</strong><small>Reservas del dia</small></article>
+      </div>
+      <aside className="panel admin-next">
+        <span className="eyebrow"><Sparkles size={14} />Proximas</span>
+        <h3>Lo que viene en la silla.</h3>
+        <div className="upcoming-list">
+          {proximas.slice(0, 4).map((cita) => (
+            <article key={cita.id}>
+              <strong>{cita.client_name}</strong>
+              <span>{fechaHumana(cita.starts_at)}</span>
+              <small>{cita.service_name} · {dinero(cita.total_price)}</small>
+            </article>
+          ))}
+          {proximas.length === 0 && <p>No hay citas proximas por ahora.</p>}
+        </div>
+      </aside>
     </div>
   );
 }
@@ -151,21 +170,51 @@ function Agenda({ admin, onFiltrar, onEstado, onMover, onBloqueo }) {
         </div>
       </div>
 
-      <div className="panel reveal">
-        <div className="panel-head">
-          <div>
-            <h3>Bloquear agenda</h3>
-            <p>Descansos, diligencias o citas tomadas fuera de la web.</p>
+      <div className="agenda-admin-grid reveal">
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <h3>Bloquear agenda</h3>
+              <p>Cerra un dia completo o aparta un rango exacto para descanso, diligencias o citas tomadas fuera de la web.</p>
+            </div>
           </div>
+          <form className="block-planner" onSubmit={onBloqueo}>
+            <div className="campo">
+              <label>Fecha</label>
+              <input name="date" type="date" min={hoyISO()} defaultValue={hoyISO()} required />
+            </div>
+            <label className="check-card">
+              <input name="all_day" type="checkbox" />
+              <span><CalendarDays size={18} /> Cerrar todo el dia</span>
+              <small>Ideal para descanso, vacaciones o feriados.</small>
+            </label>
+            <div className="block-times">
+              <div className="campo">
+                <label>Desde</label>
+                <input name="start_time" type="time" defaultValue="08:00" />
+              </div>
+              <div className="campo">
+                <label>Hasta</label>
+                <input name="end_time" type="time" defaultValue="09:00" />
+              </div>
+            </div>
+            <div className="campo">
+              <label>Motivo</label>
+              <input name="notes" placeholder="Ej: cita manual, descanso, diligencia" />
+            </div>
+            <button className="btn btn-secundario btn-ancho" type="submit"><Plus size={16} />Guardar bloqueo</button>
+          </form>
         </div>
-        <form className="form-grid" onSubmit={onBloqueo}>
-          <input name="date" type="date" min={hoyISO()} defaultValue={hoyISO()} required />
-          <label className="check-line"><input name="all_day" type="checkbox" /> Todo el día</label>
-          <input name="start_time" type="time" defaultValue="08:00" />
-          <input name="end_time" type="time" defaultValue="09:00" />
-          <input name="notes" placeholder="Motivo" />
-          <button className="btn btn-secundario" type="submit"><Plus size={16} />Crear bloqueo</button>
-        </form>
+
+        <div className="panel admin-calendar-panel">
+          <div className="panel-head">
+            <div>
+              <h3>Calendario real</h3>
+              <p>Vista rapida del Google Calendar conectado para revisar la semana sin salir del panel.</p>
+            </div>
+          </div>
+          <iframe className="admin-calendar-frame" title="Google Calendar Sebas Barber" src={CALENDAR_EMBED_URL} />
+        </div>
       </div>
     </>
   );
