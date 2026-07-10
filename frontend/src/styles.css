@@ -14,6 +14,7 @@
   --oro: #d4af37;
   --oro-claro: #ffe08a;
   --cobre: #c8754a;
+  --rosa: #f08b76;
   --menta: #58d7a2;
   --azul: #68b7ff;
   --rojo: #ff6767;
@@ -39,6 +40,8 @@ body {
   overflow-x: hidden;
   background:
     linear-gradient(135deg, rgba(212, 175, 55, .08) 0 1px, transparent 1px 32px),
+    linear-gradient(140deg, rgba(104, 183, 255, .08), transparent 34%),
+    linear-gradient(220deg, rgba(240, 139, 118, .09), transparent 38%),
     linear-gradient(180deg, #121212 0%, #191b22 45%, #101010 100%);
 }
 
@@ -306,6 +309,10 @@ p {
   background: rgba(255, 255, 255, .07);
 }
 
+.hamburguesa svg {
+  color: var(--oro-claro);
+}
+
 .hamburguesa i {
   width: 20px;
   height: 2px;
@@ -387,10 +394,15 @@ p {
   gap: 14px;
 }
 
+.hero-signature {
+  border-color: rgba(255, 224, 138, .28);
+}
+
 .tarjeta-destacada {
   padding: 20px;
   background:
-    linear-gradient(135deg, rgba(212, 175, 55, .14), transparent 45%),
+    linear-gradient(135deg, rgba(212, 175, 55, .18), transparent 45%),
+    linear-gradient(225deg, rgba(104, 183, 255, .1), transparent 40%),
     var(--panel-fuerte);
 }
 
@@ -473,6 +485,11 @@ p {
   transform: translateY(-2px);
   border-color: rgba(255, 224, 138, .62);
   background: rgba(212, 175, 55, .11);
+}
+
+.servicio-card.extra.activo {
+  border-color: rgba(88, 215, 162, .55);
+  background: rgba(88, 215, 162, .1);
 }
 
 .servicio-card span,
@@ -577,6 +594,7 @@ p {
 
 .slots-vacio,
 .vacio {
+  grid-column: 1 / -1;
   border: 1px dashed rgba(255, 255, 255, .2);
   border-radius: var(--radio-sm);
   padding: 16px;
@@ -612,6 +630,9 @@ p {
 
 .nota {
   color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: .9rem;
 }
 
@@ -883,6 +904,11 @@ p {
   margin-top: 12px;
   color: var(--oro-claro);
   font-weight: 900;
+}
+
+.loader-global > div {
+  display: grid;
+  justify-items: center;
 }
 
 .modal {

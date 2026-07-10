@@ -39,7 +39,7 @@ export async function api(ruta, opciones = {}) {
     return respuesta.status === 204 ? null : respuesta.json();
   } catch (error) {
     if (error.name === "AbortError") {
-      throw new Error("La API tardó demasiado. Intentá otra vez.");
+      throw new Error("La API tardo demasiado. Intenta otra vez.");
     }
     throw error;
   } finally {
@@ -51,10 +51,10 @@ function leerError(error) {
   const detalle = error?.detail;
   if (typeof detalle === "string") return detalle;
   if (Array.isArray(detalle)) {
-    return detalle.map((item) => item.msg || item.message || "Dato inválido").join(" ");
+    return detalle.map((item) => item.msg || item.message || "Dato invalido").join(" ");
   }
   if (detalle && typeof detalle === "object") {
-    return detalle.msg || detalle.message || "Datos inválidos.";
+    return detalle.msg || detalle.message || "Datos invalidos.";
   }
   return "No se pudo completar la solicitud.";
 }
