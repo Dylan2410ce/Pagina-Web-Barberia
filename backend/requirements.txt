@@ -7,3 +7,4 @@ python-jose[cryptography]==3.3.0
 google-api-python-client==2.137.0
 google-auth==2.33.0
 bcrypt==4.2.0
+tzdata>=2024.1

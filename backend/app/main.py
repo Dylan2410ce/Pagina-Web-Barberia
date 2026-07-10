@@ -1,10 +1,15 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import config
 from app.controllers import admin_controller, public_controller
 from app.database import SessionLocal, init_db
+from app.services.calendar_service import CalendarService
 from app.services.seed_service import seed_data
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 
 app = FastAPI(title="Sebas Barber API", version="1.0.0")
 
@@ -43,3 +48,15 @@ def root():
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+@app.get("/health/calendar")
+def calendar_health():
+    calendar = CalendarService()
+    return {
+        "enabled": calendar.enabled,
+        "calendar_id_configured": bool(config.GOOGLE_CALENDAR_ID),
+        "credentials_configured": bool(config.GOOGLE_CREDENTIALS_JSON or config.GOOGLE_CREDENTIALS_FILE),
+        "client_available": calendar.is_available(),
+        "timezone": "America/Costa_Rica",
+    }

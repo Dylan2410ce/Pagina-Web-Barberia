@@ -2,7 +2,10 @@ from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 
-TZ = ZoneInfo("America/Costa_Rica")
+try:
+    TZ = ZoneInfo("America/Costa_Rica")
+except Exception:
+    TZ = timezone(timedelta(hours=-6), name="America/Costa_Rica")
 
 
 def range_from_minutes(day: date, start_min: int, duration_min: int) -> tuple[datetime, datetime]:
@@ -20,4 +23,3 @@ def label_from_minutes(minutes: int) -> str:
     suffix = "PM" if hour >= 12 else "AM"
     display_hour = hour - 12 if hour > 12 else hour
     return f"{display_hour}:{minute:02d} {suffix}"
-
