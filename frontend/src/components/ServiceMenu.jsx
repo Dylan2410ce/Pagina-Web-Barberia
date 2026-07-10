@@ -5,9 +5,9 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
   return (
     <section id="servicios" className="seccion bloque">
       <div className="cabecera-seccion reveal">
-        <span className="eyebrow">Menú de precios</span>
-        <h2>Elegí el look. Nosotros cuidamos el detalle.</h2>
-        <p>Servicios claros, duración realista y extras para salir más pulido.</p>
+        <span className="eyebrow">Menú</span>
+        <h2>Cortes y extras sin enredo.</h2>
+        <p>Escogé el servicio principal y agregá detalles si querés salir más fino.</p>
       </div>
 
       <div className="menu-layout reveal">
@@ -19,7 +19,7 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
                 <div>
                   <span>Servicio</span>
                   <h4>{servicio.name}</h4>
-                  <p>{servicio.duration_min} min</p>
+                  <p>{servicio.duration_min} min aprox.</p>
                 </div>
                 <strong>{dinero(servicio.price)}</strong>
                 <button className={`btn ${reserva.service_id === servicio.id ? "btn-principal" : "btn-linea"}`} type="button" onClick={() => onServicio(servicio.id)}>
@@ -41,7 +41,7 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
                   <div>
                     <span>Complemento</span>
                     <h4>{extra.name}</h4>
-                    <p>{extra.duration_min} min</p>
+                    <p>Se suma al total</p>
                   </div>
                   <strong>{dinero(extra.price)}</strong>
                   <button className={`btn ${activo ? "btn-principal" : "btn-linea"}`} type="button" onClick={() => onExtra(extra.id)}>

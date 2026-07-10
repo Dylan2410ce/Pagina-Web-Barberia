@@ -22,15 +22,15 @@ export default function BookingWizard({
     <section id="reserva" className="seccion reserva-grid">
       <div className="panel reveal">
         <div className="wizard-head">
-          <span className="eyebrow">Reserva rápida</span>
-          <h2>Tu hora, en menos de un minuto.</h2>
-          <p>Escogé fecha, hora y dejá tus datos. Sebastian se encarga del resto.</p>
+          <span className="eyebrow">Reservar</span>
+          <h2>Elegí una hora y listo.</h2>
+          <p>Primero escogé tu servicio del menú. Después seleccioná fecha, hora y dejá tu contacto.</p>
         </div>
 
         <div className="pasos">
-          <span className={reserva.service_id ? "ok" : "activo"}>1 Servicio</span>
-          <span className={reserva.start_min !== null ? "ok" : ""}>2 Hora</span>
-          <span>3 Datos</span>
+          <span className={reserva.service_id ? "ok" : "activo"}>Servicio</span>
+          <span className={reserva.start_min !== null ? "ok" : ""}>Hora</span>
+          <span>Contacto</span>
         </div>
 
         <div className="campo">
@@ -39,7 +39,7 @@ export default function BookingWizard({
         </div>
 
         <div className="campo">
-          <label>Horas disponibles</label>
+          <label>Horas libres</label>
           <div className="slots">
             {cargandoSlots && <div className="slots-vacio"><span className="spinner" /> Buscando espacios...</div>}
             {!cargandoSlots && slots.map((slot) => (
@@ -73,7 +73,7 @@ export default function BookingWizard({
           </div>
           <div className="campo">
             <label>Notas</label>
-            <input maxLength={240} value={reserva.notes} placeholder="Algún detalle para tu corte" onChange={(event) => actualizar("notes", event.target.value)} />
+            <input maxLength={240} value={reserva.notes} placeholder="Ej: bajo en los lados, arriba con textura" onChange={(event) => actualizar("notes", event.target.value)} />
           </div>
           <button className="btn btn-principal btn-ancho" type="submit" disabled={!resumen.servicio || reserva.start_min === null}>
             Confirmar cita
@@ -90,7 +90,7 @@ export default function BookingWizard({
           <li><span>Duración</span><strong>{resumen.duracion || 0} min</strong></li>
           <li><span>Total</span><strong>{dinero(resumen.total)}</strong></li>
         </ul>
-        <p className="nota"><UserRound size={15} /> Llegá puntual y con una idea clara del estilo que querés.</p>
+        <p className="nota"><UserRound size={15} /> Consejo: guardá la hora y llegá unos minutos antes.</p>
       </aside>
     </section>
   );

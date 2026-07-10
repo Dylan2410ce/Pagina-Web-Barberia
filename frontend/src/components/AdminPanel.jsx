@@ -83,13 +83,14 @@ export default function AdminPanel({
   );
 }
 
-function Dashboard({ data = {} }) {
+function Dashboard({ data }) {
+  const safe = data || {};
   return (
     <div className="admin-metricas reveal">
-      <article><span>Hoy</span><strong>{data.appointments_today || 0}</strong><small>Citas activas</small></article>
-      <article><span>Completadas</span><strong>{data.completed_today || 0}</strong><small>Asistencias</small></article>
-      <article><span>Ingresos hoy</span><strong>{dinero(data.income_today || 0)}</strong><small>Real generado</small></article>
-      <article><span>Proyectado</span><strong>{dinero(data.projected_today || 0)}</strong><small>Reservas del día</small></article>
+      <article><span>Hoy</span><strong>{safe.appointments_today || 0}</strong><small>Citas activas</small></article>
+      <article><span>Completadas</span><strong>{safe.completed_today || 0}</strong><small>Asistencias</small></article>
+      <article><span>Ingresos hoy</span><strong>{dinero(safe.income_today || 0)}</strong><small>Real generado</small></article>
+      <article><span>Proyectado</span><strong>{dinero(safe.projected_today || 0)}</strong><small>Reservas del día</small></article>
     </div>
   );
 }
@@ -246,7 +247,10 @@ function Clientes({ clientes }) {
   );
 }
 
-function Reportes({ stats = {} }) {
+function Reportes({ stats }) {
+  const safe = stats || {};
+  const serviceBreakdown = safe.service_breakdown || [];
+  const dailyIncome = safe.daily_income || [];
   return (
     <div className="panel reveal">
       <div className="panel-head">
@@ -256,25 +260,25 @@ function Reportes({ stats = {} }) {
         </div>
       </div>
       <div className="admin-metricas compactas">
-        <article><span>Generado</span><strong>{dinero(stats.income || 0)}</strong><small>Completadas</small></article>
-        <article><span>Proyectado</span><strong>{dinero(stats.projected_income || 0)}</strong><small>Mes activo</small></article>
-        <article><span>Ticket promedio</span><strong>{dinero(stats.average_ticket || 0)}</strong><small>Por visita</small></article>
-        <article><span>Asistencia</span><strong>{stats.attendance_rate || 0}%</strong><small>Control mensual</small></article>
+        <article><span>Generado</span><strong>{dinero(safe.income || 0)}</strong><small>Completadas</small></article>
+        <article><span>Proyectado</span><strong>{dinero(safe.projected_income || 0)}</strong><small>Mes activo</small></article>
+        <article><span>Ticket promedio</span><strong>{dinero(safe.average_ticket || 0)}</strong><small>Por visita</small></article>
+        <article><span>Asistencia</span><strong>{safe.attendance_rate || 0}%</strong><small>Control mensual</small></article>
       </div>
       <div className="reportes-grid">
         <div>
           <h4>Servicios más pedidos</h4>
-          {(stats.service_breakdown || []).map((item) => (
+          {serviceBreakdown.map((item) => (
             <p key={item.name}><strong>{item.name}</strong><span>{item.count} · {dinero(item.income)}</span></p>
           ))}
-          {(stats.service_breakdown || []).length === 0 && <p>Sin datos todavía.</p>}
+          {serviceBreakdown.length === 0 && <p>Sin datos todavía.</p>}
         </div>
         <div>
           <h4>Movimiento diario</h4>
-          {(stats.daily_income || []).map((item) => (
+          {dailyIncome.map((item) => (
             <p key={item.day}><strong>Día {item.day}</strong><span>{item.count} citas · {dinero(item.income)}</span></p>
           ))}
-          {(stats.daily_income || []).length === 0 && <p>Sin datos todavía.</p>}
+          {dailyIncome.length === 0 && <p>Sin datos todavía.</p>}
         </div>
       </div>
     </div>

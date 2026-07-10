@@ -105,8 +105,8 @@ export default function App() {
     const { year, month } = mesActual();
     const limpiar = Object.fromEntries(Object.entries(filtrosActuales).filter(([, valor]) => valor !== ""));
     try {
-      const [perfil, dashboard, citas, servicios, horarios, clientes, stats] = await Promise.all([
-        adminApi.perfil(tokenActual),
+      const perfil = await adminApi.perfil(tokenActual);
+      const resultados = await Promise.allSettled([
         adminApi.dashboard(tokenActual),
         adminApi.citas(tokenActual, limpiar),
         adminApi.servicios(tokenActual),
@@ -114,7 +114,25 @@ export default function App() {
         adminApi.clientes(tokenActual),
         adminApi.stats(tokenActual, year, month),
       ]);
-      setAdmin((actual) => ({ ...actual, perfil, dashboard, citas, servicios, horarios, clientes, stats }));
+
+      const valor = (index, fallback) => resultados[index].status === "fulfilled" ? resultados[index].value : fallback;
+      const cargaParcial = resultados.some((resultado) => resultado.status === "rejected");
+
+      setAdmin((actual) => ({
+        ...actual,
+        token: tokenActual,
+        perfil,
+        dashboard: valor(0, actual.dashboard || {}),
+        citas: valor(1, actual.citas || []),
+        servicios: valor(2, actual.servicios || []),
+        horarios: valor(3, actual.horarios || []),
+        clientes: valor(4, actual.clientes || []),
+        stats: valor(5, actual.stats || {}),
+      }));
+
+      if (cargaParcial) {
+        avisar("warning", "Panel cargado", "Algunos datos tardaron o no respondieron, pero la agenda sigue disponible.");
+      }
     } catch (error) {
       borrarToken();
       setAdmin(adminBase);
@@ -185,9 +203,9 @@ export default function App() {
   const crearCita = async (event) => {
     event.preventDefault();
     const telefono = limpiarTelefono(reserva.client_phone);
-    if (!servicioActivo) return avisar("warning", "Escogé un servicio");
-    if (reserva.start_min === null) return avisar("warning", "Escogé una hora");
-    if (!validarTelefono(telefono)) return avisar("warning", "Revisá el teléfono", "Usá 8 dígitos de Costa Rica.");
+    if (!servicioActivo) return avisar("warning", "Escoge un servicio");
+    if (reserva.start_min === null) return avisar("warning", "Escoge una hora");
+    if (!validarTelefono(telefono)) return avisar("warning", "Revisa el telefono", "Usa 8 digitos de Costa Rica.");
 
     setProcesando("Reservando tu espacio...");
     try {
@@ -197,7 +215,7 @@ export default function App() {
         client_email: reserva.client_email.trim() || null,
         notes: reserva.notes.trim() || null,
       });
-      avisar("ok", "Cita lista", "Sebastian te espera a la hora elegida.");
+      avisar("ok", "Cita lista", "Tu espacio quedo reservado con Sebastian.");
       const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
       setReserva(limpia);
       await cargarSlots(limpia);
@@ -211,7 +229,7 @@ export default function App() {
   const buscarCitas = async (event) => {
     event.preventDefault();
     const telefono = limpiarTelefono(telefonoBusqueda);
-    if (!validarTelefono(telefono)) return avisar("warning", "Teléfono inválido");
+    if (!validarTelefono(telefono)) return avisar("warning", "Telefono invalido");
     setProcesando("Buscando tus citas...");
     try {
       const citas = await publicoApi.buscarPorTelefono(telefono);
@@ -226,8 +244,8 @@ export default function App() {
   };
 
   const cancelarCliente = async (id) => {
-    if (!telefonoBusqueda) return avisar("warning", "Buscá primero por teléfono");
-    if (!confirm("¿Querés cancelar esta cita?")) return;
+    if (!telefonoBusqueda) return avisar("warning", "Busca primero por telefono");
+    if (!confirm("¿Quieres cancelar esta cita?")) return;
     setProcesando("Liberando el espacio...");
     try {
       await publicoApi.cancelarCita(id, { phone: telefonoBusqueda, reason: "Cancelada desde la web" });
@@ -277,7 +295,7 @@ export default function App() {
   };
 
   const confirmarReprogramacion = async () => {
-    if (!modalReprogramar?.start_min) return avisar("warning", "Escogé una hora");
+    if (!modalReprogramar?.start_min) return avisar("warning", "Escoge una hora");
     setProcesando("Moviendo la cita...");
     try {
       if (modalReprogramar.modo === "cliente") {
@@ -485,7 +503,7 @@ export default function App() {
         <section id="ubicacion" className="seccion ubicacion">
           <div className="panel reveal">
             <span className="eyebrow">Nos vemos en la silla</span>
-            <h2>Un spot tranquilo en Barrio Marañonal.</h2>
+            <h2>Un espacio tranquilo en Barrio Marañonal.</h2>
             <p>{datos.location.address}</p>
             <div className="hero-acciones">
               <button className="btn btn-secundario" type="button" onClick={() => setModalMapa(true)}>Ver mapa</button>
@@ -519,7 +537,7 @@ export default function App() {
         <div className="modal-backdrop">
           <section className="modal">
             <header>
-              <strong>Elegí una nueva hora</strong>
+              <strong>Elige una nueva hora</strong>
               <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)}>×</button>
             </header>
             <div className="modal-body formulario">
@@ -539,7 +557,7 @@ export default function App() {
                     {slot.label}
                   </button>
                 ))}
-                {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese día.</div>}
+                {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese dia.</div>}
               </div>
               <button className="btn btn-principal btn-ancho" type="button" onClick={confirmarReprogramacion}>
                 Guardar cambio
