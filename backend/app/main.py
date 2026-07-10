@@ -17,10 +17,12 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         config.FRONTEND_URL,
+        "https://sebasbarber.netlify.app",
         "https://barberiasebas.netlify.app",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r"https://.*\.netlify\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -61,7 +61,7 @@ Variables necesarias:
 ```txt
 PYTHON_VERSION=3.12.11
 DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST/neondb?sslmode=require
-FRONTEND_URL=https://barberiasebas.netlify.app
+FRONTEND_URL=https://sebasbarber.netlify.app
 SECRET_KEY=clave_larga
 ADMIN_DEFAULT_PASSWORD=clave_inicial
 MASTER_RESET_CODE=SBs7LVAiZawpHfA1fgH2czClGt2iDVjU6xmOYJC8hoCK9wBv

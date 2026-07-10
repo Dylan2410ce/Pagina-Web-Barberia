@@ -9,7 +9,7 @@ class Config:
     )
 
     SECRET_KEY = os.getenv("SECRET_KEY", "sebas-barber-render-secret-key")
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://barberiasebas.netlify.app")
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sebasbarber.netlify.app")
     MASTER_RESET_CODE = os.getenv(
         "MASTER_RESET_CODE",
         "SBs7LVAiZawpHfA1fgH2czClGt2iDVjU6xmOYJC8hoCK9wBv",
