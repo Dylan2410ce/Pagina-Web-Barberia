@@ -19,7 +19,7 @@ export default function Navbar({ abierto, solida, onToggle }) {
           <a href="#servicios" onClick={cerrar}>Menú</a>
           <a href="#reserva" onClick={cerrar}>Reservar</a>
           <a href="#mis-citas" onClick={cerrar}>Mis citas</a>
-          <a href="#admin" onClick={cerrar}>Admin</a>
+          <a href="/admin" onClick={cerrar}>Admin</a>
         </div>
       </nav>
     </header>

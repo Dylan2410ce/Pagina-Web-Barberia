@@ -1,4 +1,4 @@
-import { LogOut, MoveRight, Plus, ShieldCheck } from "lucide-react";
+import { Home, LogOut, MoveRight, Plus, ShieldCheck } from "lucide-react";
 import { diasSemana, dinero, fechaCorta, fechaHumana, hoyISO, minutosAHora, textoEstado, claseEstado } from "../utils/format";
 
 export default function AdminPanel({
@@ -13,10 +13,16 @@ export default function AdminPanel({
   onBloqueo,
   onGuardarServicio,
   onGuardarHorario,
+  standalone = false,
 }) {
   if (!admin.token) {
     return (
-      <section id="admin" className="seccion bloque">
+      <section id="admin" className={`seccion bloque ${standalone ? "admin-standalone" : ""}`}>
+        {standalone && (
+          <a className="btn btn-linea admin-back" href="/">
+            <Home size={16} /> Volver a la web
+          </a>
+        )}
         <div className="admin-login panel reveal">
           <div>
             <span className="eyebrow"><ShieldCheck size={14} />Panel privado</span>
@@ -51,11 +57,16 @@ export default function AdminPanel({
   const tabs = ["agenda", "servicios", "horarios", "clientes", "reportes"];
 
   return (
-    <section id="admin" className="seccion bloque admin-shell">
+    <section id="admin" className={`seccion bloque admin-shell ${standalone ? "admin-standalone" : ""}`}>
+      {standalone && (
+        <a className="btn btn-linea admin-back" href="/">
+          <Home size={16} /> Volver a la web
+        </a>
+      )}
       <div className="cabecera-seccion reveal">
-        <span className="eyebrow">Back office</span>
-        <h2>Todo el negocio en una sola vista.</h2>
-        <p>Agenda, bloqueos, precios, clientes y rendimiento mensual.</p>
+        <span className="eyebrow">Panel privado</span>
+        <h2>Agenda y control de Sebastian.</h2>
+        <p>Una vista tranquila para atender citas, bloquear espacios y revisar el movimiento del mes.</p>
       </div>
 
       <div className="admin-toolbar panel reveal">

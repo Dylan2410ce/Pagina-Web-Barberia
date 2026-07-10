@@ -36,6 +36,7 @@ const adminBase = {
 };
 
 export default function App() {
+  const [ruta, setRuta] = useState(() => window.location.pathname);
   const [datos, setDatos] = useState({ barbers: [], services: [], addons: [], location: {} });
   const [reserva, setReserva] = useState(reservaInicial);
   const [slots, setSlots] = useState([]);
@@ -169,6 +170,12 @@ export default function App() {
     const onScroll = () => setNavSolida(window.scrollY > 18);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => setRuta(window.location.pathname);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   useEffect(() => {
@@ -465,6 +472,72 @@ export default function App() {
     );
   }
 
+  const adminProps = {
+    admin,
+    onLogin: loginAdmin,
+    onResetPassword: resetPassword,
+    onSalir: cerrarAdmin,
+    onTab: cambiarTabAdmin,
+    onFiltrar: filtrarAdmin,
+    onEstado: cambiarEstadoAdmin,
+    onMover: (cita) => abrirReprogramar(cita, "admin"),
+    onBloqueo: crearBloqueo,
+    onGuardarServicio: guardarServicio,
+    onGuardarHorario: guardarHorario,
+  };
+
+  if (ruta.startsWith("/admin")) {
+    return (
+      <>
+        <main className="admin-route">
+          <AdminPanel {...adminProps} standalone />
+        </main>
+        {procesando && (
+          <div className="loader-global">
+            <div>
+              <span className="spinner grande" />
+              <p>{procesando}</p>
+            </div>
+          </div>
+        )}
+        {modalReprogramar && (
+          <div className="modal-backdrop">
+            <section className="modal">
+              <header>
+                <strong>Elige una nueva hora</strong>
+                <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)}>×</button>
+              </header>
+              <div className="modal-body formulario">
+                <div className="campo">
+                  <label>Nueva fecha</label>
+                  <input type="date" min={hoyISO()} value={modalReprogramar.date} onChange={(event) => cambiarFechaModal(event.target.value)} />
+                </div>
+                <div className="slots">
+                  {modalReprogramar.cargando && <div className="slots-vacio"><span className="spinner" /> Buscando horas...</div>}
+                  {!modalReprogramar.cargando && modalReprogramar.slots.map((slot) => (
+                    <button
+                      key={slot.start_min}
+                      className={`slot ${modalReprogramar.start_min === slot.start_min ? "activo" : ""}`}
+                      type="button"
+                      onClick={() => setModalReprogramar((actual) => ({ ...actual, start_min: slot.start_min }))}
+                    >
+                      {slot.label}
+                    </button>
+                  ))}
+                  {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese dia.</div>}
+                </div>
+                <button className="btn btn-principal btn-ancho" type="button" onClick={confirmarReprogramacion}>
+                  Guardar cambio
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+        <Toasts items={toastList} onClose={cerrarToast} />
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar abierto={menuAbierto} solida={navSolida} onToggle={() => setMenuAbierto((value) => !value)} />
@@ -511,19 +584,6 @@ export default function App() {
             </div>
           </div>
         </section>
-        <AdminPanel
-          admin={admin}
-          onLogin={loginAdmin}
-          onResetPassword={resetPassword}
-          onSalir={cerrarAdmin}
-          onTab={cambiarTabAdmin}
-          onFiltrar={filtrarAdmin}
-          onEstado={cambiarEstadoAdmin}
-          onMover={(cita) => abrirReprogramar(cita, "admin")}
-          onBloqueo={crearBloqueo}
-          onGuardarServicio={guardarServicio}
-          onGuardarHorario={guardarHorario}
-        />
       </main>
       <footer className="footer">
         <strong>Sebas Barber</strong>
