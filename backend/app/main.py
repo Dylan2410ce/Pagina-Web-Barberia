@@ -58,5 +58,6 @@ def calendar_health():
         "calendar_id_configured": bool(config.GOOGLE_CALENDAR_ID),
         "credentials_configured": bool(config.GOOGLE_CREDENTIALS_JSON or config.GOOGLE_CREDENTIALS_FILE),
         "client_available": calendar.is_available(),
+        "required": config.CALENDAR_REQUIRED,
         "timezone": "America/Costa_Rica",
     }

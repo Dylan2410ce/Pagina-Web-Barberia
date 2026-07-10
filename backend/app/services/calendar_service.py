@@ -38,6 +38,10 @@ def log_google_error(context: str, exc: Exception) -> None:
     )
 
 
+class CalendarError(Exception):
+    pass
+
+
 class CalendarService:
     def __init__(self):
         self.enabled = config.CALENDAR_ENABLED and bool(config.GOOGLE_CALENDAR_ID)
@@ -129,13 +133,9 @@ class CalendarService:
     def create_event(self, appointment) -> str | None:
         if not self.service:
             logger.warning("Google Calendar: create_event omitido porque el cliente no esta disponible")
+            if self.enabled and config.CALENDAR_REQUIRED:
+                raise CalendarError("Google Calendar no esta disponible. Revisa credenciales en Render.")
             return None
-
-        attendees = []
-        if appointment.client_email:
-            attendees.append({"email": appointment.client_email})
-        if config.OWNER_EMAIL:
-            attendees.append({"email": config.OWNER_EMAIL})
 
         event = {
             "summary": f"{appointment.service_name} - {appointment.client_name}",
@@ -148,7 +148,6 @@ class CalendarService:
             ),
             "start": {"dateTime": rfc3339_costa_rica(appointment.starts_at), "timeZone": "America/Costa_Rica"},
             "end": {"dateTime": rfc3339_costa_rica(appointment.ends_at), "timeZone": "America/Costa_Rica"},
-            "attendees": attendees,
         }
         try:
             logger.info(
@@ -162,13 +161,15 @@ class CalendarService:
                 .insert(
                     calendarId=config.GOOGLE_CALENDAR_ID,
                     body=event,
-                    sendUpdates="all" if attendees else "none",
+                    sendUpdates="none",
                 )
                 .execute()
             )
             return created.get("id")
         except Exception as exc:
             log_google_error("error creando evento", exc)
+            if config.CALENDAR_REQUIRED:
+                raise CalendarError("Google Calendar rechazo el evento. Revisa los logs de Render.") from exc
             return None
 
     def delete_event(self, event_id: str | None) -> None:

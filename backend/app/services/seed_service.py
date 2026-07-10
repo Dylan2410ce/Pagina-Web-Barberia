@@ -10,8 +10,8 @@ SERVICES = [
     ("Corte Premium + Lavado", 45, 7000, False),
     ("Colorimetria / Rayitos", 120, 15000, False),
     ("Tinte Completo", 120, 20000, False),
-    ("Barba Hot Towel", 15, 2000, True),
-    ("Perfilado de Cejas", 15, 1000, True),
+    ("Barba Hot Towel", 0, 2000, True),
+    ("Perfilado de Cejas", 0, 1000, True),
     ("Mascarilla Black", 0, 2000, True),
     ("Depilacion con Cera", 0, 3000, True),
 ]
@@ -33,6 +33,13 @@ def seed_data(db: Session):
                     is_addon=is_addon,
                 )
             )
+    else:
+        service_map = {name: (duration, is_addon) for name, duration, _, is_addon in SERVICES}
+        for service in db.query(Service).all():
+            if service.name in service_map:
+                duration, is_addon = service_map[service.name]
+                service.is_addon = is_addon
+                service.duration_min = 0 if is_addon else duration
 
     password_hash = config.ADMIN_PASSWORD_HASH or hash_password(config.ADMIN_DEFAULT_PASSWORD)
     active_usernames = {username for _, _, _, username in BARBERS}

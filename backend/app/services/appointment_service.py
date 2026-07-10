@@ -1,6 +1,5 @@
 from datetime import date, datetime
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy import text
@@ -13,8 +12,8 @@ from app.repositories.appointment_repository import ACTIVE, AppointmentRepositor
 from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
 from app.schemas import AppointmentCreate, BlockCreate
-from app.services.calendar_service import CalendarService, parse_calendar_datetime
-from app.services.date_service import day_range, label_from_minutes, range_from_minutes
+from app.services.calendar_service import CalendarError, CalendarService, parse_calendar_datetime
+from app.services.date_service import TZ, day_range, label_from_minutes, range_from_minutes
 from app.services.email_service import EmailService
 
 
@@ -37,12 +36,12 @@ class AppointmentService:
             raise HTTPException(status_code=400, detail="Servicio invalido")
 
         addons = [a for a in self.services.by_ids(addon_ids) if a.is_addon]
-        duration = service.duration_min + sum(a.duration_min for a in addons)
+        duration = service.duration_min
         total = service.price + sum(a.price for a in addons)
         return service.name, [a.name for a in addons], duration, total
 
     def availability(self, barber_id: UUID, day: date, duration: int) -> list[dict]:
-        now = datetime.now(ZoneInfo("America/Costa_Rica"))
+        now = datetime.now(TZ)
         if day < now.date():
             return []
 
@@ -81,7 +80,7 @@ class AppointmentService:
         return slots
 
     def validate_booking_window(self, day: date, start_min: int, duration: int) -> None:
-        now = datetime.now(ZoneInfo("America/Costa_Rica"))
+        now = datetime.now(TZ)
         business_hours = self.business_hours_for(day)
         blocked_duration = duration + config.APPOINTMENT_BUFFER_MIN
         end_min = start_min + blocked_duration
@@ -132,16 +131,21 @@ class AppointmentService:
             self.appointments.save(appointment)
             self.db.flush()
             appointment.calendar_event_id = self.calendar.create_event(appointment)
+            if config.CALENDAR_REQUIRED and self.calendar.enabled and not appointment.calendar_event_id:
+                raise CalendarError("Google Calendar no devolvio id de evento")
             self.db.commit()
             self.db.refresh(appointment)
             self.email.appointment_created(appointment)
             return appointment
+        except CalendarError as exc:
+            self.db.rollback()
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
         except IntegrityError as exc:
             self.db.rollback()
             raise HTTPException(status_code=409, detail="Ese horario ya fue tomado") from exc
 
     def create_block(self, barber_id: UUID, data: BlockCreate) -> Appointment:
-        now = datetime.now(ZoneInfo("America/Costa_Rica"))
+        now = datetime.now(TZ)
         if data.date < now.date():
             raise HTTPException(status_code=400, detail="No se pueden bloquear fechas pasadas")
 
@@ -183,9 +187,14 @@ class AppointmentService:
             self.appointments.save(block)
             self.db.flush()
             block.calendar_event_id = self.calendar.create_event(block)
+            if config.CALENDAR_REQUIRED and self.calendar.enabled and not block.calendar_event_id:
+                raise CalendarError("Google Calendar no devolvio id de evento")
             self.db.commit()
             self.db.refresh(block)
             return block
+        except CalendarError as exc:
+            self.db.rollback()
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
         except IntegrityError as exc:
             self.db.rollback()
             raise HTTPException(status_code=409, detail="El bloqueo choca con una cita existente") from exc
@@ -245,12 +254,17 @@ class AppointmentService:
             appointment.notes = f"{appointment.notes or ''}\nReprogramada desde {old_start}".strip()
             appointment.calendar_event_id = None
             self.db.flush()
-            self.calendar.delete_event(old_event_id)
             appointment.calendar_event_id = self.calendar.create_event(appointment)
+            if config.CALENDAR_REQUIRED and self.calendar.enabled and not appointment.calendar_event_id:
+                raise CalendarError("Google Calendar no devolvio id de evento")
             self.db.commit()
             self.db.refresh(appointment)
+            self.calendar.delete_event(old_event_id)
             self.email.appointment_rescheduled(appointment)
             return appointment
+        except CalendarError as exc:
+            self.db.rollback()
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
         except IntegrityError as exc:
             self.db.rollback()
             raise HTTPException(status_code=409, detail="Ese horario ya fue tomado") from exc

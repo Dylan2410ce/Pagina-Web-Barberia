@@ -24,3 +24,7 @@ services:
         sync: false
       - key: CALENDAR_ENABLED
         value: "true"
+      - key: CALENDAR_REQUIRED
+        value: "true"
+      - key: APPOINTMENT_BUFFER_MIN
+        value: "0"
