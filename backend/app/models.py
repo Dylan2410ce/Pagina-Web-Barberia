@@ -15,6 +15,7 @@ class AppointmentStatus(str, enum.Enum):
     noshow = "noshow"
     cancelled = "cancelled"
     blocked = "blocked"
+    rescheduled = "rescheduled"
 
 
 class Barber(Base):
@@ -50,14 +51,25 @@ class Appointment(Base):
     barber_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("barbers.id"), index=True)
     client_name: Mapped[str] = mapped_column(String(100), nullable=False)
     client_phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    client_email: Mapped[str | None] = mapped_column(String(160), nullable=True)
     service_name: Mapped[str] = mapped_column(String(120), nullable=False)
     addons: Mapped[list[str]] = mapped_column(JSONB, default=list)
     total_price: Mapped[int] = mapped_column(Integer, nullable=False)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    calendar_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[AppointmentStatus] = mapped_column(Enum(AppointmentStatus), default=AppointmentStatus.booked)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     barber: Mapped[Barber] = relationship(back_populates="appointments")
 
+
+class BusinessHour(Base):
+    __tablename__ = "business_hours"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    weekday: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    is_open: Mapped[bool] = mapped_column(Boolean, default=True)
+    open_min: Mapped[int] = mapped_column(Integer, default=8 * 60)
+    close_min: Mapped[int] = mapped_column(Integer, default=19 * 60)

@@ -10,11 +10,20 @@ class ServiceRepository:
     def all_active(self) -> list[Service]:
         return self.db.query(Service).filter(Service.is_active.is_(True)).order_by(Service.is_addon, Service.price).all()
 
+    def all(self) -> list[Service]:
+        return self.db.query(Service).order_by(Service.is_addon, Service.price).all()
+
     def by_id(self, service_id):
         return self.db.query(Service).filter(Service.id == service_id, Service.is_active.is_(True)).first()
+
+    def by_id_any(self, service_id):
+        return self.db.query(Service).filter(Service.id == service_id).first()
 
     def by_ids(self, ids: list):
         if not ids:
             return []
         return self.db.query(Service).filter(Service.id.in_(ids), Service.is_active.is_(True)).all()
 
+    def save(self, service: Service):
+        self.db.add(service)
+        return service

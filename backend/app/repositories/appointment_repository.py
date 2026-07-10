@@ -21,20 +21,25 @@ class AppointmentRepository:
             query = query.filter(Appointment.starts_at < end, Appointment.ends_at > start)
         return query.order_by(Appointment.starts_at.asc()).all()
 
-    def has_overlap(self, barber_id, start: datetime, end: datetime) -> bool:
+    def list_by_phone(self, phone: str):
         return (
             self.db.query(Appointment)
-            .filter(
-                Appointment.barber_id == barber_id,
-                Appointment.status.in_(ACTIVE),
-                Appointment.starts_at < end,
-                Appointment.ends_at > start,
-            )
-            .first()
-            is not None
+            .filter(Appointment.client_phone == phone)
+            .order_by(Appointment.starts_at.desc())
+            .all()
         )
+
+    def has_overlap(self, barber_id, start: datetime, end: datetime, exclude_id=None) -> bool:
+        query = self.db.query(Appointment).filter(
+            Appointment.barber_id == barber_id,
+            Appointment.status.in_(ACTIVE),
+            Appointment.starts_at < end,
+            Appointment.ends_at > start,
+        )
+        if exclude_id:
+            query = query.filter(Appointment.id != exclude_id)
+        return query.first() is not None
 
     def save(self, appointment: Appointment):
         self.db.add(appointment)
         return appointment
-

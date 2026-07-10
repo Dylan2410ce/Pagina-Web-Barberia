@@ -25,25 +25,20 @@ def init_db():
 
     Base.metadata.create_all(bind=engine)
     with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE appointments ADD COLUMN IF NOT EXISTS client_email VARCHAR(160)"))
+        conn.execute(text("ALTER TABLE appointments ADD COLUMN IF NOT EXISTS calendar_event_id VARCHAR(255)"))
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS btree_gist"))
+        conn.execute(text("ALTER TABLE appointments DROP CONSTRAINT IF EXISTS no_double_booking"))
         conn.execute(
             text(
                 """
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_constraint WHERE conname = 'no_double_booking'
-                    ) THEN
-                        ALTER TABLE appointments
-                        ADD CONSTRAINT no_double_booking
-                        EXCLUDE USING gist (
-                            barber_id WITH =,
-                            tstzrange(starts_at, ends_at, '[)') WITH &&
-                        )
-                        WHERE (status IN ('booked', 'blocked', 'present'));
-                    END IF;
-                END $$;
+                ALTER TABLE appointments
+                ADD CONSTRAINT no_double_booking
+                EXCLUDE USING gist (
+                    barber_id WITH =,
+                    tstzrange(starts_at, ends_at, '[)') WITH &&
+                )
+                WHERE (status IN ('booked', 'blocked', 'present'));
                 """
             )
         )
-

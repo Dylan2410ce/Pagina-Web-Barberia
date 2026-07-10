@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Barber
 
-PUBLIC_USERNAMES = ("sebas", "gabriel")
+PUBLIC_USERNAMES = ("sebas",)
 
 
 class BarberRepository:

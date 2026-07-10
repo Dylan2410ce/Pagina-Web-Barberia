@@ -16,6 +16,20 @@ class Config:
     )
 
     ADMIN_DEFAULT_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin12345")
+    ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
+
+    GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "sebasbarberg2021@gmail.com")
+    GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "")
+    GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON", "")
+    CALENDAR_ENABLED = os.getenv("CALENDAR_ENABLED", "true").lower() == "true"
+    APPOINTMENT_BUFFER_MIN = int(os.getenv("APPOINTMENT_BUFFER_MIN", "5"))
+    NOTIFY_EMAILS_ENABLED = os.getenv("NOTIFY_EMAILS_ENABLED", "false").lower() == "true"
+    SMTP_HOST = os.getenv("SMTP_HOST", "")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
+    OWNER_EMAIL = os.getenv("OWNER_EMAIL", "")
 
     SHOP_NAME = "Sebas Barber"
     ADDRESS = "C. 19, Provincia de Puntarenas, Espiritu Santo, Barrio Maranonal"
@@ -28,7 +42,7 @@ class Config:
     CLOSE_MIN = 19 * 60
     LUNCH_START = 12 * 60
     LUNCH_END = 13 * 60
-    SLOT_STEP = 45
+    SLOT_STEP = 15
 
 
 config = Config()

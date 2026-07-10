@@ -3,14 +3,17 @@ import hashlib
 import hmac
 import os
 
+import bcrypt
+
 
 def hash_password(password: str) -> str:
-    salt = os.urandom(16)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 120_000)
-    return "pbkdf2_sha256$" + _b64(salt) + "$" + _b64(digest)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
 
 
 def verify_password(password: str, stored_hash: str) -> bool:
+    if stored_hash.startswith("$2"):
+        return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+
     try:
         algorithm, salt_text, digest_text = stored_hash.split("$", 2)
         if algorithm != "pbkdf2_sha256":
@@ -25,4 +28,3 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 def _b64(value: bytes) -> str:
     return base64.b64encode(value).decode("ascii")
-

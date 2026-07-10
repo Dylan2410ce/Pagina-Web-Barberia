@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.config import config
-from app.models import Barber, Service
+from app.models import Barber, BusinessHour, Service
 from app.services.password_service import hash_password
 
 SERVICES = [
@@ -18,7 +18,6 @@ SERVICES = [
 
 BARBERS = [
     ("Sebastian", "Master Barber", "88887777", "sebas"),
-    ("Gabriel", "Senior Barber", "66665555", "gabriel"),
 ]
 
 
@@ -35,7 +34,7 @@ def seed_data(db: Session):
                 )
             )
 
-    password_hash = hash_password(config.ADMIN_DEFAULT_PASSWORD)
+    password_hash = config.ADMIN_PASSWORD_HASH or hash_password(config.ADMIN_DEFAULT_PASSWORD)
     active_usernames = {username for _, _, _, username in BARBERS}
 
     for name, role, phone, username in BARBERS:
@@ -50,5 +49,16 @@ def seed_data(db: Session):
 
     for barber in db.query(Barber).filter(~Barber.username.in_(active_usernames)).all():
         barber.is_active = False
+
+    if db.query(BusinessHour).count() == 0:
+        for weekday in range(7):
+            db.add(
+                BusinessHour(
+                    weekday=weekday,
+                    is_open=weekday not in (0, 6),
+                    open_min=config.OPEN_MIN,
+                    close_min=config.CLOSE_MIN,
+                )
+            )
 
     db.commit()

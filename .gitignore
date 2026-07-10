@@ -5,4 +5,8 @@ frontend/node_modules/
 frontend/dist/
 .env
 *.pyc
-
+*.json
+!package.json
+!package-lock.json
+google-credentials*.json
+service-account*.json

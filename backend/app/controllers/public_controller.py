@@ -8,7 +8,7 @@ from app.config import config
 from app.database import get_db
 from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
-from app.schemas import AppointmentCreate, AppointmentOut, BootstrapOut
+from app.schemas import AppointmentCancel, AppointmentCreate, AppointmentOut, AppointmentReschedule, BootstrapOut
 from app.services.appointment_service import AppointmentService
 
 router = APIRouter(prefix="/api/public", tags=["Public"])
@@ -52,3 +52,17 @@ def availability(
 def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
     return AppointmentService(db).create(data)
 
+
+@router.get("/appointments/by-phone", response_model=list[AppointmentOut])
+def appointments_by_phone(phone: str = Query(pattern=r"^[24678][0-9]{7}$"), db: Session = Depends(get_db)):
+    return AppointmentService(db).list_by_phone(phone)
+
+
+@router.patch("/appointments/{appointment_id}/cancel", response_model=AppointmentOut)
+def cancel_appointment(appointment_id: UUID, data: AppointmentCancel, db: Session = Depends(get_db)):
+    return AppointmentService(db).cancel_by_client(appointment_id, data.phone, data.reason)
+
+
+@router.patch("/appointments/{appointment_id}/reschedule", response_model=AppointmentOut)
+def reschedule_appointment(appointment_id: UUID, data: AppointmentReschedule, db: Session = Depends(get_db)):
+    return AppointmentService(db).reschedule_by_client(appointment_id, data.phone, data.date, data.start_min)

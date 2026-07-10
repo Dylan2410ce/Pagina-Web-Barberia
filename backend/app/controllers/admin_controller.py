@@ -1,6 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 from hmac import compare_digest
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import extract, func
@@ -8,10 +9,23 @@ from sqlalchemy.orm import Session
 
 from app.config import config
 from app.database import get_db
-from app.models import Appointment, AppointmentStatus, Barber
+from app.models import Appointment, AppointmentStatus, Barber, BusinessHour, Service
 from app.repositories.appointment_repository import AppointmentRepository
 from app.repositories.barber_repository import BarberRepository
-from app.schemas import AppointmentOut, BlockCreate, LoginIn, PasswordResetIn, TokenOut
+from app.repositories.service_repository import ServiceRepository
+from app.schemas import (
+    AdminAppointmentReschedule,
+    AppointmentOut,
+    BlockCreate,
+    BusinessHourOut,
+    BusinessHourUpdate,
+    LoginIn,
+    PasswordResetIn,
+    ServiceCreate,
+    ServiceOut,
+    ServiceUpdate,
+    TokenOut,
+)
 from app.services.appointment_service import AppointmentService
 from app.services.auth_service import current_barber, login
 from app.services.date_service import day_range
@@ -44,16 +58,64 @@ def me(barber: Barber = Depends(current_barber)):
     return {"id": barber.id, "name": barber.name, "role": barber.role}
 
 
+@router.get("/dashboard")
+def dashboard(barber: Barber = Depends(current_barber), db: Session = Depends(get_db)):
+    today = datetime.now(ZoneInfo("America/Costa_Rica")).date()
+    start, end = day_range(today)
+    today_items = AppointmentRepository(db).list_by_barber(barber.id, start, end)
+    active_today = [item for item in today_items if item.status in [AppointmentStatus.booked, AppointmentStatus.present]]
+    booked_today = [item for item in today_items if item.status == AppointmentStatus.booked]
+    completed_today = [item for item in today_items if item.status == AppointmentStatus.present]
+    projected = sum(item.total_price for item in booked_today + completed_today)
+    income = sum(item.total_price for item in completed_today)
+
+    upcoming = (
+        db.query(Appointment)
+        .filter(
+            Appointment.barber_id == barber.id,
+            Appointment.status == AppointmentStatus.booked,
+            Appointment.starts_at >= datetime.now(ZoneInfo("America/Costa_Rica")),
+        )
+        .order_by(Appointment.starts_at.asc())
+        .limit(6)
+        .all()
+    )
+
+    return {
+        "today": today,
+        "appointments_today": len(active_today),
+        "completed_today": len(completed_today),
+        "pending_today": len(booked_today),
+        "income_today": income,
+        "projected_today": projected,
+        "upcoming": [AppointmentOut.model_validate(item) for item in upcoming],
+    }
+
+
 @router.get("/appointments", response_model=list[AppointmentOut])
 def appointments(
     day: date | None = Query(default=None, alias="date"),
+    status: AppointmentStatus | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=80),
     barber: Barber = Depends(current_barber),
     db: Session = Depends(get_db),
 ):
     start = end = None
     if day:
         start, end = day_range(day)
-    return AppointmentRepository(db).list_by_barber(barber.id, start, end)
+    items = AppointmentRepository(db).list_by_barber(barber.id, start, end)
+    if status:
+        items = [item for item in items if item.status == status]
+    if q:
+        term = q.lower().strip()
+        items = [
+            item
+            for item in items
+            if term in item.client_name.lower()
+            or term in item.client_phone
+            or term in item.service_name.lower()
+        ]
+    return items
 
 
 @router.patch("/appointments/{appointment_id}/status", response_model=AppointmentOut)
@@ -66,6 +128,16 @@ def update_status(
     return AppointmentService(db).update_status(appointment_id, barber.id, status.value)
 
 
+@router.patch("/appointments/{appointment_id}/reschedule", response_model=AppointmentOut)
+def admin_reschedule(
+    appointment_id: UUID,
+    data: AdminAppointmentReschedule,
+    barber: Barber = Depends(current_barber),
+    db: Session = Depends(get_db),
+):
+    return AppointmentService(db).reschedule_by_admin(appointment_id, barber.id, data.date, data.start_min)
+
+
 @router.post("/blocks", response_model=AppointmentOut, status_code=201)
 def create_block(
     data: BlockCreate,
@@ -73,6 +145,116 @@ def create_block(
     db: Session = Depends(get_db),
 ):
     return AppointmentService(db).create_block(barber.id, data)
+
+
+@router.get("/services", response_model=list[ServiceOut])
+def services(barber: Barber = Depends(current_barber), db: Session = Depends(get_db)):
+    return ServiceRepository(db).all()
+
+
+@router.post("/services", response_model=ServiceOut, status_code=201)
+def create_service(data: ServiceCreate, barber: Barber = Depends(current_barber), db: Session = Depends(get_db)):
+    service = Service(
+        name=data.name,
+        duration_min=data.duration_min,
+        base_price=max(data.price - 1000, 0),
+        price=data.price,
+        is_addon=data.is_addon,
+        is_active=data.is_active,
+    )
+    ServiceRepository(db).save(service)
+    db.commit()
+    db.refresh(service)
+    return service
+
+
+@router.patch("/services/{service_id}", response_model=ServiceOut)
+def update_service(
+    service_id: UUID,
+    data: ServiceUpdate,
+    barber: Barber = Depends(current_barber),
+    db: Session = Depends(get_db),
+):
+    service = ServiceRepository(db).by_id_any(service_id)
+    if not service:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+
+    payload = data.model_dump(exclude_unset=True)
+    for field, value in payload.items():
+        setattr(service, field, value)
+    if "price" in payload:
+        service.base_price = max(service.price - 1000, 0)
+    db.commit()
+    db.refresh(service)
+    return service
+
+
+@router.get("/business-hours", response_model=list[BusinessHourOut])
+def business_hours(barber: Barber = Depends(current_barber), db: Session = Depends(get_db)):
+    return db.query(BusinessHour).order_by(BusinessHour.weekday.asc()).all()
+
+
+@router.put("/business-hours/{weekday}", response_model=BusinessHourOut)
+def update_business_hour(
+    weekday: int,
+    data: BusinessHourUpdate,
+    barber: Barber = Depends(current_barber),
+    db: Session = Depends(get_db),
+):
+    if weekday != data.weekday:
+        raise HTTPException(status_code=400, detail="El dia de la ruta no coincide")
+    if data.is_open and data.close_min <= data.open_min:
+        raise HTTPException(status_code=400, detail="La hora de cierre debe ser mayor a la apertura")
+
+    item = db.query(BusinessHour).filter(BusinessHour.weekday == weekday).first()
+    if not item:
+        item = BusinessHour(weekday=weekday)
+        db.add(item)
+    item.is_open = data.is_open
+    item.open_min = data.open_min
+    item.close_min = data.close_min
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.get("/clients")
+def clients(barber: Barber = Depends(current_barber), db: Session = Depends(get_db)):
+    rows = (
+        db.query(Appointment)
+        .filter(Appointment.barber_id == barber.id, Appointment.status != AppointmentStatus.blocked)
+        .order_by(Appointment.starts_at.desc())
+        .all()
+    )
+    grouped = {}
+    for item in rows:
+        client = grouped.setdefault(
+            item.client_phone,
+            {
+                "name": item.client_name,
+                "phone": item.client_phone,
+                "email": item.client_email,
+                "appointments": 0,
+                "spent": 0,
+                "last_visit": None,
+                "history": [],
+            },
+        )
+        client["appointments"] += 1
+        if item.status == AppointmentStatus.present:
+            client["spent"] += item.total_price
+        if not client["last_visit"]:
+            client["last_visit"] = item.starts_at
+        client["history"].append(
+            {
+                "id": item.id,
+                "service": item.service_name,
+                "status": item.status,
+                "starts_at": item.starts_at,
+                "total_price": item.total_price,
+            }
+        )
+    return sorted(grouped.values(), key=lambda item: item["appointments"], reverse=True)
 
 
 @router.get("/stats")
