@@ -28,8 +28,8 @@ export default function AdminPanel({
         <div className="admin-login panel reveal">
           <div>
             <span className="eyebrow"><ShieldCheck size={14} />Panel privado</span>
-            <h2>Administración de Sebastian</h2>
-            <p>Entrá para ver la agenda, cerrar espacios, actualizar servicios y revisar números del negocio.</p>
+            <h2>Administracion de Sebastian</h2>
+            <p>Entra para ver la agenda, cerrar espacios, actualizar servicios y revisar numeros del negocio.</p>
           </div>
           <form className="formulario" onSubmit={onLogin}>
             <div className="campo">
@@ -37,18 +37,18 @@ export default function AdminPanel({
               <input name="username" defaultValue="sebas" autoComplete="username" required />
             </div>
             <div className="campo">
-              <label>Contraseña</label>
+              <label>Contrasena</label>
               <input name="password" type="password" autoComplete="current-password" required />
             </div>
             <button className="btn btn-principal btn-ancho" type="submit">Entrar</button>
           </form>
           <details className="reset-box">
-            <summary>Recuperar contraseña</summary>
+            <summary>Recuperar contrasena</summary>
             <form className="formulario" onSubmit={onResetPassword}>
               <input name="username" defaultValue="sebas" required />
-              <input name="master_code" placeholder="Código maestro" required />
-              <input name="new_password" type="password" minLength={8} placeholder="Nueva contraseña" required />
-              <button className="btn btn-secundario" type="submit">Cambiar contraseña</button>
+              <input name="master_code" placeholder="Codigo maestro" required />
+              <input name="new_password" type="password" minLength={8} placeholder="Nueva contrasena" required />
+              <button className="btn btn-secundario" type="submit">Cambiar contrasena</button>
             </form>
           </details>
         </div>
@@ -103,7 +103,7 @@ function Dashboard({ data }) {
     <div className="admin-overview reveal">
       <div className="admin-metricas">
         <article><span>Hoy</span><strong>{safe.appointments_today || 0}</strong><small>Citas activas</small></article>
-        <article><span>Completadas</span><strong>{safe.completed_today || 0}</strong><small>Asistencias</small></article>
+        <article><span>Pendientes</span><strong>{safe.pending_today || 0}</strong><small>Por atender</small></article>
         <article><span>Ingresos hoy</span><strong>{dinero(safe.income_today || 0)}</strong><small>Real generado</small></article>
         <article><span>Proyectado</span><strong>{dinero(safe.projected_today || 0)}</strong><small>Reservas del dia</small></article>
       </div>
@@ -132,7 +132,7 @@ function Agenda({ admin, onFiltrar, onEstado, onMover, onBloqueo }) {
         <div className="panel-head">
           <div>
             <h3>Agenda</h3>
-            <p>Filtrá, confirmá asistencia o mové una cita cuando haga falta.</p>
+            <p>Filtra, confirma asistencia o mueve una cita cuando haga falta.</p>
           </div>
         </div>
         <form className="filtros-admin" onSubmit={onFiltrar}>
@@ -143,7 +143,7 @@ function Agenda({ admin, onFiltrar, onEstado, onMover, onBloqueo }) {
               <option value={status} key={status}>{textoEstado(status)}</option>
             ))}
           </select>
-          <input name="q" placeholder="Cliente, teléfono o servicio" defaultValue={admin.filtros.q || ""} />
+          <input name="q" placeholder="Cliente, telefono o servicio" defaultValue={admin.filtros.q || ""} />
           <button className="btn btn-principal" type="submit">Filtrar</button>
         </form>
         <div className="tabla-citas">
@@ -160,8 +160,8 @@ function Agenda({ admin, onFiltrar, onEstado, onMover, onBloqueo }) {
                 <span>{dinero(cita.total_price)}</span>
               </div>
               <div className="acciones-card">
-                <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "present")}>Asistió</button>
-                <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "noshow")}>No asistió</button>
+                <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "present")}>Asistio</button>
+                <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "noshow")}>No asistio</button>
                 <button className="btn btn-linea" type="button" onClick={() => onMover(cita)}><MoveRight size={16} />Mover</button>
                 <button className="btn btn-peligro" type="button" onClick={() => onEstado(cita.id, "cancelled")}>Cancelar</button>
               </div>
@@ -175,7 +175,7 @@ function Agenda({ admin, onFiltrar, onEstado, onMover, onBloqueo }) {
           <div className="panel-head">
             <div>
               <h3>Bloquear agenda</h3>
-              <p>Cerra un dia completo o aparta un rango exacto para descanso, diligencias o citas tomadas fuera de la web.</p>
+              <p>Cierra un dia completo o aparta un rango exacto para descanso, diligencias o citas tomadas fuera de la web.</p>
             </div>
           </div>
           <form className="block-planner" onSubmit={onBloqueo}>
@@ -226,7 +226,7 @@ function Servicios({ servicios, onGuardar }) {
       <div className="panel-head">
         <div>
           <h3>Servicios</h3>
-          <p>Actualizá el menú según lo que se vende en la silla.</p>
+          <p>Actualiza el menu segun lo que se vende en la silla.</p>
         </div>
       </div>
       <form className="form-grid servicio-nuevo" onSubmit={(event) => onGuardar(event)}>
@@ -258,12 +258,12 @@ function Horarios({ horarios, onGuardar }) {
       <div className="panel-head">
         <div>
           <h3>Horario semanal</h3>
-          <p>Definí cuándo se puede reservar desde la web.</p>
+          <p>Define cuando se puede reservar desde la web.</p>
         </div>
       </div>
       <div className="horarios-lista">
         {horarios.map((hora) => (
-          <form className="horario-row" key={hora.weekday} onSubmit={(event) => onGuardarHorarioSubmit(event, hora.weekday, onGuardar)}>
+          <form className="horario-row" key={hora.weekday} onSubmit={(event) => onGuardar(event, hora.weekday)}>
             <strong>{diasSemana[hora.weekday]}</strong>
             <label className="check-line"><input name="is_open" type="checkbox" defaultChecked={hora.is_open} /> Abierto</label>
             <input name="open_time" type="time" defaultValue={minutosAHora(hora.open_min)} />
@@ -276,27 +276,23 @@ function Horarios({ horarios, onGuardar }) {
   );
 }
 
-function onGuardarHorarioSubmit(event, weekday, onGuardar) {
-  onGuardar(event, weekday);
-}
-
 function Clientes({ clientes }) {
   return (
     <div className="panel reveal">
       <div className="panel-head">
         <div>
           <h3>Clientes</h3>
-          <p>Historial rápido para reconocer a quienes vuelven.</p>
+          <p>Historial rapido para reconocer a quienes vuelven.</p>
         </div>
       </div>
       <div className="clientes-lista">
-        {clientes.length === 0 && <div className="vacio">Todavía no hay clientes registrados.</div>}
+        {clientes.length === 0 && <div className="vacio">Todavia no hay clientes registrados.</div>}
         {clientes.map((cliente) => (
           <article className="cliente-card" key={cliente.phone}>
             <div>
               <h4>{cliente.name}</h4>
               <p>{cliente.phone}{cliente.email ? ` · ${cliente.email}` : ""}</p>
-              <small>Última visita: {cliente.last_visit ? fechaCorta(cliente.last_visit) : "Sin visitas"}</small>
+              <small>Ultima visita: {cliente.last_visit ? fechaCorta(cliente.last_visit) : "Sin visitas"}</small>
             </div>
             <div><strong>{cliente.appointments}</strong><span>citas</span></div>
             <div><strong>{dinero(cliente.spent)}</strong><span>generado</span></div>
@@ -311,12 +307,15 @@ function Reportes({ stats }) {
   const safe = stats || {};
   const serviceBreakdown = safe.service_breakdown || [];
   const dailyIncome = safe.daily_income || [];
+  const maxServicio = Math.max(...serviceBreakdown.map((item) => item.count), 1);
+  const maxDia = Math.max(...dailyIncome.map((item) => item.income), 1);
+
   return (
     <div className="panel reveal">
       <div className="panel-head">
         <div>
           <h3>Reportes del mes</h3>
-          <p>Una lectura rápida de lo que está moviendo el negocio.</p>
+          <p>Una lectura clara de ingresos, asistencia y servicios fuertes.</p>
         </div>
       </div>
       <div className="admin-metricas compactas">
@@ -324,21 +323,35 @@ function Reportes({ stats }) {
         <article><span>Proyectado</span><strong>{dinero(safe.projected_income || 0)}</strong><small>Mes activo</small></article>
         <article><span>Ticket promedio</span><strong>{dinero(safe.average_ticket || 0)}</strong><small>Por visita</small></article>
         <article><span>Asistencia</span><strong>{safe.attendance_rate || 0}%</strong><small>Control mensual</small></article>
+        <article><span>Cancelacion</span><strong>{safe.cancellation_rate || 0}%</strong><small>{safe.cancelled || 0} citas</small></article>
+        <article><span>Servicio top</span><strong>{safe.top_service || "Sin datos"}</strong><small>Mas solicitado</small></article>
       </div>
       <div className="reportes-grid">
         <div>
-          <h4>Servicios más pedidos</h4>
+          <h4>Servicios mas pedidos</h4>
           {serviceBreakdown.map((item) => (
-            <p key={item.name}><strong>{item.name}</strong><span>{item.count} · {dinero(item.income)}</span></p>
+            <article className="reporte-barra" key={item.name}>
+              <div>
+                <strong>{item.name}</strong>
+                <span>{item.count} citas · {dinero(item.income)}</span>
+              </div>
+              <i style={{ width: `${Math.max((item.count / maxServicio) * 100, 8)}%` }} />
+            </article>
           ))}
-          {serviceBreakdown.length === 0 && <p>Sin datos todavía.</p>}
+          {serviceBreakdown.length === 0 && <p>Sin datos todavia.</p>}
         </div>
         <div>
           <h4>Movimiento diario</h4>
           {dailyIncome.map((item) => (
-            <p key={item.day}><strong>Día {item.day}</strong><span>{item.count} citas · {dinero(item.income)}</span></p>
+            <article className="reporte-barra" key={item.day}>
+              <div>
+                <strong>Dia {item.day}</strong>
+                <span>{item.count} citas · {dinero(item.income)}</span>
+              </div>
+              <i style={{ width: `${Math.max((item.income / maxDia) * 100, 8)}%` }} />
+            </article>
           ))}
-          {dailyIncome.length === 0 && <p>Sin datos todavía.</p>}
+          {dailyIncome.length === 0 && <p>Sin datos todavia.</p>}
         </div>
       </div>
     </div>

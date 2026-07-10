@@ -35,6 +35,7 @@ class Config:
     CALENDAR_ENABLED = os.getenv("CALENDAR_ENABLED", "true").lower() == "true"
     APPOINTMENT_BUFFER_MIN = int(os.getenv("APPOINTMENT_BUFFER_MIN", "0"))
     CALENDAR_REQUIRED = os.getenv("CALENDAR_REQUIRED", "true").lower() == "true"
+    EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "emailjs").lower()
     NOTIFY_EMAILS_ENABLED = os.getenv("NOTIFY_EMAILS_ENABLED", "false").lower() == "true"
     SMTP_HOST = os.getenv("SMTP_HOST", "")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))

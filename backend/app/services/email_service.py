@@ -12,7 +12,8 @@ logger = logging.getLogger("sebas_barber.email")
 class EmailService:
     def enabled(self) -> bool:
         return (
-            config.NOTIFY_EMAILS_ENABLED
+            config.EMAIL_PROVIDER == "smtp"
+            and config.NOTIFY_EMAILS_ENABLED
             and bool(config.SMTP_HOST)
             and bool(config.SMTP_FROM)
             and bool(config.SMTP_USER)

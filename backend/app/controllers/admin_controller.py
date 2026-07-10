@@ -312,21 +312,28 @@ def stats(
     attended = summary.get("present", {}).get("count", 0)
     booked = summary.get("booked", {}).get("count", 0)
     noshow = summary.get("noshow", {}).get("count", 0)
+    cancelled = summary.get("cancelled", {}).get("count", 0)
     income = summary.get("present", {}).get("income", 0)
     projected = summary.get("booked", {}).get("income", 0) + income
     avg_ticket = round(income / attended) if attended else 0
     attendance_rate = round((attended / max(attended + noshow, 1)) * 100)
+    completion_rate = round((attended / max(appointments, 1)) * 100)
+    cancellation_rate = round((cancelled / max(appointments, 1)) * 100)
+    top_service = services[0][0] if services else ""
 
     return {
         "appointments": appointments,
         "attended": attended,
         "noshow": noshow,
         "booked": booked,
-        "cancelled": summary.get("cancelled", {}).get("count", 0),
+        "cancelled": cancelled,
         "income": income,
         "projected_income": projected,
         "average_ticket": avg_ticket,
         "attendance_rate": attendance_rate,
+        "completion_rate": completion_rate,
+        "cancellation_rate": cancellation_rate,
+        "top_service": top_service,
         "service_breakdown": [
             {"name": name, "count": count, "income": int(total)}
             for name, count, total in services

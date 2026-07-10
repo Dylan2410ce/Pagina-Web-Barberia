@@ -8,6 +8,7 @@ import MapModal from "./components/MapModal";
 import Navbar from "./components/Navbar";
 import ServiceMenu from "./components/ServiceMenu";
 import Toasts from "./components/Toasts";
+import { enviarCorreosCita } from "./services/emailjsService";
 import { hoyISO, horaAMinutos, limpiarTelefono, mesActual, validarTelefono } from "./utils/format";
 
 const reservaInicial = {
@@ -216,13 +217,18 @@ export default function App() {
 
     setProcesando("Reservando tu espacio...");
     try {
-      await publicoApi.crearCita({
+      const citaCreada = await publicoApi.crearCita({
         ...reserva,
         client_phone: telefono,
         client_email: reserva.client_email.trim() || null,
         notes: reserva.notes.trim() || null,
       });
-      avisar("ok", "Cita lista", "Tu espacio quedo reservado con Sebastian. Si dejaste correo, te llega la confirmacion.");
+      enviarCorreosCita(citaCreada, resumen).then((resultado) => {
+        if (resultado.fallos) {
+          avisar("warning", "Cita guardada", "La reserva quedo lista, pero algun correo no salio.");
+        }
+      });
+      avisar("ok", "Cita lista", "Tu espacio quedo reservado con Sebastian.");
       const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
       setReserva(limpia);
       await cargarSlots(limpia);
