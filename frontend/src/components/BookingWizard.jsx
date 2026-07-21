@@ -23,8 +23,8 @@ export default function BookingWizard({
       <div className="panel reveal">
         <div className="wizard-head">
           <span className="eyebrow">Reservar</span>
-          <h2>Tu cita en pocos pasos.</h2>
-          <p>Escoge servicio, mira las horas libres y deja tus datos. La agenda se confirma al instante.</p>
+          <h2>Reserva sin perderte.</h2>
+          <p>Selecciona fecha, hora y datos de contacto. Antes de confirmar ves el total completo.</p>
         </div>
 
         <div className="booking-helper">
@@ -102,7 +102,7 @@ export default function BookingWizard({
         <ul>
           <li><span>Fecha</span><strong>{reserva.date}</strong></li>
           <li><span>Hora</span><strong>{resumen.hora || "Pendiente"}</strong></li>
-          <li><span>Duracion</span><strong>{resumen.duracion || 0} min</strong></li>
+          <li><span>Tiempo</span><strong>{resumen.duracion || 0} min</strong></li>
           <li><span>Total</span><strong>{dinero(resumen.total)}</strong></li>
         </ul>
         <p className="nota"><UserRound size={15} /> Te recomendamos llegar unos minutos antes para entrar tranquilo.</p>

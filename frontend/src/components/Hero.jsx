@@ -4,10 +4,10 @@ export default function Hero({ barbero, servicios, primerSlot, onMapa }) {
   return (
     <section id="inicio" className="hero seccion">
       <div className="hero-copy reveal">
-        <span className="eyebrow">Solo con Sebastian</span>
-        <h1>Corte limpio, agenda clara y estilo sin complicarse.</h1>
+        <span className="eyebrow">Sebas Barber</span>
+        <h1>Tu corte, a tiempo y sin vueltas.</h1>
         <p>
-          Reserva tu espacio en segundos, mira las horas reales disponibles y llega directo a la silla.
+          Revisa precios, elige una hora disponible y reserva directo con Sebastian.
         </p>
         <div className="hero-acciones">
           <a className="btn btn-principal" href="#reserva"><CalendarCheck size={18} />Reservar ahora</a>
@@ -19,7 +19,7 @@ export default function Hero({ barbero, servicios, primerSlot, onMapa }) {
         <div className="tarjeta-destacada hero-signature">
           <span className="chip"><Sparkles size={14} />Sebastian</span>
           <h2>{barbero?.role || "Master Barber"}</h2>
-          <p>Fades pulidos, cortes limpios y una atencion tranquila para que cada detalle quede en su lugar.</p>
+          <p>Fades limpios, barba bien trabajada y una atencion tranquila desde que llegas.</p>
         </div>
         <div className="metricas">
           <article><strong>{servicios.length}</strong><span>Servicios disponibles</span></article>

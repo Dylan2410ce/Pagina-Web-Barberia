@@ -133,7 +133,7 @@ export default function App() {
       }));
 
       if (cargaParcial) {
-        avisar("warning", "Panel cargado", "Algunos datos tardaron o no respondieron, pero la agenda sigue disponible.");
+        avisar("warning", "Panel cargado", "Algunos datos tardaron, pero la agenda sigue disponible.");
       }
     } catch (error) {
       borrarToken();
@@ -161,7 +161,7 @@ export default function App() {
         if (tokenGuardado) await cargarAdmin(tokenGuardado, adminBase.filtros);
       } catch (error) {
         setCargando(false);
-        avisar("error", "La agenda no cargó", error.message);
+        avisar("error", "La agenda no cargo", error.message);
       }
     }
     iniciar();
@@ -228,7 +228,7 @@ export default function App() {
           avisar("warning", "Cita guardada", "La reserva quedo lista, pero algun correo no salio.");
         }
       });
-      avisar("ok", "Cita lista", "Tu espacio quedo reservado con Sebastian.");
+      avisar("ok", "Cita lista", "Tu cita quedo reservada.");
       const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
       setReserva(limpia);
       await cargarSlots(limpia);
@@ -258,7 +258,7 @@ export default function App() {
 
   const cancelarCliente = async (id) => {
     if (!telefonoBusqueda) return avisar("warning", "Busca primero por telefono");
-    if (!confirm("¿Quieres cancelar esta cita?")) return;
+    if (!confirm("Quieres cancelar esta cita?")) return;
     setProcesando("Liberando el espacio...");
     try {
       await publicoApi.cancelarCita(id, { phone: telefonoBusqueda, reason: "Cancelada desde la web" });
@@ -582,7 +582,7 @@ export default function App() {
         <section id="ubicacion" className="seccion ubicacion">
           <div className="panel reveal">
             <span className="eyebrow">Llegada facil</span>
-            <h2>Te esperamos en Barrio Marañonal.</h2>
+            <h2>Te esperamos en Barrio Maranonal.</h2>
             <p>{datos.location.address}</p>
             <div className="hero-acciones">
               <button className="btn btn-secundario" type="button" onClick={() => setModalMapa(true)}>Ver mapa</button>
@@ -592,8 +592,11 @@ export default function App() {
         </section>
       </main>
       <footer className="footer">
-        <strong>Sebas Barber</strong>
-        <span>Agenda simple, cortes precisos y trato relajado.</span>
+        <div>
+          <strong>Sebas Barber</strong>
+          <span>Agenda simple, cortes precisos y trato relajado.</span>
+        </div>
+        <small>Pagina web creada y desarrollada por Dylan Calvo Escobar, 2026. Todos los derechos reservados.</small>
       </footer>
       <button className="cta-flotante" type="button" onClick={() => document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" })}>
         Agendar

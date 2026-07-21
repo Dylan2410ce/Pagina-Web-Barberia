@@ -6,8 +6,8 @@ export default function ClientAppointments({ telefono, setTelefono, citas, onBus
     <section id="mis-citas" className="seccion bloque">
       <div className="cabecera-seccion reveal">
         <span className="eyebrow">Mis citas</span>
-        <h2>Mové tu cita sin complicarte.</h2>
-        <p>Usá tu número para ver reservas activas, cancelar o buscar otra hora.</p>
+        <h2>Consulta o mueve tu cita.</h2>
+        <p>Ingresa tu WhatsApp para ver tus reservas activas, cancelar o cambiar la hora.</p>
       </div>
       <div className="panel reveal">
         <form className="busqueda-linea" onSubmit={onBuscar}>
@@ -15,7 +15,7 @@ export default function ClientAppointments({ telefono, setTelefono, citas, onBus
             inputMode="numeric"
             maxLength={8}
             value={telefono}
-            placeholder="Teléfono de 8 dígitos"
+            placeholder="Telefono de 8 digitos"
             onChange={(event) => setTelefono(limpiarTelefono(event.target.value))}
             required
           />
@@ -23,7 +23,7 @@ export default function ClientAppointments({ telefono, setTelefono, citas, onBus
         </form>
 
         <div className="lista-citas">
-          {citas.length === 0 && <div className="vacio">Cuando busqués tu número, tus citas aparecerán aquí.</div>}
+          {citas.length === 0 && <div className="vacio">Tus citas apareceran aqui despues de buscar tu numero.</div>}
           {citas.map((cita) => (
             <article className="cita-card" key={cita.id}>
               <div>

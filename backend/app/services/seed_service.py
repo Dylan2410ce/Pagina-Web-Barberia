@@ -5,15 +5,14 @@ from app.models import Barber, BusinessHour, Service
 from app.services.password_service import hash_password
 
 SERVICES = [
-    ("Corte Clasico", 45, 4000, False),
-    ("Corte Fade / Moderno", 45, 5000, False),
-    ("Corte Premium + Lavado", 45, 7000, False),
+    ("Corte de Cabello", 45, 5000, False),
+    ("Corte de Cabello Sebastian", 45, 6000, False),
+    ("Barba Completa", 45, 3000, False),
+    ("Mantenimiento de Barba", 45, 2000, False),
+    ("Perfilado de Cejas", 0, 1000, True),
+    ("Mascarilla Facial", 0, 5000, True),
     ("Colorimetria / Rayitos", 120, 15000, False),
     ("Tinte Completo", 120, 20000, False),
-    ("Barba Hot Towel", 0, 2000, True),
-    ("Perfilado de Cejas", 0, 1000, True),
-    ("Mascarilla Black", 0, 2000, True),
-    ("Depilacion con Cera", 0, 3000, True),
 ]
 
 BARBERS = [
@@ -22,24 +21,43 @@ BARBERS = [
 
 
 def seed_data(db: Session):
+    service_names = {name for name, _, _, _ in SERVICES}
     if db.query(Service).count() == 0:
-        for name, duration, base_price, is_addon in SERVICES:
+        for name, duration, price, is_addon in SERVICES:
             db.add(
                 Service(
                     name=name,
                     duration_min=duration,
-                    base_price=base_price,
-                    price=base_price + 1000,
+                    base_price=max(price - 1000, 0),
+                    price=price,
                     is_addon=is_addon,
                 )
             )
     else:
-        service_map = {name: (duration, is_addon) for name, duration, _, is_addon in SERVICES}
+        service_map = {name: (duration, price, is_addon) for name, duration, price, is_addon in SERVICES}
         for service in db.query(Service).all():
             if service.name in service_map:
-                duration, is_addon = service_map[service.name]
+                duration, price, is_addon = service_map[service.name]
                 service.is_addon = is_addon
                 service.duration_min = 0 if is_addon else duration
+                service.price = price
+                service.base_price = max(price - 1000, 0)
+                service.is_active = True
+            elif service.name not in service_names:
+                service.is_active = False
+        existing_names = {service.name for service in db.query(Service).all()}
+        for name, duration, price, is_addon in SERVICES:
+            if name not in existing_names:
+                db.add(
+                    Service(
+                        name=name,
+                        duration_min=duration,
+                        base_price=max(price - 1000, 0),
+                        price=price,
+                        is_addon=is_addon,
+                        is_active=True,
+                    )
+                )
 
     password_hash = config.ADMIN_PASSWORD_HASH or hash_password(config.ADMIN_DEFAULT_PASSWORD)
     active_usernames = {username for _, _, _, username in BARBERS}
