@@ -148,4 +148,6 @@ export const adminApi = {
   clientes: (token) => api("/api/admin/clients", { token }),
   stats: (token, year, month) => api(`/api/admin/stats${query({ year, month })}`, { token }),
   resetPassword: (datos) => api("/api/admin/reset-password", { method: "POST", body: datos }),
+  changePassword: (token, datos) =>
+    api("/api/admin/change-password", { method: "POST", token, body: datos }),
 };

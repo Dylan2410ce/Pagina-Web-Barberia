@@ -8,6 +8,7 @@ import {
   Clock3,
   Home,
   LayoutDashboard,
+  LockKeyhole,
   LogOut,
   MoveRight,
   Plus,
@@ -23,6 +24,7 @@ import {
   dinero,
   fechaCorta,
   fechaHumana,
+  horaAMinutos,
   hoyISO,
   minutosAHora,
   textoEstado,
@@ -38,6 +40,7 @@ const secciones = [
   { id: "horarios", label: "Horarios", icon: Clock3 },
   { id: "clientes", label: "Clientes", icon: Users },
   { id: "reportes", label: "Reportes", icon: BarChart3 },
+  { id: "seguridad", label: "Seguridad", icon: LockKeyhole },
 ];
 
 export default function AdminPanel({
@@ -52,6 +55,7 @@ export default function AdminPanel({
   onBloqueo,
   onGuardarServicio,
   onGuardarHorario,
+  onChangePassword,
 }) {
   if (!admin.token) {
     return <Login onLogin={onLogin} onResetPassword={onResetPassword} />;
@@ -103,6 +107,7 @@ export default function AdminPanel({
           {admin.tab === "horarios" && <Horarios horarios={admin.horarios} onGuardar={onGuardarHorario} />}
           {admin.tab === "clientes" && <Clientes clientes={admin.clientes} />}
           {admin.tab === "reportes" && <Reportes stats={admin.stats} />}
+          {admin.tab === "seguridad" && <Seguridad onChangePassword={onChangePassword} />}
         </main>
       </div>
     </section>
@@ -110,6 +115,26 @@ export default function AdminPanel({
 }
 
 function Login({ onLogin, onResetPassword }) {
+  const [loginForm, setLoginForm] = useState({ username: "sebas", password: "" });
+  const [resetForm, setResetForm] = useState({
+    username: "sebas",
+    master_code: "",
+    new_password: "",
+  });
+
+  const enviarLogin = async (event) => {
+    event.preventDefault();
+    await onLogin(loginForm);
+  };
+
+  const enviarRecuperacion = async (event) => {
+    event.preventDefault();
+    const actualizado = await onResetPassword(resetForm);
+    if (actualizado) {
+      setResetForm({ username: "sebas", master_code: "", new_password: "" });
+    }
+  };
+
   return (
     <section className="admin-login-page">
       <a className="btn btn-linea admin-back" href="/"><Home size={16} />Volver a la web</a>
@@ -125,23 +150,62 @@ function Login({ onLogin, onResetPassword }) {
             <h2>Iniciar sesion</h2>
             <p>Ingresa con la cuenta de Sebastian.</p>
           </div>
-          <form className="formulario" onSubmit={onLogin}>
+          <form className="formulario grid gap-4" onSubmit={enviarLogin}>
             <div className="campo">
               <label htmlFor="admin-user">Usuario</label>
-              <input id="admin-user" name="username" defaultValue="sebas" autoComplete="username" required />
+              <input
+                id="admin-user"
+                name="username"
+                value={loginForm.username}
+                autoComplete="username"
+                required
+                onChange={(event) => setLoginForm((actual) => ({ ...actual, username: event.target.value }))}
+              />
             </div>
             <div className="campo">
               <label htmlFor="admin-password">Contrasena</label>
-              <input id="admin-password" name="password" type="password" minLength={8} autoComplete="current-password" required />
+              <input
+                id="admin-password"
+                name="password"
+                type="password"
+                minLength={8}
+                value={loginForm.password}
+                autoComplete="current-password"
+                required
+                onChange={(event) => setLoginForm((actual) => ({ ...actual, password: event.target.value }))}
+              />
             </div>
             <button className="btn btn-principal btn-ancho" type="submit">Entrar al panel</button>
           </form>
           <details className="reset-box">
             <summary>Olvide mi contrasena</summary>
-            <form className="formulario" onSubmit={onResetPassword}>
-              <input name="username" defaultValue="sebas" aria-label="Usuario" required />
-              <input name="master_code" minLength={32} placeholder="Codigo maestro" aria-label="Codigo maestro" required />
-              <input name="new_password" type="password" minLength={8} placeholder="Nueva contrasena" aria-label="Nueva contrasena" required />
+            <form className="formulario grid gap-3" onSubmit={enviarRecuperacion}>
+              <input
+                name="username"
+                value={resetForm.username}
+                aria-label="Usuario"
+                required
+                onChange={(event) => setResetForm((actual) => ({ ...actual, username: event.target.value }))}
+              />
+              <input
+                name="master_code"
+                minLength={32}
+                value={resetForm.master_code}
+                placeholder="Codigo maestro"
+                aria-label="Codigo maestro"
+                required
+                onChange={(event) => setResetForm((actual) => ({ ...actual, master_code: event.target.value }))}
+              />
+              <input
+                name="new_password"
+                type="password"
+                minLength={8}
+                value={resetForm.new_password}
+                placeholder="Nueva contrasena"
+                aria-label="Nueva contrasena"
+                required
+                onChange={(event) => setResetForm((actual) => ({ ...actual, new_password: event.target.value }))}
+              />
               <button className="btn btn-secundario" type="submit">Cambiar contrasena</button>
             </form>
           </details>
@@ -265,13 +329,38 @@ function Agenda({ admin, onFiltrar, onEstado, onMover }) {
 
 function Bloqueos({ onBloqueo }) {
   const [modo, setModo] = useState("horas");
+  const [fecha, setFecha] = useState(hoyISO());
   const [inicio, setInicio] = useState("08:00");
   const [fin, setFin] = useState("09:00");
+  const [motivo, setMotivo] = useState("");
+  const [error, setError] = useState("");
 
   const usarRango = (desde, hasta) => {
     setModo("horas");
     setInicio(desde);
     setFin(hasta);
+    setError("");
+  };
+
+  const guardarBloqueo = async (event) => {
+    event.preventDefault();
+    const startMin = horaAMinutos(inicio);
+    const endMin = horaAMinutos(fin);
+
+    if (modo === "horas" && endMin <= startMin) {
+      setError("La hora final debe ser posterior a la hora inicial.");
+      return;
+    }
+
+    setError("");
+    const guardado = await onBloqueo({
+      date: fecha,
+      all_day: modo === "dia",
+      start_min: modo === "dia" ? 480 : startMin,
+      end_min: modo === "dia" ? null : endMin,
+      notes: motivo.trim() || null,
+    });
+    if (guardado) setMotivo("");
   };
 
   return (
@@ -283,11 +372,18 @@ function Bloqueos({ onBloqueo }) {
             <button className={modo === "horas" ? "activo" : ""} type="button" onClick={() => setModo("horas")}><Clock3 size={17} />Unas horas</button>
             <button className={modo === "dia" ? "activo" : ""} type="button" onClick={() => setModo("dia")}><CalendarDays size={17} />Dia completo</button>
           </div>
-          <form className="block-form" onSubmit={onBloqueo}>
-            <input type="hidden" name="all_day" value={modo === "dia" ? "on" : ""} />
+          <form className="block-form" onSubmit={guardarBloqueo}>
             <div className="campo">
               <label htmlFor="block-date">Fecha</label>
-              <input id="block-date" name="date" type="date" min={hoyISO()} defaultValue={hoyISO()} required />
+              <input
+                id="block-date"
+                name="date"
+                type="date"
+                min={hoyISO()}
+                value={fecha}
+                onChange={(event) => setFecha(event.target.value)}
+                required
+              />
             </div>
             {modo === "horas" && (
               <>
@@ -305,8 +401,16 @@ function Bloqueos({ onBloqueo }) {
             )}
             <div className="campo">
               <label htmlFor="block-reason">Motivo</label>
-              <input id="block-reason" name="notes" maxLength={240} placeholder={modo === "dia" ? "Ej: descanso o vacaciones" : "Ej: cita manual o diligencia"} />
+              <input
+                id="block-reason"
+                name="notes"
+                maxLength={240}
+                value={motivo}
+                onChange={(event) => setMotivo(event.target.value)}
+                placeholder={modo === "dia" ? "Ej: descanso o vacaciones" : "Ej: cita manual o diligencia"}
+              />
             </div>
+            {error && <p className="form-error" role="alert">{error}</p>}
             <button className="btn btn-principal btn-ancho" type="submit"><Plus size={17} />Guardar bloqueo</button>
           </form>
         </section>
@@ -364,6 +468,99 @@ function Horarios({ horarios, onGuardar }) {
             </form>
           ))}
         </div>
+      </section>
+    </>
+  );
+}
+
+function Seguridad({ onChangePassword }) {
+  const [form, setForm] = useState({
+    current_password: "",
+    new_password: "",
+    confirmation: "",
+  });
+  const [error, setError] = useState("");
+
+  const actualizarCampo = (campo, valor) => {
+    setForm((actual) => ({ ...actual, [campo]: valor }));
+    setError("");
+  };
+
+  const guardar = async (event) => {
+    event.preventDefault();
+    if (form.new_password !== form.confirmation) {
+      setError("Las contrasenas nuevas no coinciden.");
+      return;
+    }
+    if (form.current_password === form.new_password) {
+      setError("Usa una contrasena diferente a la actual.");
+      return;
+    }
+
+    const actualizado = await onChangePassword({
+      current_password: form.current_password,
+      new_password: form.new_password,
+    });
+    if (actualizado) {
+      setForm({ current_password: "", new_password: "", confirmation: "" });
+    }
+  };
+
+  return (
+    <>
+      <PageHead
+        eyebrow="Seguridad"
+        title="Cambia tu contrasena"
+        text="Actualiza el acceso desde una sesion abierta. Al guardar, deberas iniciar sesion otra vez."
+      />
+      <section className="admin-panel max-w-xl">
+        <div className="security-intro flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-950/30 p-4">
+          <span className="security-icon"><ShieldCheck size={20} /></span>
+          <div>
+            <strong>Acceso del administrador</strong>
+            <p>La clave debe tener al menos 8 caracteres. No compartas el codigo maestro de recuperacion.</p>
+          </div>
+        </div>
+        <form className="formulario security-form grid gap-4" onSubmit={guardar}>
+          <div className="campo">
+            <label htmlFor="current-password">Contrasena actual</label>
+            <input
+              id="current-password"
+              type="password"
+              minLength={8}
+              value={form.current_password}
+              autoComplete="current-password"
+              onChange={(event) => actualizarCampo("current_password", event.target.value)}
+              required
+            />
+          </div>
+          <div className="campo">
+            <label htmlFor="new-password">Nueva contrasena</label>
+            <input
+              id="new-password"
+              type="password"
+              minLength={8}
+              value={form.new_password}
+              autoComplete="new-password"
+              onChange={(event) => actualizarCampo("new_password", event.target.value)}
+              required
+            />
+          </div>
+          <div className="campo">
+            <label htmlFor="confirm-password">Repite la nueva contrasena</label>
+            <input
+              id="confirm-password"
+              type="password"
+              minLength={8}
+              value={form.confirmation}
+              autoComplete="new-password"
+              onChange={(event) => actualizarCampo("confirmation", event.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button className="btn btn-principal" type="submit"><LockKeyhole size={17} />Actualizar contrasena</button>
+        </form>
       </section>
     </>
   );

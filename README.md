@@ -2,7 +2,7 @@
 
 App de barberia para Sebastian.
 
-- Frontend: React + CSS + Vite, deploy en Netlify.
+- Frontend: React + Tailwind CSS + CSS3 + Vite, deploy en Netlify.
 - Backend: FastAPI + SQLAlchemy + Pydantic + PostgreSQL Neon, deploy en Render.
 - Agenda: PostgreSQL + Google Calendar API como fuente externa de disponibilidad.
 
@@ -26,9 +26,10 @@ sebas-barber/
 |   |-- src/
 |   |   |-- api/
 |   |   |-- components/
-|   |   |-- pages/
+|   |   |-- services/
 |   |   |-- utils/
-|   |   |-- main.js
+|   |   |-- App.jsx
+|   |   |-- main.jsx
 |   |   `-- styles.css
 |   |-- index.html
 |   |-- netlify.toml
@@ -119,6 +120,10 @@ Publish directory:
 ```txt
 dist
 ```
+
+Para un deploy manual, ejecuta `npm run build` dentro de `frontend` y arrastra
+el contenido generado en `frontend/dist` a Netlify Drop. La carpeta preparada
+en el escritorio contiene exactamente ese resultado.
 
 Variable:
 

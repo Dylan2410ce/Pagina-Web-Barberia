@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminApi, borrarToken, guardarToken, obtenerToken, publicoApi } from "./api/client";
 import AdminPanel from "./components/AdminPanel";
+import BookingSuccessModal from "./components/BookingSuccessModal";
 import BookingWizard from "./components/BookingWizard";
 import ClientAppointments from "./components/ClientAppointments";
 import Gallery from "./components/Gallery";
@@ -60,6 +61,7 @@ export default function App() {
   const [citasCliente, setCitasCliente] = useState([]);
   const [admin, setAdmin] = useState(() => ({ ...adminBase, token: obtenerToken() }));
   const [modalReprogramar, setModalReprogramar] = useState(null);
+  const [citaConfirmada, setCitaConfirmada] = useState(null);
 
   const avisar = useCallback((tipo, titulo, mensaje = "") => {
     const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
@@ -242,6 +244,7 @@ export default function App() {
           avisar("warning", "Cita guardada", "La reserva quedo lista, pero algun correo no salio.");
         }
       });
+      setCitaConfirmada(citaCreada);
       avisar("ok", "Cita lista", "Tu cita quedo reservada.");
       const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
       setReserva(limpia);
@@ -349,9 +352,7 @@ export default function App() {
     }
   };
 
-  const loginAdmin = async (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget));
+  const loginAdmin = async (data) => {
     setProcesando("Entrando al panel...");
     try {
       const respuesta = await adminApi.login(data);
@@ -359,23 +360,40 @@ export default function App() {
       setAdmin((actual) => ({ ...actual, token: respuesta.token }));
       await cargarAdmin(respuesta.token, admin.filtros);
       avisar("ok", "Panel abierto");
+      return true;
     } catch (error) {
       avisar("error", "No se pudo entrar", error.message);
+      return false;
     } finally {
       setProcesando("");
     }
   };
 
-  const resetPassword = async (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget));
+  const resetPassword = async (data) => {
     setProcesando("Actualizando clave...");
     try {
       await adminApi.resetPassword(data);
-      event.currentTarget.reset();
-      avisar("ok", "Clave actualizada");
+      avisar("ok", "Clave actualizada", "Ya puedes entrar con tu nueva contrasena.");
+      return true;
     } catch (error) {
       avisar("error", "No se pudo cambiar", error.message);
+      return false;
+    } finally {
+      setProcesando("");
+    }
+  };
+
+  const cambiarPassword = async (data) => {
+    setProcesando("Actualizando clave...");
+    try {
+      await adminApi.changePassword(admin.token, data);
+      borrarToken();
+      setAdmin({ ...adminBase });
+      avisar("ok", "Clave actualizada", "Inicia sesion de nuevo para continuar.");
+      return true;
+    } catch (error) {
+      avisar("error", "No se pudo cambiar", error.message);
+      return false;
     } finally {
       setProcesando("");
     }
@@ -413,25 +431,17 @@ export default function App() {
     }
   };
 
-  const crearBloqueo = async (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget));
-    const allDay = data.all_day === "on";
+  const crearBloqueo = async (data) => {
     setProcesando("Bloqueando espacio...");
     try {
-      await adminApi.crearBloqueo(admin.token, {
-        date: data.date,
-        all_day: allDay,
-        start_min: allDay ? 480 : horaAMinutos(data.start_time),
-        end_min: allDay ? null : horaAMinutos(data.end_time),
-        notes: data.notes || null,
-      });
-      event.currentTarget.reset();
+      await adminApi.crearBloqueo(admin.token, data);
       await cargarAdmin();
       await cargarSlots();
       avisar("ok", "Espacio bloqueado");
+      return true;
     } catch (error) {
       avisar("error", "No se pudo bloquear", error.message);
+      return false;
     } finally {
       setProcesando("");
     }
@@ -504,6 +514,7 @@ export default function App() {
     onBloqueo: crearBloqueo,
     onGuardarServicio: guardarServicio,
     onGuardarHorario: guardarHorario,
+    onChangePassword: cambiarPassword,
   };
 
   if (ruta.startsWith("/admin")) {
@@ -613,6 +624,12 @@ export default function App() {
         <small>Pagina web creada y desarrollada por Dylan Calvo Escobar, 2026. Todos los derechos reservados.</small>
       </footer>
       {modalMapa && <MapModal location={datos.location} onClose={() => setModalMapa(false)} />}
+      {citaConfirmada && (
+        <BookingSuccessModal
+          cita={citaConfirmada}
+          onClose={() => setCitaConfirmada(null)}
+        />
+      )}
       {modalReprogramar && (
         <div className="modal-backdrop">
           <section className="modal">
