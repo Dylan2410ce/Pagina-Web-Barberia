@@ -20,6 +20,7 @@ from app.schemas import (
     BusinessHourOut,
     BusinessHourUpdate,
     LoginIn,
+    PasswordChangeIn,
     PasswordResetIn,
     ServiceCreate,
     ServiceOut,
@@ -29,7 +30,7 @@ from app.schemas import (
 from app.services.appointment_service import AppointmentService
 from app.services.auth_service import current_barber, login
 from app.services.date_service import day_range
-from app.services.password_service import hash_password
+from app.services.password_service import hash_password, verify_password
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
@@ -51,6 +52,20 @@ def reset_password(data: PasswordResetIn, db: Session = Depends(get_db)):
     barber.password_hash = hash_password(data.new_password)
     db.commit()
     return {"ok": True, "message": "Password actualizado"}
+
+
+@router.post("/change-password")
+def change_password(
+    data: PasswordChangeIn,
+    barber: Barber = Depends(current_barber),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(data.current_password, barber.password_hash):
+        raise HTTPException(status_code=401, detail="La contrasena actual no es correcta")
+
+    barber.password_hash = hash_password(data.new_password)
+    db.commit()
+    return {"ok": True, "message": "Contrasena actualizada"}
 
 
 @router.get("/me")

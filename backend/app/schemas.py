@@ -138,6 +138,17 @@ class PasswordResetIn(StrictInput):
     new_password: str = Field(min_length=8, max_length=80)
 
 
+class PasswordChangeIn(StrictInput):
+    current_password: str = Field(min_length=8, max_length=80)
+    new_password: str = Field(min_length=8, max_length=80)
+
+    @model_validator(mode="after")
+    def validate_new_password(self):
+        if self.current_password == self.new_password:
+            raise ValueError("La nueva contrasena debe ser diferente")
+        return self
+
+
 class LoginIn(StrictInput):
     username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=8, max_length=80)

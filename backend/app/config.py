@@ -1,14 +1,24 @@
 import os
 
 
+def normalize_database_url(value: str) -> str:
+    value = value.strip()
+    if value.startswith("postgres://"):
+        return value.replace("postgres://", "postgresql+psycopg2://", 1)
+    if value.startswith("postgresql://"):
+        return value.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return value
+
+
 class Config:
-    # Neon usa PostgreSQL, no MySQL. Pega aqui tu connection string de Neon.
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg2://USER:PASSWORD@HOST.neon.tech/neondb?sslmode=require",
+    DATABASE_URL = normalize_database_url(
+        os.getenv(
+            "DATABASE_URL",
+            "postgresql+psycopg2://USER:PASSWORD@HOST.neon.tech/neondb?sslmode=require",
+        )
     )
 
-    SECRET_KEY = os.getenv("SECRET_KEY", "sebas-barber-render-secret-key")
+    SECRET_KEY = os.getenv("SECRET_KEY", "sebas_barber_default_super_secret_key_2026")
     FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sebasbarber.netlify.app")
     MASTER_RESET_CODE = os.getenv(
         "MASTER_RESET_CODE",
