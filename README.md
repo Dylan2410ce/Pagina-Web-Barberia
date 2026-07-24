@@ -91,6 +91,15 @@ Diagnostico despues del deploy:
 https://pagina-web-barberia.onrender.com/health/calendar
 ```
 
+Healthcheck ultraligero para Render y cron-job.org:
+
+```txt
+https://pagina-web-barberia.onrender.com/health
+```
+
+En cron-job.org configura esa URL con metodo `GET`. La respuesta esperada es
+`{"status":"ok"}` con codigo `200`.
+
 ## Netlify
 
 Base directory:

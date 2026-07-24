@@ -3,7 +3,9 @@ import { adminApi, borrarToken, guardarToken, obtenerToken, publicoApi } from ".
 import AdminPanel from "./components/AdminPanel";
 import BookingWizard from "./components/BookingWizard";
 import ClientAppointments from "./components/ClientAppointments";
+import Gallery from "./components/Gallery";
 import Hero from "./components/Hero";
+import LocationSection from "./components/LocationSection";
 import MapModal from "./components/MapModal";
 import Navbar from "./components/Navbar";
 import ServiceMenu from "./components/ServiceMenu";
@@ -32,13 +34,19 @@ const adminBase = {
   horarios: [],
   clientes: [],
   stats: null,
-  tab: "agenda",
+  tab: "resumen",
   filtros: { date: hoyISO(), status: "", q: "" },
 };
 
 export default function App() {
   const [ruta, setRuta] = useState(() => window.location.pathname);
-  const [datos, setDatos] = useState({ barbers: [], services: [], addons: [], location: {} });
+  const [datos, setDatos] = useState({
+    barbers: [],
+    services: [],
+    addons: [],
+    business_hours: [],
+    location: {},
+  });
   const [reserva, setReserva] = useState(reservaInicial);
   const [slots, setSlots] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -147,7 +155,13 @@ export default function App() {
       try {
         const bootstrap = await publicoApi.iniciar();
         const barbers = (bootstrap.barbers || []).filter((barbero) => barbero.name.toLowerCase().includes("sebastian"));
-        const normalizados = { ...bootstrap, barbers, services: bootstrap.services || [], addons: bootstrap.addons || [] };
+        const normalizados = {
+          ...bootstrap,
+          barbers,
+          services: bootstrap.services || [],
+          addons: bootstrap.addons || [],
+          business_hours: bootstrap.business_hours || [],
+        };
         setDatos(normalizados);
         const primeraReserva = {
           ...reservaInicial,
@@ -186,7 +200,7 @@ export default function App() {
     );
     document.querySelectorAll(".reveal").forEach((item) => observer.observe(item));
     return () => observer.disconnect();
-  });
+  }, [admin.tab, cargando, ruta]);
 
   const seleccionarServicio = async (id) => {
     const siguiente = { service_id: id, start_min: null };
@@ -511,7 +525,7 @@ export default function App() {
             <section className="modal">
               <header>
                 <strong>Elige una nueva hora</strong>
-                <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)}>×</button>
+                <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)} aria-label="Cerrar">X</button>
               </header>
               <div className="modal-body formulario">
                 <div className="campo">
@@ -550,7 +564,6 @@ export default function App() {
       <main>
         <Hero
           barbero={datos.barbers[0]}
-          servicios={datos.services}
           primerSlot={slots[0]?.label}
           onMapa={() => setModalMapa(true)}
         />
@@ -561,14 +574,20 @@ export default function App() {
           onServicio={seleccionarServicio}
           onExtra={toggleExtra}
         />
+        <Gallery />
         <BookingWizard
           reserva={reserva}
           setReserva={setReserva}
           resumen={resumen}
+          servicios={datos.services}
+          extras={datos.addons}
+          barbero={datos.barbers[0]}
           slots={slots}
           cargandoSlots={cargandoSlots}
           minFecha={hoyISO()}
           onFecha={cambiarFecha}
+          onServicio={seleccionarServicio}
+          onExtra={toggleExtra}
           onSubmit={crearCita}
         />
         <ClientAppointments
@@ -579,17 +598,12 @@ export default function App() {
           onCancelar={cancelarCliente}
           onReprogramar={(cita) => abrirReprogramar(cita, "cliente")}
         />
-        <section id="ubicacion" className="seccion ubicacion">
-          <div className="panel reveal">
-            <span className="eyebrow">Llegada facil</span>
-            <h2>Te esperamos en Barrio Maranonal.</h2>
-            <p>{datos.location.address}</p>
-            <div className="hero-acciones">
-              <button className="btn btn-secundario" type="button" onClick={() => setModalMapa(true)}>Ver mapa</button>
-              <a className="btn btn-principal" href={datos.location.wazeUrl} target="_blank" rel="noreferrer">Abrir Waze</a>
-            </div>
-          </div>
-        </section>
+        <LocationSection
+          location={datos.location}
+          horarios={datos.business_hours}
+          barbero={datos.barbers[0]}
+          onMapa={() => setModalMapa(true)}
+        />
       </main>
       <footer className="footer">
         <div>
@@ -598,16 +612,13 @@ export default function App() {
         </div>
         <small>Pagina web creada y desarrollada por Dylan Calvo Escobar, 2026. Todos los derechos reservados.</small>
       </footer>
-      <button className="cta-flotante" type="button" onClick={() => document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" })}>
-        Agendar
-      </button>
       {modalMapa && <MapModal location={datos.location} onClose={() => setModalMapa(false)} />}
       {modalReprogramar && (
         <div className="modal-backdrop">
           <section className="modal">
             <header>
               <strong>Elige una nueva hora</strong>
-              <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)}>×</button>
+              <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)} aria-label="Cerrar">X</button>
             </header>
             <div className="modal-body formulario">
               <div className="campo">

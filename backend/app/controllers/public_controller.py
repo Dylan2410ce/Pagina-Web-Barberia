@@ -6,9 +6,17 @@ from sqlalchemy.orm import Session
 
 from app.config import config
 from app.database import get_db
+from app.models import BusinessHour
 from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
-from app.schemas import AppointmentCancel, AppointmentCreate, AppointmentOut, AppointmentReschedule, BootstrapOut
+from app.schemas import (
+    AppointmentCancel,
+    AppointmentCreate,
+    AppointmentOut,
+    AppointmentReschedule,
+    BootstrapOut,
+    SlotOut,
+)
 from app.services.appointment_service import AppointmentService
 
 router = APIRouter(prefix="/api/public", tags=["Public"])
@@ -22,6 +30,7 @@ def init(db: Session = Depends(get_db)):
         "barbers": barbers,
         "services": [item for item in items if not item.is_addon],
         "addons": [item for item in items if item.is_addon],
+        "business_hours": db.query(BusinessHour).order_by(BusinessHour.weekday.asc()).all(),
         "location": {
             "name": config.SHOP_NAME,
             "address": config.ADDRESS,
@@ -33,12 +42,12 @@ def init(db: Session = Depends(get_db)):
     }
 
 
-@router.get("/availability")
+@router.get("/availability", response_model=list[SlotOut])
 def availability(
     barber_id: UUID,
     day: date = Query(alias="date"),
     service_id: UUID | None = None,
-    addon_ids: list[UUID] = Query(default=[]),
+    addon_ids: list[UUID] = Query(default_factory=list),
     db: Session = Depends(get_db),
 ):
     service = AppointmentService(db)

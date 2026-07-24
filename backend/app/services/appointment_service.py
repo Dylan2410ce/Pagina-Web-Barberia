@@ -30,6 +30,13 @@ class AppointmentService:
         weekday = day.weekday()
         return self.db.query(BusinessHour).filter(BusinessHour.weekday == weekday).first()
 
+    def lock_schedule(self, barber_id: UUID, day: date) -> None:
+        lock_key = f"schedule:{barber_id}:{day.isoformat()}"
+        self.db.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+            {"key": lock_key},
+        )
+
     def get_duration_and_price(self, service_id: UUID, addon_ids: list[UUID]) -> tuple[str, list[str], int, int]:
         service = self.services.by_id(service_id)
         if not service or service.is_addon:
@@ -44,6 +51,10 @@ class AppointmentService:
         now = datetime.now(TZ)
         if day < now.date():
             return []
+        if not self.barbers.by_id(barber_id):
+            raise HTTPException(status_code=404, detail="Barbero no encontrado")
+        if duration <= 0:
+            raise HTTPException(status_code=400, detail="El servicio necesita una duracion valida")
 
         business_hours = self.business_hours_for(day)
         if not business_hours or not business_hours.is_open:
@@ -85,10 +96,14 @@ class AppointmentService:
         blocked_duration = duration + config.APPOINTMENT_BUFFER_MIN
         end_min = start_min + blocked_duration
 
+        if duration <= 0:
+            raise HTTPException(status_code=400, detail="El servicio necesita una duracion valida")
         if day < now.date():
             raise HTTPException(status_code=400, detail="No se pueden reservar fechas pasadas")
         if not business_hours or not business_hours.is_open:
             raise HTTPException(status_code=400, detail="Ese dia esta cerrado")
+        if (start_min - business_hours.open_min) % config.SLOT_STEP != 0:
+            raise HTTPException(status_code=400, detail="La hora no pertenece a un bloque disponible")
         if start_min < business_hours.open_min or end_min > business_hours.close_min:
             raise HTTPException(status_code=400, detail="La hora esta fuera del horario de atencion")
         if start_min < config.LUNCH_START < end_min or config.LUNCH_START <= start_min < config.LUNCH_END:
@@ -105,10 +120,9 @@ class AppointmentService:
         self.validate_booking_window(data.date, data.start_min, duration)
         blocked_duration = duration + config.APPOINTMENT_BUFFER_MIN
         starts_at, ends_at = range_from_minutes(data.date, data.start_min, blocked_duration)
-        lock_key = f"{data.barber_id}:{starts_at.isoformat()}"
 
         try:
-            self.db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"), {"key": lock_key})
+            self.lock_schedule(data.barber_id, data.date)
             if self.appointments.has_overlap(data.barber_id, starts_at, ends_at):
                 self.db.rollback()
                 raise HTTPException(status_code=409, detail="Ese horario ya fue tomado")
@@ -150,8 +164,10 @@ class AppointmentService:
             raise HTTPException(status_code=400, detail="No se pueden bloquear fechas pasadas")
 
         if data.all_day:
-            start_min = config.OPEN_MIN
-            duration = config.CLOSE_MIN - config.OPEN_MIN
+            business_hours = self.business_hours_for(data.date)
+            start_min = business_hours.open_min if business_hours else config.OPEN_MIN
+            close_min = business_hours.close_min if business_hours else config.CLOSE_MIN
+            duration = close_min - start_min
             client_name = "Dia bloqueado"
             service_name = "Bloqueo de dia"
         else:
@@ -162,7 +178,10 @@ class AppointmentService:
 
         if duration is None or duration <= 0:
             raise HTTPException(status_code=400, detail="El bloqueo necesita una hora final mayor a la inicial")
-        if start_min < config.OPEN_MIN or start_min + duration > config.CLOSE_MIN:
+        business_hours = self.business_hours_for(data.date)
+        open_min = business_hours.open_min if business_hours else config.OPEN_MIN
+        close_min = business_hours.close_min if business_hours else config.CLOSE_MIN
+        if start_min < open_min or start_min + duration > close_min:
             raise HTTPException(status_code=400, detail="El bloqueo debe estar dentro del horario de atencion")
 
         starts_at, ends_at = range_from_minutes(data.date, start_min, duration)
@@ -179,6 +198,7 @@ class AppointmentService:
             notes=data.notes,
         )
         try:
+            self.lock_schedule(barber_id, data.date)
             if self.appointments.has_overlap(barber_id, starts_at, ends_at):
                 raise HTTPException(status_code=409, detail="El bloqueo choca con una cita existente")
             if self.calendar.has_overlap(starts_at, ends_at):
@@ -243,6 +263,7 @@ class AppointmentService:
         old_start = appointment.starts_at.isoformat()
 
         try:
+            self.lock_schedule(appointment.barber_id, day)
             if self.appointments.has_overlap(appointment.barber_id, starts_at, ends_at, exclude_id=appointment.id):
                 raise HTTPException(status_code=409, detail="Ese horario ya fue tomado")
             if self.calendar.has_overlap(starts_at, ends_at, ignore_event_id=appointment.calendar_event_id):

@@ -156,7 +156,7 @@ def services(barber: Barber = Depends(current_barber), db: Session = Depends(get
 def create_service(data: ServiceCreate, barber: Barber = Depends(current_barber), db: Session = Depends(get_db)):
     service = Service(
         name=data.name,
-        duration_min=data.duration_min,
+        duration_min=0 if data.is_addon else data.duration_min,
         base_price=max(data.price - 1000, 0),
         price=data.price,
         is_addon=data.is_addon,
@@ -180,6 +180,12 @@ def update_service(
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
 
     payload = data.model_dump(exclude_unset=True)
+    next_is_addon = payload.get("is_addon", service.is_addon)
+    next_duration = payload.get("duration_min", service.duration_min)
+    if not next_is_addon and next_duration <= 0:
+        raise HTTPException(status_code=400, detail="Un servicio principal necesita una duracion")
+    if next_is_addon:
+        payload["duration_min"] = 0
     for field, value in payload.items():
         setattr(service, field, value)
     if "price" in payload:
