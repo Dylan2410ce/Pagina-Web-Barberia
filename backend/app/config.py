@@ -34,17 +34,24 @@ def normalize_database_url(value: str) -> str:
     )
 
 
-class Config:
-    MISSING_SECURITY_ENV = tuple(
+def missing_security_env() -> tuple[str, ...]:
+    missing = [
         name
-        for name in (
-            "SECRET_KEY",
-            "ADMIN_DEFAULT_PASSWORD",
-            "GABRIEL_DEFAULT_PASSWORD",
-            "MASTER_RESET_CODE",
-        )
+        for name in ("SECRET_KEY", "MASTER_RESET_CODE")
         if not os.getenv(name)
-    )
+    ]
+    if not (os.getenv("ADMIN_DEFAULT_PASSWORD") or os.getenv("ADMIN_PASSWORD_HASH")):
+        missing.append("ADMIN_DEFAULT_PASSWORD/ADMIN_PASSWORD_HASH")
+    if not (
+        os.getenv("GABRIEL_DEFAULT_PASSWORD")
+        or os.getenv("GABRIEL_PASSWORD_HASH")
+    ):
+        missing.append("GABRIEL_DEFAULT_PASSWORD/GABRIEL_PASSWORD_HASH")
+    return tuple(missing)
+
+
+class Config:
+    MISSING_SECURITY_ENV = missing_security_env()
 
     DATABASE_URL = normalize_database_url(
         os.getenv(
@@ -58,10 +65,16 @@ class Config:
     FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sebasbarber.netlify.app")
     MASTER_RESET_CODE = os.getenv("MASTER_RESET_CODE") or secrets.token_hex(32)
 
-    ADMIN_DEFAULT_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD") or secrets.token_urlsafe(24)
     ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
-    GABRIEL_DEFAULT_PASSWORD = os.getenv("GABRIEL_DEFAULT_PASSWORD") or secrets.token_urlsafe(24)
     GABRIEL_PASSWORD_HASH = os.getenv("GABRIEL_PASSWORD_HASH", "")
+    ADMIN_PASSWORD_CONFIGURED = bool(
+        os.getenv("ADMIN_DEFAULT_PASSWORD") or ADMIN_PASSWORD_HASH
+    )
+    GABRIEL_PASSWORD_CONFIGURED = bool(
+        os.getenv("GABRIEL_DEFAULT_PASSWORD") or GABRIEL_PASSWORD_HASH
+    )
+    ADMIN_DEFAULT_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD", "")
+    GABRIEL_DEFAULT_PASSWORD = os.getenv("GABRIEL_DEFAULT_PASSWORD", "")
 
     GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "sebasbarberg2021@gmail.com")
     GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "")

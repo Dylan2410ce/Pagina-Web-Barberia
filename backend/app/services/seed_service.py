@@ -28,6 +28,7 @@ BARBERS = [
         "instagram_url": "https://www.instagram.com/andres29?igsh=dnVxdnNkYm16OXU1",
         "password": lambda: config.ADMIN_DEFAULT_PASSWORD,
         "password_hash": lambda: config.ADMIN_PASSWORD_HASH,
+        "password_configured": lambda: config.ADMIN_PASSWORD_CONFIGURED,
     },
     {
         "name": "Gabriel",
@@ -38,6 +39,7 @@ BARBERS = [
         "instagram_url": "https://www.instagram.com/gabriel_madriz01?igsh=dmk4NnZ2cGg3Z21q",
         "password": lambda: config.GABRIEL_DEFAULT_PASSWORD,
         "password_hash": lambda: config.GABRIEL_PASSWORD_HASH,
+        "password_configured": lambda: config.GABRIEL_PASSWORD_CONFIGURED,
     },
 ]
 
@@ -68,15 +70,29 @@ async def seed_data(db: AsyncSession):
         barber = existing_barbers.get(profile["username"])
         if not barber:
             configured_hash = profile["password_hash"]()
-            password_hash = configured_hash or await asyncio.to_thread(
-                hash_password,
-                profile["password"](),
-            )
+            if configured_hash:
+                password_hash = configured_hash
+            elif profile["password_configured"]():
+                password_hash = await asyncio.to_thread(
+                    hash_password,
+                    profile["password"](),
+                )
+            else:
+                password_hash = "unconfigured"
             barber = Barber(
                 username=profile["username"],
                 password_hash=password_hash,
             )
             db.add(barber)
+        elif barber.password_hash == "unconfigured":
+            configured_hash = profile["password_hash"]()
+            if configured_hash:
+                barber.password_hash = configured_hash
+            elif profile["password_configured"]():
+                barber.password_hash = await asyncio.to_thread(
+                    hash_password,
+                    profile["password"](),
+                )
 
         barber.name = profile["name"]
         barber.role = profile["role"]
