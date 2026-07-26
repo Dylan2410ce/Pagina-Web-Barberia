@@ -67,18 +67,26 @@ class AppointmentService:
     ) -> list[dict]:
         if not barber.calendar_sync:
             return []
-        available = await asyncio.to_thread(self.calendar.is_available)
+        available = await asyncio.to_thread(
+            self.calendar.is_available,
+            barber.calendar_id,
+        )
         if config.CALENDAR_REQUIRED and not available:
             raise HTTPException(
                 status_code=503,
-                detail="La agenda de Sebastian esta sincronizando. Intenta de nuevo en unos segundos.",
+                detail=f"La agenda de {barber.name} está sincronizando. Intenta de nuevo en unos segundos.",
             )
         try:
-            return await asyncio.to_thread(self.calendar.list_busy, start, end)
+            return await asyncio.to_thread(
+                self.calendar.list_busy,
+                barber.calendar_id,
+                start,
+                end,
+            )
         except CalendarError as exc:
             raise HTTPException(
                 status_code=503,
-                detail="No pudimos verificar la agenda de Sebastian. Intenta de nuevo.",
+                detail=f"No pudimos verificar la agenda de {barber.name}. Intenta de nuevo.",
             ) from exc
 
     async def _calendar_has_overlap(
@@ -90,15 +98,19 @@ class AppointmentService:
     ) -> bool:
         if not barber.calendar_sync:
             return False
-        available = await asyncio.to_thread(self.calendar.is_available)
+        available = await asyncio.to_thread(
+            self.calendar.is_available,
+            barber.calendar_id,
+        )
         if config.CALENDAR_REQUIRED and not available:
             raise HTTPException(
                 status_code=503,
-                detail="La agenda de Sebastian esta sincronizando. Intenta de nuevo en unos segundos.",
+                detail=f"La agenda de {barber.name} está sincronizando. Intenta de nuevo en unos segundos.",
             )
         try:
             return await asyncio.to_thread(
                 self.calendar.has_overlap,
+                barber.calendar_id,
                 start,
                 end,
                 ignore_event_id,
@@ -106,7 +118,7 @@ class AppointmentService:
         except CalendarError as exc:
             raise HTTPException(
                 status_code=503,
-                detail="No pudimos verificar la agenda de Sebastian. Intenta de nuevo.",
+                detail=f"No pudimos verificar la agenda de {barber.name}. Intenta de nuevo.",
             ) from exc
 
     async def _create_calendar_event(
@@ -116,14 +128,31 @@ class AppointmentService:
     ) -> str | None:
         if not barber.calendar_sync:
             return None
-        event_id = await asyncio.to_thread(self.calendar.create_event, appointment)
+        event_id = await asyncio.to_thread(
+            self.calendar.create_event,
+            barber.calendar_id,
+            appointment,
+        )
         if config.CALENDAR_REQUIRED and not event_id:
             raise CalendarError("Google Calendar no devolvio id de evento")
         return event_id
 
-    async def _delete_calendar_event(self, barber: Barber, event_id: str | None) -> None:
+    async def _delete_calendar_event(
+        self,
+        barber: Barber,
+        event_id: str | None,
+        suppress_errors: bool = False,
+    ) -> None:
         if barber.calendar_sync and event_id:
-            await asyncio.to_thread(self.calendar.delete_event, event_id)
+            try:
+                await asyncio.to_thread(
+                    self.calendar.delete_event,
+                    barber.calendar_id,
+                    event_id,
+                )
+            except CalendarError:
+                if not suppress_errors:
+                    raise
 
     async def _notify(self, method_name: str, appointment: Appointment) -> None:
         if self.email.enabled():
@@ -231,7 +260,7 @@ class AppointmentService:
                 await self.db.rollback()
                 raise HTTPException(
                     status_code=409,
-                    detail="Ese horario esta ocupado en la agenda de Sebastian",
+                    detail=f"Ese horario está ocupado en la agenda de {barber.name}",
                 )
 
             appointment = Appointment(
@@ -257,12 +286,20 @@ class AppointmentService:
         except CalendarError as exc:
             await self.db.rollback()
             if created_event_id:
-                await self._delete_calendar_event(barber, created_event_id)
+                await self._delete_calendar_event(
+                    barber,
+                    created_event_id,
+                    suppress_errors=True,
+                )
             raise HTTPException(status_code=502, detail=str(exc)) from exc
         except IntegrityError as exc:
             await self.db.rollback()
             if created_event_id:
-                await self._delete_calendar_event(barber, created_event_id)
+                await self._delete_calendar_event(
+                    barber,
+                    created_event_id,
+                    suppress_errors=True,
+                )
             raise HTTPException(status_code=409, detail="Ese horario ya fue tomado") from exc
 
     async def create_block(self, barber_id: UUID, data: BlockCreate) -> Appointment:
@@ -326,7 +363,7 @@ class AppointmentService:
                 await self.db.rollback()
                 raise HTTPException(
                     status_code=409,
-                    detail="Ese espacio esta ocupado en la agenda de Sebastian",
+                    detail=f"Ese espacio está ocupado en la agenda de {barber.name}",
                 )
 
             self.appointments.save(block)
@@ -339,12 +376,20 @@ class AppointmentService:
         except CalendarError as exc:
             await self.db.rollback()
             if created_event_id:
-                await self._delete_calendar_event(barber, created_event_id)
+                await self._delete_calendar_event(
+                    barber,
+                    created_event_id,
+                    suppress_errors=True,
+                )
             raise HTTPException(status_code=502, detail=str(exc)) from exc
         except IntegrityError as exc:
             await self.db.rollback()
             if created_event_id:
-                await self._delete_calendar_event(barber, created_event_id)
+                await self._delete_calendar_event(
+                    barber,
+                    created_event_id,
+                    suppress_errors=True,
+                )
             raise HTTPException(
                 status_code=409,
                 detail="El bloqueo choca con una cita existente",
@@ -378,14 +423,20 @@ class AppointmentService:
                 detail="Ese cambio de estado no esta permitido",
             )
 
-        appointment.status = next_status
         event_id = appointment.calendar_event_id
-        if appointment.status == AppointmentStatus.cancelled:
+        if next_status == AppointmentStatus.cancelled:
+            try:
+                await self._delete_calendar_event(barber, event_id)
+            except CalendarError as exc:
+                raise HTTPException(
+                    status_code=503,
+                    detail="No pudimos liberar el espacio en Google Calendar. Intenta de nuevo.",
+                ) from exc
             appointment.calendar_event_id = None
+        appointment.status = next_status
         await self.db.commit()
         await self.db.refresh(appointment)
         if appointment.status == AppointmentStatus.cancelled:
-            await self._delete_calendar_event(barber, event_id)
             await self._notify("appointment_cancelled", appointment)
         return appointment
 
@@ -414,6 +465,13 @@ class AppointmentService:
             raise HTTPException(status_code=404, detail="Barbero no encontrado")
 
         event_id = appointment.calendar_event_id
+        try:
+            await self._delete_calendar_event(barber, event_id)
+        except CalendarError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="No pudimos liberar el espacio en Google Calendar. Intenta de nuevo.",
+            ) from exc
         appointment.status = AppointmentStatus.cancelled
         appointment.notes = (
             f"{appointment.notes or ''}\nCancelada por cliente: {reason or ''}".strip()
@@ -421,7 +479,6 @@ class AppointmentService:
         appointment.calendar_event_id = None
         await self.db.commit()
         await self.db.refresh(appointment)
-        await self._delete_calendar_event(barber, event_id)
         await self._notify("appointment_cancelled", appointment)
         return appointment
 
@@ -463,7 +520,7 @@ class AppointmentService:
                 await self.db.rollback()
                 raise HTTPException(
                     status_code=409,
-                    detail="Ese horario esta ocupado en la agenda de Sebastian",
+                    detail=f"Ese horario está ocupado en la agenda de {barber.name}",
                 )
 
             appointment.starts_at = starts_at
@@ -475,20 +532,28 @@ class AppointmentService:
             await self.db.flush()
             new_event_id = await self._create_calendar_event(barber, appointment)
             appointment.calendar_event_id = new_event_id
+            await self._delete_calendar_event(barber, old_event_id)
             await self.db.commit()
             await self.db.refresh(appointment)
-            await self._delete_calendar_event(barber, old_event_id)
             await self._notify("appointment_rescheduled", appointment)
             return appointment
         except CalendarError as exc:
             await self.db.rollback()
             if new_event_id:
-                await self._delete_calendar_event(barber, new_event_id)
+                await self._delete_calendar_event(
+                    barber,
+                    new_event_id,
+                    suppress_errors=True,
+                )
             raise HTTPException(status_code=502, detail=str(exc)) from exc
         except IntegrityError as exc:
             await self.db.rollback()
             if new_event_id:
-                await self._delete_calendar_event(barber, new_event_id)
+                await self._delete_calendar_event(
+                    barber,
+                    new_event_id,
+                    suppress_errors=True,
+                )
             raise HTTPException(status_code=409, detail="Ese horario ya fue tomado") from exc
 
     async def reschedule_by_client(

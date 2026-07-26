@@ -9,12 +9,15 @@ class Base(DeclarativeBase):
     pass
 
 
-engine_options = {
-    "pool_pre_ping": True,
-    "pool_recycle": 300,
-    "pool_use_lifo": True,
-}
+engine_options = {}
 if config.DATABASE_URL.startswith("postgresql+asyncpg://"):
+    engine_options.update(
+        {
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+            "pool_use_lifo": True,
+        }
+    )
     engine_options["connect_args"] = {"ssl": config.DATABASE_SSL}
 
 engine = create_async_engine(config.DATABASE_URL, **engine_options)
@@ -41,6 +44,7 @@ async def init_db():
 
         migrations = [
             "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS calendar_sync BOOLEAN NOT NULL DEFAULT FALSE",
+            "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS calendar_id VARCHAR(255)",
             "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(255)",
             "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS credentials_initialized BOOLEAN NOT NULL DEFAULT FALSE",
             "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS client_email VARCHAR(160)",

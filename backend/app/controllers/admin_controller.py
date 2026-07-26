@@ -30,6 +30,7 @@ from app.schemas import (
 )
 from app.services.appointment_service import AppointmentService
 from app.services.auth_service import current_barber, login
+from app.services.calendar_service import calendar_embed_url
 from app.services.date_service import TZ, day_range
 from app.services.password_service import hash_password, verify_password
 from app.services.service_cache import service_cache
@@ -86,6 +87,8 @@ async def me(barber: Barber = Depends(current_barber)):
         "role": barber.role,
         "phone": barber.phone,
         "calendar_sync": barber.calendar_sync,
+        "calendar_connected": bool(barber.calendar_sync and barber.calendar_id),
+        "calendar_embed_url": calendar_embed_url(barber.calendar_id),
     }
 
 

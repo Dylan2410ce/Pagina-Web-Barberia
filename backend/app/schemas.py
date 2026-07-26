@@ -8,6 +8,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class StrictInput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
+    @field_validator("*", mode="before", check_fields=False)
+    @classmethod
+    def sanitize_text(cls, value):
+        if not isinstance(value, str):
+            return value
+        cleaned = "".join(
+            character
+            for character in value
+            if character in {"\n", "\t"} or ord(character) >= 32
+        ).strip()
+        if "<" in cleaned or ">" in cleaned:
+            raise ValueError("El texto contiene caracteres no permitidos")
+        return cleaned
+
 
 class BarberOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

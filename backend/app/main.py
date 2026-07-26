@@ -38,8 +38,6 @@ app = FastAPI(title="Sebas Barber API", version="2.0.0", lifespan=lifespan)
 
 allowed_origins = {
     config.FRONTEND_URL.rstrip("/"),
-    "https://sebasbarber.netlify.app",
-    "https://barberiasebas.netlify.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 }
@@ -52,6 +50,16 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -144,10 +152,16 @@ async def health():
 @app.get("/health/calendar")
 async def calendar_health():
     calendar = CalendarService()
-    client_available = await asyncio.to_thread(calendar.is_available)
+    sebastian_available = await asyncio.to_thread(
+        calendar.is_available,
+        config.GOOGLE_CALENDAR_SEBASTIAN_ID,
+    )
+    gabriel_available = await asyncio.to_thread(
+        calendar.is_available,
+        config.GOOGLE_CALENDAR_GABRIEL_ID,
+    )
     return {
         "enabled": calendar.enabled,
-        "calendar_id_configured": bool(config.GOOGLE_CALENDAR_ID),
         "credentials_configured": bool(
             config.GOOGLE_CREDENTIALS_JSON
             or config.GOOGLE_SERVICE_ACCOUNT_JSON
@@ -157,11 +171,23 @@ async def calendar_health():
             or calendar.credential_source != "none"
         ),
         "credential_source": calendar.credential_source,
-        "client_available": client_available,
+        "client_available": bool(sebastian_available and gabriel_available),
         "required": config.CALENDAR_REQUIRED,
         "timezone": "America/Costa_Rica",
         "profiles": {
-            "sebastian": "google_calendar",
-            "gabriel": "postgresql",
+            "sebastian": {
+                "provider": "google_calendar",
+                "calendar_id_configured": bool(
+                    config.GOOGLE_CALENDAR_SEBASTIAN_ID
+                ),
+                "available": sebastian_available,
+            },
+            "gabriel": {
+                "provider": "google_calendar",
+                "calendar_id_configured": bool(
+                    config.GOOGLE_CALENDAR_GABRIEL_ID
+                ),
+                "available": gabriel_available,
+            },
         },
     }

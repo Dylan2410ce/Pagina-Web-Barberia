@@ -39,7 +39,7 @@ class EmailService:
             logger.exception("No se pudo enviar correo a %s: %s", to_email, exc)
 
     def owner_email(self) -> str:
-        return config.OWNER_EMAIL or config.GOOGLE_CALENDAR_ID
+        return config.OWNER_EMAIL
 
     def fecha_legible(self, appointment) -> str:
         return appointment.starts_at.astimezone(TZ).strftime("%d/%m/%Y %I:%M %p")
@@ -59,9 +59,9 @@ class EmailService:
         fecha = self.fecha_legible(appointment)
         self.send(
             appointment.client_email,
-            "Tu cita en Sebas Barber esta confirmada",
+            "Tu cita en Sebas Barber está confirmada",
             (
-                f"Hola {appointment.client_name}, tu cita quedo confirmada.\n\n"
+                f"Hola {appointment.client_name}, tu cita quedó confirmada.\n\n"
                 f"Servicio: {appointment.service_name}\n"
                 f"Extras: {self.extras_legibles(appointment)}\n"
                 f"Fecha y hora: {fecha}\n"
@@ -74,7 +74,7 @@ class EmailService:
             self.owner_email(),
             "Nueva cita reservada - Sebas Barber",
             (
-                "Se agrego una nueva cita a la agenda.\n\n"
+                "Se agregó una nueva cita a la agenda.\n\n"
                 f"Cliente: {appointment.client_name}\n"
                 f"WhatsApp: {appointment.client_phone}\n"
                 f"Correo: {appointment.client_email or 'No indicado'}\n"
@@ -96,7 +96,7 @@ class EmailService:
         self.send(
             self.owner_email(),
             "Cita cancelada - Sebas Barber",
-            f"{appointment.client_name} cancelo la cita del {fecha}.",
+            f"{appointment.client_name} canceló la cita del {fecha}.",
         )
 
     def appointment_rescheduled(self, appointment) -> None:
@@ -104,10 +104,10 @@ class EmailService:
         self.send(
             appointment.client_email,
             "Cita reprogramada - Sebas Barber",
-            f"Hola {appointment.client_name}, tu nueva cita quedo para {fecha}.",
+            f"Hola {appointment.client_name}, tu nueva cita quedó para {fecha}.",
         )
         self.send(
             self.owner_email(),
             "Cita reprogramada - Sebas Barber",
-            f"{appointment.client_name} movio su cita. Nueva hora: {fecha}.",
+            f"{appointment.client_name} movió su cita. Nueva hora: {fecha}.",
         )

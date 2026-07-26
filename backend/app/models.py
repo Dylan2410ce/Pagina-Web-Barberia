@@ -33,6 +33,7 @@ class Barber(Base):
         nullable=False,
     )
     calendar_sync: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     instagram_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 

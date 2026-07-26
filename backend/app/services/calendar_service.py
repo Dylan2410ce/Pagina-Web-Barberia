@@ -5,6 +5,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from app.config import config
@@ -23,6 +24,19 @@ def parse_calendar_datetime(value: str) -> datetime:
 
 def rfc3339_costa_rica(value: datetime) -> str:
     return value.astimezone(CR_TZ).isoformat(timespec="seconds")
+
+
+def calendar_embed_url(calendar_id: str | None) -> str | None:
+    if not calendar_id:
+        return None
+    query = urlencode(
+        {
+            "src": calendar_id,
+            "ctz": "America/Costa_Rica",
+            "mode": "WEEK",
+        }
+    )
+    return f"https://calendar.google.com/calendar/embed?{query}"
 
 
 def log_google_error(context: str, exc: Exception) -> None:
@@ -47,7 +61,7 @@ class CalendarError(Exception):
 
 class CalendarService:
     def __init__(self):
-        self.enabled = config.CALENDAR_ENABLED and bool(config.GOOGLE_CALENDAR_ID)
+        self.enabled = config.CALENDAR_ENABLED
         self.credential_source = "none"
 
     def _credentials_from_secret_file(self, service_account, scopes):
@@ -125,19 +139,27 @@ class CalendarService:
             logger.exception("Google Calendar: no se pudo crear el cliente: %s", exc)
             return None
 
-    def is_available(self) -> bool:
-        return self.service is not None
+    def is_available(self, calendar_id: str | None = None) -> bool:
+        return bool(self.enabled and calendar_id and self.service)
 
-    def list_busy(self, start: datetime, end: datetime) -> list[dict]:
-        if not self.service:
-            logger.warning("Google Calendar: list_busy omitido porque el cliente no esta disponible")
+    def list_busy(
+        self,
+        calendar_id: str,
+        start: datetime,
+        end: datetime,
+    ) -> list[dict]:
+        if not self.is_available(calendar_id):
+            message = "Google Calendar no está disponible para esta agenda."
+            logger.warning("%s calendar_id_configured=%s", message, bool(calendar_id))
+            if config.CALENDAR_REQUIRED:
+                raise CalendarError(message)
             return []
 
         try:
             response = (
                 self.service.events()
                 .list(
-                    calendarId=config.GOOGLE_CALENDAR_ID,
+                    calendarId=calendar_id,
                     timeMin=rfc3339_costa_rica(start),
                     timeMax=rfc3339_costa_rica(end),
                     timeZone="America/Costa_Rica",
@@ -164,8 +186,14 @@ class CalendarService:
                 busy.append({"id": event.get("id"), "start": event_start, "end": event_end})
         return busy
 
-    def has_overlap(self, start: datetime, end: datetime, ignore_event_id: str | None = None) -> bool:
-        busy = self.list_busy(start, end)
+    def has_overlap(
+        self,
+        calendar_id: str,
+        start: datetime,
+        end: datetime,
+        ignore_event_id: str | None = None,
+    ) -> bool:
+        busy = self.list_busy(calendar_id, start, end)
         return any(
             item["id"] != ignore_event_id
             and start < parse_calendar_datetime(item["end"])
@@ -173,11 +201,16 @@ class CalendarService:
             for item in busy
         )
 
-    def create_event(self, appointment) -> str | None:
-        if not self.service:
-            logger.warning("Google Calendar: create_event omitido porque el cliente no esta disponible")
+    def create_event(self, calendar_id: str, appointment) -> str | None:
+        if not self.is_available(calendar_id):
+            logger.warning(
+                "Google Calendar: create_event omitido. calendar_id_configured=%s",
+                bool(calendar_id),
+            )
             if self.enabled and config.CALENDAR_REQUIRED:
-                raise CalendarError("Google Calendar no esta disponible. Revisa credenciales en Render.")
+                raise CalendarError(
+                    "Google Calendar no está disponible para esta agenda."
+                )
             return None
 
         event = {
@@ -195,14 +228,14 @@ class CalendarService:
         try:
             logger.info(
                 "Google Calendar: creando evento calendarId=%s start=%s end=%s",
-                config.GOOGLE_CALENDAR_ID,
+                calendar_id,
                 event["start"]["dateTime"],
                 event["end"]["dateTime"],
             )
             created = (
                 self.service.events()
                 .insert(
-                    calendarId=config.GOOGLE_CALENDAR_ID,
+                    calendarId=calendar_id,
                     body=event,
                     sendUpdates="none",
                 )
@@ -215,10 +248,31 @@ class CalendarService:
                 raise CalendarError("Google Calendar rechazo el evento. Revisa los logs de Render.") from exc
             return None
 
-    def delete_event(self, event_id: str | None) -> None:
-        if not self.service or not event_id:
+    def delete_event(self, calendar_id: str, event_id: str | None) -> None:
+        if not event_id:
+            return
+        if not self.is_available(calendar_id):
+            logger.warning(
+                "Google Calendar: delete_event omitido. calendar_id_configured=%s",
+                bool(calendar_id),
+            )
+            if self.enabled and config.CALENDAR_REQUIRED:
+                raise CalendarError(
+                    "Google Calendar no está disponible para esta agenda."
+                )
             return
         try:
-            self.service.events().delete(calendarId=config.GOOGLE_CALENDAR_ID, eventId=event_id, sendUpdates="all").execute()
+            self.service.events().delete(
+                calendarId=calendar_id,
+                eventId=event_id,
+                sendUpdates="none",
+            ).execute()
         except Exception as exc:
+            status = getattr(getattr(exc, "resp", None), "status", None)
+            if status == 404:
+                return
             log_google_error(f"error eliminando evento {event_id}", exc)
+            if config.CALENDAR_REQUIRED:
+                raise CalendarError(
+                    "Google Calendar no pudo eliminar el evento."
+                ) from exc

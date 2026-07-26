@@ -9,22 +9,23 @@ from app.services.password_service import hash_password
 
 SERVICES = [
     ("Corte de Cabello", 45, 5000, False),
-    ("Corte de Cabello Sebastian", 45, 6000, False),
+    ("Corte de Cabello Sebastián", 45, 6000, False),
     ("Barba Completa", 45, 3000, False),
     ("Mantenimiento de Barba", 45, 2000, False),
     ("Perfilado de Cejas", 0, 1000, True),
     ("Mascarilla Facial", 0, 5000, True),
-    ("Colorimetria / Rayitos", 120, 15000, False),
+    ("Colorimetría / Rayitos", 120, 15000, False),
     ("Tinte Completo", 120, 20000, False),
 ]
 
 BARBERS = [
     {
-        "name": "Sebastian",
-        "role": "Master Barber",
+        "name": "Sebastián",
+        "role": "Barbero principal",
         "phone": "83778700",
         "username": "sebas",
         "calendar_sync": True,
+        "calendar_id": lambda: config.GOOGLE_CALENDAR_SEBASTIAN_ID,
         "instagram_url": "https://www.instagram.com/andres29?igsh=dnVxdnNkYm16OXU1",
         "password": lambda: config.ADMIN_DEFAULT_PASSWORD,
         "password_hash": lambda: config.ADMIN_PASSWORD_HASH,
@@ -35,7 +36,8 @@ BARBERS = [
         "role": "Barbero",
         "phone": "00000000",
         "username": "gabriel",
-        "calendar_sync": False,
+        "calendar_sync": True,
+        "calendar_id": lambda: config.GOOGLE_CALENDAR_GABRIEL_ID,
         "instagram_url": "https://www.instagram.com/gabriel_madriz01?igsh=dmk4NnZ2cGg3Z21q",
         "password": lambda: config.GABRIEL_DEFAULT_PASSWORD,
         "password_hash": lambda: config.GABRIEL_PASSWORD_HASH,
@@ -47,6 +49,17 @@ BARBERS = [
 async def seed_data(db: AsyncSession):
     services_result = await db.execute(select(Service))
     services = list(services_result.scalars().all())
+    service_renames = {
+        "Corte de Cabello Sebastian": "Corte de Cabello Sebastián",
+        "Colorimetria / Rayitos": "Colorimetría / Rayitos",
+    }
+    current_names = {service.name for service in services}
+    for service in services:
+        new_name = service_renames.get(service.name)
+        if new_name and new_name not in current_names:
+            service.name = new_name
+            current_names.add(new_name)
+
     existing_service_names = {service.name for service in services}
     for name, duration, price, is_addon in SERVICES:
         if name not in existing_service_names:
@@ -109,6 +122,7 @@ async def seed_data(db: AsyncSession):
         barber.role = profile["role"]
         barber.phone = profile["phone"]
         barber.calendar_sync = profile["calendar_sync"]
+        barber.calendar_id = profile["calendar_id"]() or None
         barber.instagram_url = profile["instagram_url"]
         barber.is_active = True
         active_barbers.append(barber)
