@@ -1,12 +1,30 @@
+# Entornos y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+**/credentials.json
+**/*credentials*.json
+**/*service-account*.json
+**/*service_account*.json
+**/google-calendar*.json
+**/barberiasebas-*.json
+
+# Python
 backend/.venv/
-backend/__pycache__/
-backend/app/**/__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Frontend
 frontend/node_modules/
 frontend/dist/
-.env
-*.pyc
-*.json
-!package.json
-!package-lock.json
-google-credentials*.json
-service-account*.json
+frontend/.vercel/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

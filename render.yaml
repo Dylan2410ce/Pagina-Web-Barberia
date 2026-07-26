@@ -16,15 +16,17 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
-        value: https://sebasbarber.netlify.app
+        value: https://sebasbarber.vercel.app
       - key: ADMIN_DEFAULT_PASSWORD
         sync: false
       - key: GABRIEL_DEFAULT_PASSWORD
         sync: false
       - key: MASTER_RESET_CODE
         sync: false
-      - key: GOOGLE_CALENDAR_ID
+      - key: GOOGLE_CALENDAR_SEBASTIAN_ID
         value: sebasbarberg2021@gmail.com
+      - key: GOOGLE_CALENDAR_GABRIEL_ID
+        value: ce553e6aad32461bfe8a2e22e9ace248af0810c8e987115572b8db28d227bd7a@group.calendar.google.com
       - key: GOOGLE_CREDENTIALS_JSON
         sync: false
       - key: CALENDAR_ENABLED
