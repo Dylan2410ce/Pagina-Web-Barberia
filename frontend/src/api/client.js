@@ -1,4 +1,7 @@
-export const API_URL = import.meta.env.VITE_API_URL || "https://pagina-web-barberia.onrender.com";
+export const API_URL = (
+  import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? "http://localhost:8000" : "")
+).replace(/\/+$/, "");
 
 const ADMIN_TOKEN_KEY = "sebas_admin_token";
 
@@ -15,6 +18,9 @@ export function borrarToken() {
 }
 
 async function ejecutarSolicitud(ruta, opciones = {}) {
+  if (!API_URL) {
+    throw new Error("Falta configurar VITE_API_URL en Vercel.");
+  }
   const controlador = new AbortController();
   const metodo = opciones.method || "GET";
   const timeout = opciones.timeout || (metodo === "GET" ? 65000 : 35000);
@@ -48,7 +54,7 @@ async function ejecutarSolicitud(ruta, opciones = {}) {
     return respuesta.status === 204 ? null : respuesta.json();
   } catch (error) {
     if (error.name === "AbortError") {
-      const timeoutError = new Error("La agenda tardo demasiado en responder. Intenta otra vez.");
+      const timeoutError = new Error("La agenda tardó demasiado en responder. Intenta otra vez.");
       timeoutError.status = 408;
       throw timeoutError;
     }
@@ -83,17 +89,17 @@ function leerError(error) {
   if (typeof error?.error?.message === "string") {
     const details = error.error.details;
     if (Array.isArray(details) && details.length > 0) {
-      return `${error.error.message}: ${details.map((item) => item.message || "dato invalido").join(". ")}`;
+      return `${error.error.message}: ${details.map((item) => item.message || "dato inválido").join(". ")}`;
     }
     return error.error.message;
   }
   const detalle = error?.detail;
   if (typeof detalle === "string") return detalle;
   if (Array.isArray(detalle)) {
-    return detalle.map((item) => item.msg || item.message || "Dato invalido").join(" ");
+    return detalle.map((item) => item.msg || item.message || "Dato inválido").join(" ");
   }
   if (detalle && typeof detalle === "object") {
-    return detalle.msg || detalle.message || "Datos invalidos.";
+    return detalle.msg || detalle.message || "Datos inválidos.";
   }
   return "No se pudo completar la solicitud.";
 }

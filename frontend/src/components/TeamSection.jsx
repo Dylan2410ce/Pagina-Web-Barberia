@@ -6,6 +6,7 @@ import {
   Phone,
   Scissors,
 } from "lucide-react";
+import BarberPhoto from "./BarberPhoto";
 
 function whatsappUrl(phone) {
   return `https://wa.me/506${String(phone || "").replace(/\D/g, "")}`;
@@ -22,7 +23,7 @@ export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
         <div>
           <span className="eyebrow">Nuestro equipo</span>
           <h2>Elige tu barbero.</h2>
-          <p>Dos agendas independientes, los mismos servicios y precios claros.</p>
+          <p>Conoce su estilo y reserva directamente en su agenda.</p>
         </div>
       </div>
 
@@ -32,8 +33,8 @@ export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
           return (
             <article className={`team-card ${activo ? "activo" : ""}`} key={barbero.id}>
               <div className={`team-visual team-visual-${index + 1}`}>
-                <span>{barbero.name.slice(0, 1)}</span>
-                <Scissors size={32} />
+                <BarberPhoto nombre={barbero.name} />
+                <span className="team-photo-accent"><Scissors size={24} /></span>
               </div>
               <div className="team-card-body">
                 <div className="team-card-head">
@@ -44,8 +45,8 @@ export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
                   {activo && <span className="team-selected"><Check size={15} />Elegido</span>}
                 </div>
                 <p>
-                  {barbero.name === "Sebastian"
-                    ? "Tecnica precisa, degradados limpios y atencion al detalle."
+                  {barbero.name.toLocaleLowerCase("es-CR").startsWith("sebas")
+                    ? "Técnica precisa, degradados limpios y atención al detalle."
                     : "Cortes actuales, trato directo y una agenda hecha a su ritmo."}
                 </p>
                 <div className="team-contact" aria-label={`Contacto de ${barbero.name}`}>

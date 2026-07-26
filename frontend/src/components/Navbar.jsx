@@ -7,7 +7,7 @@ export default function Navbar({ abierto, solida, onToggle }) {
 
   return (
     <header className={`navbar ${solida ? "navbar-solida" : ""}`}>
-      <nav className="nav-contenido" aria-label="Navegacion principal">
+      <nav className="nav-contenido" aria-label="Navegación principal">
         <a className="marca" href="#inicio" onClick={cerrar} aria-label="Sebas Barber, inicio">
           <span><Scissors size={20} /></span>
           <strong>Sebas Barber</strong>
@@ -16,7 +16,7 @@ export default function Navbar({ abierto, solida, onToggle }) {
           className="hamburguesa"
           type="button"
           onClick={onToggle}
-          aria-label={abierto ? "Cerrar menu" : "Abrir menu"}
+          aria-label={abierto ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={abierto}
         >
           {abierto ? <X size={22} /> : <Menu size={22} />}
@@ -24,7 +24,7 @@ export default function Navbar({ abierto, solida, onToggle }) {
         <div className={`nav-links ${abierto ? "abierto" : ""}`}>
           <a href="#equipo" onClick={cerrar}>Equipo</a>
           <a href="#servicios" onClick={cerrar}>Servicios</a>
-          <a href="#ubicacion" onClick={cerrar}>Ubicacion</a>
+          <a href="#ubicacion" onClick={cerrar}>Ubicación</a>
           <a className="nav-reservar" href="#reserva" onClick={cerrar}>Reservar</a>
           <a href="#mis-citas" onClick={cerrar}>Mis citas</a>
           <a href="/admin" onClick={cerrar}>Admin</a>

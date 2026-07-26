@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Code2 } from "lucide-react";
 import { adminApi, borrarToken, guardarToken, obtenerToken, publicoApi } from "./api/client";
 import AdminPanel from "./components/AdminPanel";
 import BookingSuccessModal from "./components/BookingSuccessModal";
@@ -10,6 +11,7 @@ import LocationSection from "./components/LocationSection";
 import MapModal from "./components/MapModal";
 import Navbar from "./components/Navbar";
 import ServiceMenu from "./components/ServiceMenu";
+import ScrollToTop from "./components/ScrollToTop";
 import TeamSection from "./components/TeamSection";
 import Toasts from "./components/Toasts";
 import { enviarCorreosCita } from "./services/emailjsService";
@@ -190,7 +192,7 @@ export default function App() {
         if (tokenGuardado) await cargarAdmin(tokenGuardado, adminBase.filtros);
       } catch (error) {
         setCargando(false);
-        avisar("error", "La agenda no cargo", error.message);
+        avisar("error", "La agenda no cargó", error.message);
       }
     }
     iniciar();
@@ -252,7 +254,7 @@ export default function App() {
     if (!barberoActivo) return avisar("warning", "Escoge un barbero");
     if (!servicioActivo) return avisar("warning", "Escoge un servicio");
     if (reserva.start_min === null) return avisar("warning", "Escoge una hora");
-    if (!validarTelefono(telefono)) return avisar("warning", "Revisa el telefono", "Usa 8 digitos de Costa Rica.");
+    if (!validarTelefono(telefono)) return avisar("warning", "Revisa el teléfono", "Usa 8 dígitos de Costa Rica.");
 
     setProcesando("Reservando tu espacio...");
     try {
@@ -282,7 +284,7 @@ export default function App() {
   const buscarCitas = async (event) => {
     event.preventDefault();
     const telefono = limpiarTelefono(telefonoBusqueda);
-    if (!validarTelefono(telefono)) return avisar("warning", "Telefono invalido");
+    if (!validarTelefono(telefono)) return avisar("warning", "Teléfono inválido");
     setProcesando("Buscando tus citas...");
     try {
       const citas = await publicoApi.buscarPorTelefono(telefono);
@@ -297,8 +299,8 @@ export default function App() {
   };
 
   const cancelarCliente = async (id) => {
-    if (!telefonoBusqueda) return avisar("warning", "Busca primero por telefono");
-    if (!confirm("Quieres cancelar esta cita?")) return;
+    if (!telefonoBusqueda) return avisar("warning", "Busca primero por teléfono");
+    if (!confirm("¿Quieres cancelar esta cita?")) return;
     setProcesando("Liberando el espacio...");
     try {
       await publicoApi.cancelarCita(id, { phone: telefonoBusqueda, reason: "Cancelada desde la web" });
@@ -409,7 +411,7 @@ export default function App() {
     setProcesando("Actualizando clave...");
     try {
       await adminApi.resetPassword(data);
-      avisar("ok", "Clave actualizada", "Ya puedes entrar con tu nueva contrasena.");
+      avisar("ok", "Clave actualizada", "Ya puedes entrar con tu nueva contraseña.");
       return true;
     } catch (error) {
       avisar("error", "No se pudo cambiar", error.message);
@@ -425,7 +427,7 @@ export default function App() {
       await adminApi.changePassword(admin.token, data);
       borrarToken();
       setAdmin({ ...adminBase });
-      avisar("ok", "Clave actualizada", "Inicia sesion de nuevo para continuar.");
+      avisar("ok", "Clave actualizada", "Inicia sesión de nuevo para continuar.");
       return true;
     } catch (error) {
       avisar("error", "No se pudo cambiar", error.message);
@@ -438,7 +440,7 @@ export default function App() {
   const cerrarAdmin = () => {
     borrarToken();
     setAdmin(adminBase);
-    avisar("ok", "Sesion cerrada");
+    avisar("ok", "Sesión cerrada");
   };
 
   const cambiarTabAdmin = async (tab) => {
@@ -591,7 +593,7 @@ export default function App() {
                       {slot.label}
                     </button>
                   ))}
-                  {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese dia.</div>}
+                  {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese día.</div>}
                 </div>
                 <button className="btn btn-principal btn-ancho" type="button" onClick={confirmarReprogramacion}>
                   Guardar cambio
@@ -662,12 +664,27 @@ export default function App() {
         />
       </main>
       <footer className="footer">
-        <div>
-          <strong>Sebas Barber</strong>
-          <span>Dos barberos, horarios claros y una reserva sin vueltas.</span>
+        <div className="footer-main">
+          <div className="footer-brand">
+            <strong>Sebas Barber</strong>
+            <span>Cortes precisos. Agenda clara. Buen servicio.</span>
+          </div>
+          <nav aria-label="Enlaces del pie de página">
+            <a href="#equipo">Barberos</a>
+            <a href="#servicios">Servicios</a>
+            <a href="#reserva">Reservar</a>
+            <a href="#ubicacion">Ubicación</a>
+          </nav>
         </div>
-        <small>Pagina web creada y desarrollada por Dylan Calvo Escobar, 2026. Todos los derechos reservados.</small>
+        <div className="footer-legal">
+          <small>© {new Date().getFullYear()} Sebas Barber. Todos los derechos reservados.</small>
+          <small className="footer-credit">
+            <Code2 size={14} />
+            Desarrollado por <span>Dylan Calvo Escobar</span> | Innovación y tecnología.
+          </small>
+        </div>
       </footer>
+      <ScrollToTop />
       {modalMapa && <MapModal location={datos.location} onClose={() => setModalMapa(false)} />}
       {citaConfirmada && (
         <BookingSuccessModal
@@ -700,7 +717,7 @@ export default function App() {
                     {slot.label}
                   </button>
                 ))}
-                {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese dia.</div>}
+                {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese día.</div>}
               </div>
               <button className="btn btn-principal btn-ancho" type="button" onClick={confirmarReprogramacion}>
                 Guardar cambio

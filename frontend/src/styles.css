@@ -139,12 +139,12 @@ label {
 .seccion {
   width: min(1160px, calc(100% - 28px));
   margin: 0 auto;
-  padding: 64px 0;
+  padding: 76px 0;
   scroll-margin-top: 82px;
 }
 
 .bloque {
-  padding-top: 72px;
+  padding-top: 88px;
 }
 
 .eyebrow,
@@ -504,12 +504,12 @@ label {
 }
 
 .team-section {
-  padding-bottom: 34px;
+  padding-bottom: 54px;
 }
 
 .team-grid {
   display: grid;
-  gap: 14px;
+  gap: 20px;
 }
 
 .team-card {
@@ -536,23 +536,20 @@ label {
 
 .team-visual {
   position: relative;
-  min-height: 156px;
+  min-height: 260px;
   overflow: hidden;
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  padding: 20px;
   color: var(--text);
   isolation: isolate;
 }
 
-.team-visual::before {
+.team-visual::after {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 1;
   background:
-    linear-gradient(120deg, rgba(16, 18, 19, 0.18), rgba(16, 18, 19, 0.78)),
-    repeating-linear-gradient(135deg, transparent 0 24px, rgba(255, 255, 255, 0.035) 24px 25px);
+    linear-gradient(180deg, transparent 48%, rgba(10, 12, 13, 0.78) 100%),
+    linear-gradient(110deg, rgba(212, 175, 55, 0.08), transparent 54%);
+  pointer-events: none;
   content: "";
 }
 
@@ -564,16 +561,51 @@ label {
   background: #326b72;
 }
 
-.team-visual > span {
+.barber-photo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.barber-photo-fallback {
+  color: rgba(255, 250, 242, 0.92);
   font-family: "Oswald", "Arial Narrow", sans-serif;
   font-size: 6rem;
   font-weight: 700;
-  line-height: 0.78;
-  opacity: 0.94;
+  line-height: 1;
 }
 
-.team-visual > svg {
+.barber-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 24%;
+  transition: transform 0.5s ease, filter 0.3s ease;
+}
+
+.team-card:hover .barber-photo img {
+  transform: scale(1.035);
+  filter: contrast(1.03);
+}
+
+.team-photo-accent {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
   color: var(--gold-light);
+  background: rgba(14, 16, 17, 0.72);
+  backdrop-filter: blur(8px);
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
 }
 
@@ -1067,17 +1099,21 @@ label {
   color: var(--green);
 }
 
-.booking-barber-avatar {
+.barber-photo-compacta {
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 6px;
-  display: grid;
-  place-items: center;
   color: #17130a;
   background: var(--gold-light);
-  font-family: "Oswald", "Arial Narrow", sans-serif;
+}
+
+.barber-photo-compacta .barber-photo-fallback {
   font-size: 1.4rem;
-  font-weight: 700;
+}
+
+.barber-photo-compacta img {
+  object-position: center 22%;
 }
 
 .barber-choice {
@@ -1487,24 +1523,102 @@ label {
   width: min(1160px, calc(100% - 28px));
   margin: 0 auto;
   display: grid;
-  gap: 10px;
-  padding: 30px 0 92px;
+  gap: 24px;
+  border-top: 1px solid var(--line);
+  padding: 40px 0 92px;
   color: var(--muted);
 }
 
-.footer > div {
+.footer-main {
   display: grid;
-  gap: 4px;
+  gap: 22px;
 }
 
-.footer strong {
+.footer-brand {
+  display: grid;
+  gap: 6px;
+}
+
+.footer-brand strong {
   color: var(--text);
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-size: 1.45rem;
+  text-transform: uppercase;
 }
 
-.footer span,
+.footer-brand > span,
 .footer small {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   line-height: 1.5;
+}
+
+.footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.footer nav a {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: color 0.2s ease;
+}
+
+.footer nav a:hover {
+  color: var(--gold-light);
+}
+
+.footer-legal {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.footer-credit {
+  display: block;
+}
+
+.footer-credit svg {
+  margin-right: 5px;
+  vertical-align: -3px;
+}
+
+.footer-credit svg,
+.footer-credit span {
+  color: var(--gold-light);
+}
+
+.scroll-top {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 38;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(240, 207, 114, 0.44);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #17130a;
+  background: var(--gold-light);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.22s ease, transform 0.22s ease, background 0.22s ease;
+}
+
+.scroll-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.scroll-top:hover {
+  background: #f7d985;
+  transform: translateY(-2px);
 }
 
 .pantalla-carga,
@@ -1680,12 +1794,20 @@ label {
   border-left: 4px solid var(--gold);
   border-radius: 8px;
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
   gap: 4px;
-  padding: 14px 46px 14px 14px;
+  column-gap: 10px;
+  padding: 14px;
   color: var(--text);
   background: rgba(30, 34, 36, 0.98);
   box-shadow: var(--shadow);
   animation: stage-in 0.22s ease;
+}
+
+.toast > div {
+  display: grid;
+  gap: 3px;
 }
 
 .toast span {
@@ -1694,9 +1816,6 @@ label {
 }
 
 .toast button {
-  position: absolute;
-  top: 9px;
-  right: 9px;
   width: 30px;
   height: 30px;
   border: 0;
@@ -1705,6 +1824,19 @@ label {
   place-items: center;
   color: var(--text);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.toast-icon {
+  margin-top: 1px;
+  color: var(--gold-light);
+}
+
+.toast-ok .toast-icon {
+  color: var(--green);
+}
+
+.toast-error .toast-icon {
+  color: var(--red);
 }
 
 .toast-ok {
@@ -2476,11 +2608,11 @@ label {
 @media (min-width: 760px) {
   .seccion {
     width: min(1160px, calc(100% - 48px));
-    padding-block: 82px;
+    padding-block: 96px;
   }
 
   .bloque {
-    padding-top: 92px;
+    padding-top: 112px;
   }
 
   .hero {
@@ -2528,7 +2660,7 @@ label {
   }
 
   .team-card {
-    grid-template-columns: minmax(145px, 0.7fr) minmax(0, 1.3fr);
+    grid-template-columns: minmax(210px, 0.9fr) minmax(0, 1.1fr);
   }
 
   .team-visual {
@@ -2610,13 +2742,22 @@ label {
 
   .footer {
     width: min(1160px, calc(100% - 48px));
-    grid-template-columns: 1fr auto;
-    align-items: end;
+    gap: 30px;
     padding-bottom: 34px;
   }
 
-  .footer small {
-    max-width: 520px;
+  .footer-main,
+  .footer-legal {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .footer nav {
+    justify-content: flex-end;
+  }
+
+  .footer-legal small:last-child {
+    justify-content: flex-end;
     text-align: right;
   }
 

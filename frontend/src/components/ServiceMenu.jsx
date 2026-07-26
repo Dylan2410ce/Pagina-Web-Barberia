@@ -36,15 +36,15 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Servicios y precios</span>
-          <h2>Elige el estilo. El precio ya esta claro.</h2>
+          <h2>Elige tu servicio. El precio está claro.</h2>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>
           <Image size={18} />
-          Ver menu impreso
+          Ver menú impreso
         </button>
       </div>
 
-      <div className="filtros-servicios reveal" role="tablist" aria-label="Categorias de servicios">
+      <div className="filtros-servicios reveal" role="tablist" aria-label="Categorías de servicios">
         {categorias.map((item) => (
           <button
             className={categoria === item.id ? "activo" : ""}
@@ -122,9 +122,9 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
 
       {mostrarPoster && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setMostrarPoster(false)}>
-          <section className="modal modal-poster" role="dialog" aria-modal="true" aria-label="Menu oficial" onMouseDown={(event) => event.stopPropagation()}>
+          <section className="modal modal-poster" role="dialog" aria-modal="true" aria-label="Menú oficial" onMouseDown={(event) => event.stopPropagation()}>
             <header>
-              <strong>Menu oficial de precios</strong>
+              <strong>Menú oficial de precios</strong>
               <button className="icon-btn" type="button" onClick={() => setMostrarPoster(false)} aria-label="Cerrar">
                 <X size={19} />
               </button>

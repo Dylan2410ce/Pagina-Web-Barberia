@@ -8,12 +8,12 @@ export default function ClientAppointments({ telefono, setTelefono, citas, barbe
         <div>
           <span className="eyebrow">Mis citas</span>
           <h2>Consulta, cambia o cancela.</h2>
-          <p>Usa el mismo numero de WhatsApp con el que reservaste.</p>
+          <p>Usa el mismo número de WhatsApp con el que reservaste.</p>
         </div>
       </div>
       <div className="client-search-layout reveal">
         <form className="client-search" onSubmit={onBuscar}>
-          <label htmlFor="lookup-phone">Numero de WhatsApp</label>
+          <label htmlFor="lookup-phone">Número de WhatsApp</label>
           <div>
             <input
               id="lookup-phone"
@@ -34,8 +34,8 @@ export default function ClientAppointments({ telefono, setTelefono, citas, barbe
           {citas.length === 0 && (
             <div className="empty-appointments">
               <CalendarClock size={26} />
-              <strong>Tus reservas apareceran aqui</strong>
-              <span>Escribe tu numero y toca Buscar citas.</span>
+              <strong>Tus reservas aparecerán aquí</strong>
+              <span>Escribe tu número y toca “Buscar citas”.</span>
             </div>
           )}
           {citas.map((cita) => (

@@ -1,18 +1,32 @@
 import emailjs from "@emailjs/browser";
 import { dinero, fechaHumana } from "../utils/format";
 
-const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_o9hd76x";
-const EMAILJS_TEMPLATE_CLIENTE = import.meta.env.VITE_EMAILJS_TEMPLATE_CLIENTE || "template_t0wm7yn";
-const EMAILJS_TEMPLATE_BARBERO = import.meta.env.VITE_EMAILJS_TEMPLATE_BARBERO || "template_4zjh1wk";
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "Q1abm6KXrqLgnkHFR";
-const BARBERO_EMAIL = import.meta.env.VITE_BARBERO_EMAIL || "sebasbarberg2021@gmail.com";
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || "";
+const EMAILJS_TEMPLATE_CLIENTE = (
+  import.meta.env.VITE_EMAILJS_TEMPLATE_CLIENTE
+  || import.meta.env.VITE_EMAILJS_CLIENT_TEMPLATE_ID
+  || ""
+);
+const EMAILJS_TEMPLATE_BARBERO = (
+  import.meta.env.VITE_EMAILJS_TEMPLATE_BARBERO
+  || import.meta.env.VITE_EMAILJS_BARBER_TEMPLATE_ID
+  || ""
+);
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "";
+const BARBERO_EMAIL = import.meta.env.VITE_BARBERO_EMAIL || "";
 
-const UBICACION = "C. 19, Provincia de Puntarenas, Espiritu Santo, Barrio Maranonal";
+const UBICACION = "C. 19, Provincia de Puntarenas, Espíritu Santo, Barrio Marañonal";
 const MAPS_URL = "https://www.google.com/maps?q=10.002565,-84.657672";
 const WAZE_URL = "https://waze.com/ul?ll=10.002565,-84.657672&navigate=yes";
 
 function puedeEnviar() {
-  return Boolean(EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_CLIENTE && EMAILJS_TEMPLATE_BARBERO && EMAILJS_PUBLIC_KEY);
+  return Boolean(
+    EMAILJS_SERVICE_ID
+    && EMAILJS_TEMPLATE_CLIENTE
+    && EMAILJS_TEMPLATE_BARBERO
+    && EMAILJS_PUBLIC_KEY
+    && BARBERO_EMAIL
+  );
 }
 
 function parametrosBase(cita, resumen = {}) {
@@ -54,8 +68,8 @@ async function enviar(templateId, parametros) {
 
 export async function enviarCorreosCita(cita, resumen) {
   if (!puedeEnviar()) {
-    console.warn("EmailJS no esta configurado. Falta VITE_EMAILJS_PUBLIC_KEY.");
-    return { enviados: false, motivo: "EmailJS sin public key" };
+    console.warn("EmailJS no está configurado en este despliegue.");
+    return { enviados: false, motivo: "EmailJS sin configuración completa" };
   }
 
   const parametros = parametrosBase(cita, resumen);

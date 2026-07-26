@@ -8,9 +8,9 @@ export default function Hero({ barberos = [], barbero, primerSlot, onMapa }) {
         <div className="hero-copy reveal">
           <span className="hero-status">
             <span />
-            {primerSlot ? `Proxima hora libre: ${primerSlot}` : "Dos agendas disponibles"}
+            {primerSlot ? `Próxima hora libre: ${primerSlot}` : "Dos agendas disponibles"}
           </span>
-          <p className="hero-kicker">Barberia en Esparza</p>
+          <p className="hero-kicker">Barbería en Esparza</p>
           <h1>Sebas Barber</h1>
           <p className="hero-lead">
             Cortes limpios, barba precisa y una cita que reservas desde el celular en menos de un minuto.
@@ -22,11 +22,11 @@ export default function Hero({ barberos = [], barbero, primerSlot, onMapa }) {
             </a>
             <button className="btn btn-cristal" type="button" onClick={onMapa}>
               <MapPinned size={19} />
-              Como llegar
+              Cómo llegar
             </button>
           </div>
-          <div className="hero-facts" aria-label="Informacion de la barberia">
-            <span><Scissors size={16} />{barbero?.name || barberos.map((item) => item.name).join(" y ") || "Sebastian y Gabriel"}</span>
+          <div className="hero-facts" aria-label="Información de la barbería">
+            <span><Scissors size={16} />{barbero?.name || barberos.map((item) => item.name).join(" y ") || "Sebastián y Gabriel"}</span>
             <span><Clock3 size={16} />Citas desde las 8:00 a. m.</span>
           </div>
         </div>

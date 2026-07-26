@@ -31,8 +31,6 @@ import {
   textoEstado,
 } from "../utils/format";
 
-const CALENDAR_EMBED_URL = "https://calendar.google.com/calendar/embed?src=sebasbarberg2021%40gmail.com&ctz=America%2FCosta_Rica";
-
 const secciones = [
   { id: "resumen", label: "Resumen", icon: LayoutDashboard },
   { id: "agenda", label: "Agenda", icon: CalendarCheck2 },
@@ -70,8 +68,8 @@ export default function AdminPanel({
           <div><strong>Sebas Barber</strong><small>Panel de control</small></div>
         </a>
         <div className="admin-user">
-          <div><strong>{admin.perfil?.name || "Sebastian"}</strong><small>{admin.perfil?.role || "Administrador"}</small></div>
-          <button className="icon-btn" type="button" onClick={onSalir} aria-label="Cerrar sesion" title="Cerrar sesion">
+          <div><strong>{admin.perfil?.name || "Sebastián"}</strong><small>{admin.perfil?.role || "Administrador"}</small></div>
+          <button className="icon-btn" type="button" onClick={onSalir} aria-label="Cerrar sesión" title="Cerrar sesión">
             <LogOut size={18} />
           </button>
         </div>
@@ -151,11 +149,11 @@ function Login({ onLogin, onResetPassword }) {
           <span className="admin-login-mark"><Scissors size={26} /></span>
           <span className="eyebrow"><ShieldCheck size={14} />Acceso privado</span>
           <h1>Controla la agenda sin enredos.</h1>
-          <p>Citas, bloqueos, horarios, servicios y numeros del negocio en un solo lugar.</p>
+          <p>Citas, bloqueos, horarios, servicios y números del negocio en un solo lugar.</p>
         </div>
         <div className="admin-login-form">
           <div>
-            <h2>Iniciar sesion</h2>
+            <h2>Iniciar sesión</h2>
             <p>Usa tu cuenta personal para abrir solamente tu agenda.</p>
           </div>
           <form className="formulario grid gap-4" onSubmit={enviarLogin}>
@@ -172,7 +170,7 @@ function Login({ onLogin, onResetPassword }) {
               />
             </div>
             <div className="campo">
-              <label htmlFor="admin-password">Contrasena</label>
+              <label htmlFor="admin-password">Contraseña</label>
               <input
                 id="admin-password"
                 name="password"
@@ -187,7 +185,7 @@ function Login({ onLogin, onResetPassword }) {
             <button className="btn btn-principal btn-ancho" type="submit">Entrar al panel</button>
           </form>
           <details className="reset-box">
-            <summary>Olvide mi contrasena</summary>
+            <summary>Olvidé mi contraseña</summary>
             <form className="formulario grid gap-3" onSubmit={enviarRecuperacion}>
               <input
                 name="username"
@@ -201,8 +199,8 @@ function Login({ onLogin, onResetPassword }) {
                 name="master_code"
                 minLength={32}
                 value={resetForm.master_code}
-                placeholder="Codigo maestro"
-                aria-label="Codigo maestro"
+                placeholder="Código maestro"
+                aria-label="Código maestro"
                 required
                 onChange={(event) => setResetForm((actual) => ({ ...actual, master_code: event.target.value }))}
               />
@@ -211,12 +209,12 @@ function Login({ onLogin, onResetPassword }) {
                 type="password"
                 minLength={8}
                 value={resetForm.new_password}
-                placeholder="Nueva contrasena"
-                aria-label="Nueva contrasena"
+                placeholder="Nueva contraseña"
+                aria-label="Nueva contraseña"
                 required
                 onChange={(event) => setResetForm((actual) => ({ ...actual, new_password: event.target.value }))}
               />
-              <button className="btn btn-secundario" type="submit">Cambiar contrasena</button>
+              <button className="btn btn-secundario" type="submit">Cambiar contraseña</button>
             </form>
           </details>
         </div>
@@ -247,7 +245,7 @@ function Dashboard({ data, stats, perfil, onTab }) {
     <>
       <PageHead
         eyebrow="Resumen"
-        title={`Buen dia, ${perfil?.name || "barbero"}.`}
+        title={`Buen día, ${perfil?.name || "barbero"}.`}
         text="Esto es lo importante de hoy y del mes actual."
         action={<button className="btn btn-principal" type="button" onClick={() => onTab("bloqueos")}><CalendarOff size={17} />Bloquear agenda</button>}
       />
@@ -260,7 +258,7 @@ function Dashboard({ data, stats, perfil, onTab }) {
       <div className="dashboard-grid">
         <section className="admin-panel">
           <div className="admin-panel-head">
-            <div><span>Agenda</span><h2>Proximas citas</h2></div>
+            <div><span>Agenda</span><h2>Próximas citas</h2></div>
             <button className="btn btn-linea" type="button" onClick={() => onTab("agenda")}>Ver agenda</button>
           </div>
           <div className="upcoming-list">
@@ -271,12 +269,12 @@ function Dashboard({ data, stats, perfil, onTab }) {
                 <div><strong>{fechaHumana(cita.starts_at)}</strong><small>{dinero(cita.total_price)}</small></div>
               </article>
             ))}
-            {proximas.length === 0 && <EmptyState text="No hay citas proximas." />}
+            {proximas.length === 0 && <EmptyState text="No hay citas próximas." />}
           </div>
         </section>
         <aside className="admin-panel month-snapshot">
           <div className="admin-panel-head"><div><span>Mes actual</span><h2>Rendimiento</h2></div></div>
-          <div className="snapshot-row"><span>Servicio mas pedido</span><strong>{monthly.top_service || "Sin datos"}</strong></div>
+          <div className="snapshot-row"><span>Servicio más pedido</span><strong>{monthly.top_service || "Sin datos"}</strong></div>
           <div className="snapshot-row"><span>Ingresos proyectados</span><strong>{dinero(monthly.projected_income || 0)}</strong></div>
           <div className="snapshot-row"><span>Cancelaciones</span><strong>{monthly.cancellation_rate || 0}%</strong></div>
           <button className="btn btn-secundario btn-ancho" type="button" onClick={() => onTab("reportes")}>Abrir reportes</button>
@@ -292,7 +290,7 @@ function Agenda({ admin, onFiltrar, onEstado, onMover }) {
       <PageHead eyebrow="Agenda" title="Citas y asistencia" text="Busca una reserva, confirma la visita o cambia la hora." />
       <section className="admin-panel">
         <form className="admin-filters" onSubmit={onFiltrar}>
-          <div className="filter-search"><Search size={17} /><input name="q" placeholder="Cliente, telefono o servicio" defaultValue={admin.filtros.q || ""} /></div>
+          <div className="filter-search"><Search size={17} /><input name="q" placeholder="Cliente, teléfono o servicio" defaultValue={admin.filtros.q || ""} /></div>
           <input name="date" type="date" defaultValue={admin.filtros.date || hoyISO()} aria-label="Fecha" />
           <select name="status" defaultValue={admin.filtros.status || ""} aria-label="Estado">
             <option value="">Todos los estados</option>
@@ -318,8 +316,8 @@ function Agenda({ admin, onFiltrar, onEstado, onMover }) {
               <div className="appointment-actions">
                 {cita.status === "booked" && (
                   <>
-                    <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "present")}><CheckCircle2 size={16} />Asistio</button>
-                    <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "noshow")}><XCircle size={16} />No asistio</button>
+                    <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "present")}><CheckCircle2 size={16} />Asistió</button>
+                    <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "noshow")}><XCircle size={16} />No asistió</button>
                   </>
                 )}
                 {["booked", "blocked"].includes(cita.status) && (
@@ -375,12 +373,12 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
 
   return (
     <>
-      <PageHead eyebrow="Disponibilidad" title="Bloquea un dia o unas horas" text="Usa un cierre completo para descanso y un rango para diligencias o citas tomadas por fuera." />
+      <PageHead eyebrow="Disponibilidad" title="Bloquea un día o unas horas" text="Usa un cierre completo para descanso y un rango para diligencias o citas tomadas por fuera." />
       <div className="block-admin-grid">
         <section className="admin-panel">
           <div className="segmented-control" aria-label="Tipo de bloqueo">
             <button className={modo === "horas" ? "activo" : ""} type="button" onClick={() => setModo("horas")}><Clock3 size={17} />Unas horas</button>
-            <button className={modo === "dia" ? "activo" : ""} type="button" onClick={() => setModo("dia")}><CalendarDays size={17} />Dia completo</button>
+            <button className={modo === "dia" ? "activo" : ""} type="button" onClick={() => setModo("dia")}><CalendarDays size={17} />Día completo</button>
           </div>
           <form className="block-form" onSubmit={guardarBloqueo}>
             <div className="campo">
@@ -398,7 +396,7 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
             {modo === "horas" && (
               <>
                 <div className="quick-ranges">
-                  <button type="button" onClick={() => usarRango("08:00", "12:00")}>Manana</button>
+                  <button type="button" onClick={() => usarRango("08:00", "12:00")}>Mañana</button>
                   <button type="button" onClick={() => usarRango("12:00", "13:00")}>Almuerzo</button>
                   <button type="button" onClick={() => usarRango("13:00", "17:00")}>Tarde</button>
                   <button type="button" onClick={() => usarRango("17:00", "19:00")}>Cierre</button>
@@ -425,24 +423,28 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
           </form>
         </section>
         <section className="admin-panel calendar-panel">
-          {perfil?.calendar_sync ? (
+          {perfil?.calendar_connected && perfil?.calendar_embed_url ? (
             <>
               <div className="admin-panel-head"><div><span>Agenda conectada</span><h2>Semana visible</h2></div></div>
-              <iframe className="admin-calendar-frame" title="Calendario de Sebastian" src={CALENDAR_EMBED_URL} />
+              <iframe
+                className="admin-calendar-frame"
+                title={`Calendario de ${perfil?.name || "barbero"}`}
+                src={perfil.calendar_embed_url}
+              />
             </>
           ) : (
             <div className="local-agenda-state">
               <span><Database size={24} /></span>
               <div>
-                <small>Agenda personal</small>
-                <h2>Todo queda en este panel.</h2>
-                <p>Las citas y bloqueos de {perfil?.name || "este barbero"} se gestionan aqui y no se mezclan con otra agenda.</p>
+                <small>Agenda no conectada</small>
+                <h2>Revisa la configuración de Calendar.</h2>
+                <p>Las citas siguen protegidas en el sistema, pero falta conectar el calendario de {perfil?.name || "este barbero"}.</p>
               </div>
             </div>
           )}
           <div className="block-overview">
             <div className="admin-panel-head">
-              <div><span>Proximos</span><h2>Bloqueos activos</h2></div>
+              <div><span>Próximos</span><h2>Bloqueos activos</h2></div>
               <strong>{bloqueos.length}</strong>
             </div>
             <div className="block-list">
@@ -475,11 +477,11 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
 function Servicios({ servicios, onGuardar }) {
   return (
     <>
-      <PageHead eyebrow="Menu" title="Servicios y precios" text="Edita lo que aparece en la reserva. Los extras suman precio, no tiempo." />
+      <PageHead eyebrow="Menú" title="Servicios y precios" text="Edita lo que aparece en la reserva. Los extras suman precio, no tiempo." />
       <section className="admin-panel">
         <form className="service-create" onSubmit={(event) => onGuardar(event)}>
           <input name="name" placeholder="Nombre del servicio" required />
-          <label><span>Duracion</span><input name="duration_min" type="number" min="0" max="360" defaultValue="45" /></label>
+          <label><span>Duración</span><input name="duration_min" type="number" min="0" max="360" defaultValue="45" /></label>
           <label><span>Precio</span><input name="price" type="number" min="0" defaultValue="6000" /></label>
           <label className="toggle-line"><input name="is_addon" type="checkbox" /><span>Es un extra</span></label>
           <button className="btn btn-principal" type="submit"><Plus size={17} />Crear</button>
@@ -538,11 +540,11 @@ function Seguridad({ onChangePassword }) {
   const guardar = async (event) => {
     event.preventDefault();
     if (form.new_password !== form.confirmation) {
-      setError("Las contrasenas nuevas no coinciden.");
+      setError("Las contraseñas nuevas no coinciden.");
       return;
     }
     if (form.current_password === form.new_password) {
-      setError("Usa una contrasena diferente a la actual.");
+      setError("Usa una contraseña diferente a la actual.");
       return;
     }
 
@@ -559,20 +561,20 @@ function Seguridad({ onChangePassword }) {
     <>
       <PageHead
         eyebrow="Seguridad"
-        title="Cambia tu contrasena"
-        text="Actualiza el acceso desde una sesion abierta. Al guardar, deberas iniciar sesion otra vez."
+        title="Cambia tu contraseña"
+        text="Actualiza el acceso desde una sesión abierta. Al guardar, deberás iniciar sesión otra vez."
       />
       <section className="admin-panel max-w-xl">
         <div className="security-intro flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-950/30 p-4">
           <span className="security-icon"><ShieldCheck size={20} /></span>
           <div>
             <strong>Acceso del administrador</strong>
-            <p>La clave debe tener al menos 8 caracteres. No compartas el codigo maestro de recuperacion.</p>
+            <p>La clave debe tener al menos 8 caracteres. No compartas el código maestro de recuperación.</p>
           </div>
         </div>
         <form className="formulario security-form grid gap-4" onSubmit={guardar}>
           <div className="campo">
-            <label htmlFor="current-password">Contrasena actual</label>
+            <label htmlFor="current-password">Contraseña actual</label>
             <input
               id="current-password"
               type="password"
@@ -584,7 +586,7 @@ function Seguridad({ onChangePassword }) {
             />
           </div>
           <div className="campo">
-            <label htmlFor="new-password">Nueva contrasena</label>
+            <label htmlFor="new-password">Nueva contraseña</label>
             <input
               id="new-password"
               type="password"
@@ -596,7 +598,7 @@ function Seguridad({ onChangePassword }) {
             />
           </div>
           <div className="campo">
-            <label htmlFor="confirm-password">Repite la nueva contrasena</label>
+            <label htmlFor="confirm-password">Repite la nueva contraseña</label>
             <input
               id="confirm-password"
               type="password"
@@ -608,7 +610,7 @@ function Seguridad({ onChangePassword }) {
             />
           </div>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="btn btn-principal" type="submit"><LockKeyhole size={17} />Actualizar contrasena</button>
+          <button className="btn btn-principal" type="submit"><LockKeyhole size={17} />Actualizar contraseña</button>
         </form>
       </section>
     </>
@@ -645,7 +647,7 @@ function Reportes({ stats }) {
 
   return (
     <>
-      <PageHead eyebrow="Reportes" title="Numeros del mes" text="Ingresos, asistencia y servicios con mayor movimiento." />
+      <PageHead eyebrow="Reportes" title="Números del mes" text="Ingresos, asistencia y servicios con mayor movimiento." />
       <div className="admin-metrics report-metrics">
         <article><span>Generado</span><strong>{dinero(safe.income || 0)}</strong><small>{safe.attended || 0} completadas</small></article>
         <article><span>Proyectado</span><strong>{dinero(safe.projected_income || 0)}</strong><small>{safe.booked || 0} reservadas</small></article>
@@ -654,7 +656,7 @@ function Reportes({ stats }) {
       </div>
       <div className="reports-grid">
         <section className="admin-panel">
-          <div className="admin-panel-head"><div><span>Demanda</span><h2>Servicios mas pedidos</h2></div></div>
+          <div className="admin-panel-head"><div><span>Demanda</span><h2>Servicios más pedidos</h2></div></div>
           <div className="chart-list">
             {serviceBreakdown.map((item) => (
               <article key={item.name}>
@@ -670,7 +672,7 @@ function Reportes({ stats }) {
           <div className="chart-list">
             {dailyIncome.map((item) => (
               <article key={item.day}>
-                <div><strong>Dia {item.day}</strong><span>{item.count} citas | {dinero(item.income)}</span></div>
+                <div><strong>Día {item.day}</strong><span>{item.count} citas | {dinero(item.income)}</span></div>
                 <div className="chart-track"><i style={{ width: `${Math.max((item.income / maxDia) * 100, 6)}%` }} /></div>
               </article>
             ))}

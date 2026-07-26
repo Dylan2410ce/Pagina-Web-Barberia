@@ -60,7 +60,7 @@ export function textoEstado(estado) {
   const estados = {
     booked: "Reservada",
     present: "Completada",
-    noshow: "No asistio",
+    noshow: "No asistió",
     cancelled: "Cancelada",
     blocked: "Bloqueada",
   };
@@ -94,9 +94,9 @@ export function uid() {
 export const diasSemana = [
   "Lunes",
   "Martes",
-  "Miercoles",
+  "Miércoles",
   "Jueves",
   "Viernes",
-  "Sabado",
+  "Sábado",
   "Domingo",
 ];

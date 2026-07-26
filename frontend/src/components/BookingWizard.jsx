@@ -10,6 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { dinero, limpiarTelefono } from "../utils/format";
+import BarberPhoto from "./BarberPhoto";
 
 const pasos = [
   { id: 1, label: "Barbero" },
@@ -67,7 +68,7 @@ export default function BookingWizard({
         <div>
           <span className="eyebrow">Reserva online</span>
           <h2>Tu cita, lista en cuatro pasos.</h2>
-          <p>Cada barbero maneja su propia agenda. Solo veras espacios realmente libres.</p>
+          <p>Cada barbero tiene su propia agenda. Solo verás espacios realmente libres.</p>
         </div>
       </div>
 
@@ -92,8 +93,8 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>1 de 4</span>
-                <h3>Con quien quieres reservar?</h3>
-                <p>La disponibilidad cambia segun la agenda de cada barbero.</p>
+                <h3>¿Con quién quieres reservar?</h3>
+                <p>Elige a tu barbero para consultar sus horarios.</p>
               </div>
               <div className="booking-barber-grid">
                 {barberos.map((item) => {
@@ -106,7 +107,7 @@ export default function BookingWizard({
                       aria-pressed={activo}
                       onClick={() => onBarbero(item.id)}
                     >
-                      <span className="booking-barber-avatar">{item.name.slice(0, 1)}</span>
+                      <BarberPhoto nombre={item.name} compacta />
                       <span>
                         <strong>{item.name}</strong>
                         <small>{item.role}</small>
@@ -132,7 +133,7 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>2 de 4</span>
-                <h3>Que quieres hacerte?</h3>
+                <h3>¿Qué quieres hacerte?</h3>
                 <p>Escoge el servicio principal. Los extras suman precio, no tiempo.</p>
               </div>
 
@@ -207,8 +208,8 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>3 de 4</span>
-                <h3>Cuando te queda mejor?</h3>
-                <p>Estas horas pertenecen a la agenda de {barbero?.name}.</p>
+                <h3>¿Cuándo te queda mejor?</h3>
+                <p>Estas horas están disponibles con {barbero?.name}.</p>
               </div>
               <div className="campo">
                 <label htmlFor="booking-date">Fecha</label>
@@ -237,7 +238,7 @@ export default function BookingWizard({
                     </button>
                   ))}
                   {!cargandoSlots && slots.length === 0 && (
-                    <div className="slots-vacio">No quedan espacios ese dia. Prueba con otra fecha.</div>
+                    <div className="slots-vacio">No quedan espacios ese día. Prueba con otra fecha.</div>
                   )}
                 </div>
               </div>
@@ -263,7 +264,7 @@ export default function BookingWizard({
             <form className="wizard-stage formulario" onSubmit={onSubmit}>
               <div className="stage-heading">
                 <span>4 de 4</span>
-                <h3>A nombre de quien?</h3>
+                <h3>¿A nombre de quién?</h3>
                 <p>Usaremos estos datos para identificar tu cita.</p>
               </div>
               <div className="campo">
@@ -319,7 +320,7 @@ export default function BookingWizard({
               </div>
               <div className="privacy-note">
                 <ShieldCheck size={17} />
-                Tus datos se usan unicamente para gestionar esta cita.
+                Tus datos se usan únicamente para gestionar esta cita.
               </div>
               <div className="wizard-actions">
                 <button className="btn btn-linea" type="button" onClick={() => setPaso(3)}>
@@ -342,7 +343,7 @@ export default function BookingWizard({
             <li><span>Barbero</span><strong>{barbero?.name || "Por elegir"}</strong></li>
             <li><span>Fecha</span><strong>{reserva.date}</strong></li>
             <li><span>Hora</span><strong>{resumen.hora || "Por elegir"}</strong></li>
-            <li><span>Duracion</span><strong>{resumen.duracion || 0} min</strong></li>
+            <li><span>Duración</span><strong>{resumen.duracion || 0} min</strong></li>
           </ul>
           {resumen.extras.length > 0 && (
             <div className="resumen-extras">

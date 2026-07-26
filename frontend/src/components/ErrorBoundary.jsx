@@ -18,10 +18,10 @@ export default class ErrorBoundary extends Component {
     if (this.state.error) {
       return (
         <main className="pantalla-carga error-screen">
-          <h1>La pagina necesita recargarse.</h1>
+          <h1>La página necesita recargarse.</h1>
           <p>Las citas que ya fueron confirmadas no se pierden.</p>
           <button className="btn btn-principal" type="button" onClick={() => window.location.reload()}>
-            Recargar pagina
+            Recargar página
           </button>
         </main>
       );

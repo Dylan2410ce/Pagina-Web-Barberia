@@ -5,17 +5,17 @@ const trabajos = [
     src: "/corte-fade.jpg",
     alt: "Corte texturizado con fade limpio",
     titulo: "Textura y fade",
-    detalle: "Transicion suave y acabado natural.",
+    detalle: "Transición suave y acabado natural.",
   },
   {
     src: "/barba-perfilada.jpg",
     alt: "Barba perfilada con contornos definidos",
     titulo: "Barba definida",
-    detalle: "Lineas precisas y volumen equilibrado.",
+    detalle: "Líneas precisas y volumen equilibrado.",
   },
   {
     src: "/barberia-hero.jpg",
-    alt: "Sebas trabajando un corte en la barberia",
+    alt: "Sebas trabajando un corte en la barbería",
     titulo: "Detalle en cada corte",
     detalle: "Tiempo bien usado, sin trabajar a la carrera.",
   },
@@ -48,7 +48,7 @@ export default function Gallery() {
       <div className="service-promises reveal">
         <article><CheckCircle2 size={20} /><div><strong>Precio antes de confirmar</strong><span>Sin sorpresas al terminar.</span></div></article>
         <article><Clock3 size={20} /><div><strong>Tu hora queda apartada</strong><span>La agenda evita reservas dobles.</span></div></article>
-        <article><Sparkles size={20} /><div><strong>Atencion uno a uno</strong><span>Tu corte lleva su propio tiempo.</span></div></article>
+        <article><Sparkles size={20} /><div><strong>Atención uno a uno</strong><span>Tu corte lleva su propio tiempo.</span></div></article>
       </div>
     </section>
   );

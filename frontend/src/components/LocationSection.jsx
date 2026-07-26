@@ -17,7 +17,7 @@ export default function LocationSection({ location, horarios = [], barbero, onMa
     <section id="ubicacion" className="location-band">
       <div className="seccion location-grid">
         <div className="location-copy reveal">
-          <span className="eyebrow"><MapPinned size={14} />Ubicacion</span>
+          <span className="eyebrow"><MapPinned size={14} />Ubicación</span>
           <h2>Nos vemos en Barrio Maranonal.</h2>
           <p>{location.address}</p>
           <div className="location-actions">
@@ -41,7 +41,7 @@ export default function LocationSection({ location, horarios = [], barbero, onMa
           <div className="hours-head">
             <Clock3 size={20} />
             <div>
-              <strong>Horario de {barbero?.name || "Sebastian"}</strong>
+              <strong>Horario de {barbero?.name || "Sebastián"}</strong>
               <span>Selecciona otro barbero para consultar su horario.</span>
             </div>
           </div>
@@ -58,8 +58,8 @@ export default function LocationSection({ location, horarios = [], barbero, onMa
         <div className="reviews-strip reveal">
           <div>
             <span>Opiniones en Google</span>
-            <h3>Ya te atendiste con Sebas?</h3>
-            <p>Tu opinion ayuda a otros clientes a reservar con confianza.</p>
+            <h3>¿Ya te atendiste con Sebas?</h3>
+            <p>Tu opinión ayuda a otros clientes a reservar con confianza.</p>
           </div>
           <a className="btn btn-linea" href={location.googleMapsUrl} target="_blank" rel="noreferrer">
             Abrir Google Maps
