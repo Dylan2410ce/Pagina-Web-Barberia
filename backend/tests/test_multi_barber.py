@@ -10,6 +10,7 @@ from app.config import normalize_database_url
 from app.schemas import AppointmentCreate
 from app.services.appointment_service import AppointmentService
 from app.services.calendar_service import CR_TZ, rfc3339_costa_rica
+from app.services.password_service import verify_password
 
 
 class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
@@ -65,6 +66,9 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
                 client_phone="123",
                 unexpected=True,
             )
+
+    def test_unconfigured_account_cannot_authenticate(self):
+        self.assertFalse(verify_password("cualquier-clave", "unconfigured"))
 
 
 if __name__ == "__main__":

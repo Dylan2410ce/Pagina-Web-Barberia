@@ -70,29 +70,40 @@ async def seed_data(db: AsyncSession):
         barber = existing_barbers.get(profile["username"])
         if not barber:
             configured_hash = profile["password_hash"]()
+            credentials_initialized = False
             if configured_hash:
                 password_hash = configured_hash
+                credentials_initialized = True
             elif profile["password_configured"]():
                 password_hash = await asyncio.to_thread(
                     hash_password,
                     profile["password"](),
                 )
+                credentials_initialized = True
             else:
                 password_hash = "unconfigured"
             barber = Barber(
                 username=profile["username"],
                 password_hash=password_hash,
+                credentials_initialized=credentials_initialized,
             )
             db.add(barber)
-        elif barber.password_hash == "unconfigured":
-            configured_hash = profile["password_hash"]()
-            if configured_hash:
-                barber.password_hash = configured_hash
-            elif profile["password_configured"]():
-                barber.password_hash = await asyncio.to_thread(
-                    hash_password,
-                    profile["password"](),
-                )
+        elif not barber.credentials_initialized:
+            if profile["username"] == "sebas" and barber.password_hash != "unconfigured":
+                barber.credentials_initialized = True
+            else:
+                configured_hash = profile["password_hash"]()
+                if configured_hash:
+                    barber.password_hash = configured_hash
+                    barber.credentials_initialized = True
+                elif profile["password_configured"]():
+                    barber.password_hash = await asyncio.to_thread(
+                        hash_password,
+                        profile["password"](),
+                    )
+                    barber.credentials_initialized = True
+                else:
+                    barber.password_hash = "unconfigured"
 
         barber.name = profile["name"]
         barber.role = profile["role"]

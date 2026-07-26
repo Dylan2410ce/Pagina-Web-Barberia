@@ -52,6 +52,7 @@ async def reset_password(data: PasswordResetIn, db: AsyncSession = Depends(get_d
         raise HTTPException(status_code=404, detail="Barbero no encontrado")
 
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
+    barber.credentials_initialized = True
     await db.commit()
     return {"ok": True, "message": "Password actualizado"}
 
@@ -71,6 +72,7 @@ async def change_password(
         raise HTTPException(status_code=401, detail="La contrasena actual no es correcta")
 
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
+    barber.credentials_initialized = True
     await db.commit()
     return {"ok": True, "message": "Contrasena actualizada"}
 
