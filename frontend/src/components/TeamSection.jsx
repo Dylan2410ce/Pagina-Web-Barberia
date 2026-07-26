@@ -16,14 +16,19 @@ function phoneUrl(phone) {
   return `tel:+506${String(phone || "").replace(/\D/g, "")}`;
 }
 
+function telefonoDisponible(phone) {
+  const limpio = String(phone || "").replace(/\D/g, "");
+  return /^[24678]\d{7}$/.test(limpio) && !/^0+$/.test(limpio);
+}
+
 export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
   return (
     <section id="equipo" className="seccion bloque team-section">
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Nuestro equipo</span>
-          <h2>Elige tu barbero.</h2>
-          <p>Conoce su estilo y reserva directamente en su agenda.</p>
+          <h2>Tu estilo, en buenas manos.</h2>
+          <p>Elige con quién atenderte y reserva directamente.</p>
         </div>
       </div>
 
@@ -46,35 +51,41 @@ export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
                 </div>
                 <p>
                   {barbero.name.toLocaleLowerCase("es-CR").startsWith("sebas")
-                    ? "Técnica precisa, degradados limpios y atención al detalle."
-                    : "Cortes actuales, trato directo y una agenda hecha a su ritmo."}
+                    ? "Degradados precisos, textura limpia y atención al detalle."
+                    : "Cortes actuales, acabados definidos y trato directo."}
                 </p>
                 <div className="team-contact" aria-label={`Contacto de ${barbero.name}`}>
-                  <a
-                    href={barbero.instagram_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Instagram de ${barbero.name}`}
-                    title="Instagram"
-                  >
-                    <Instagram size={18} />
-                  </a>
-                  <a
-                    href={whatsappUrl(barbero.phone)}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`WhatsApp de ${barbero.name}`}
-                    title="WhatsApp"
-                  >
-                    <MessageCircle size={18} />
-                  </a>
-                  <a
-                    href={phoneUrl(barbero.phone)}
-                    aria-label={`Llamar a ${barbero.name}`}
-                    title="Llamar"
-                  >
-                    <Phone size={18} />
-                  </a>
+                  {barbero.instagram_url && (
+                    <a
+                      href={barbero.instagram_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Instagram de ${barbero.name}`}
+                      title="Instagram"
+                    >
+                      <Instagram size={18} />
+                    </a>
+                  )}
+                  {telefonoDisponible(barbero.phone) && (
+                    <>
+                      <a
+                        href={whatsappUrl(barbero.phone)}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`WhatsApp de ${barbero.name}`}
+                        title="WhatsApp"
+                      >
+                        <MessageCircle size={18} />
+                      </a>
+                      <a
+                        href={phoneUrl(barbero.phone)}
+                        aria-label={`Llamar a ${barbero.name}`}
+                        title="Llamar"
+                      >
+                        <Phone size={18} />
+                      </a>
+                    </>
+                  )}
                 </div>
                 <button
                   className={`btn btn-ancho ${activo ? "btn-secundario" : "btn-principal"}`}

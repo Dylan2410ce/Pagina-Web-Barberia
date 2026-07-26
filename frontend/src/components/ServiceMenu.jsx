@@ -12,15 +12,24 @@ const categorias = [
 function categoriaDe(nombre = "") {
   const texto = nombre.toLowerCase();
   if (texto.includes("barba")) return "barba";
-  if (texto.includes("color") || texto.includes("tinte") || texto.includes("mascarilla")) return "tratamientos";
+  if (
+    texto.includes("color")
+    || texto.includes("tinte")
+    || texto.includes("mascarilla")
+    || texto.includes("ceja")
+  ) return "tratamientos";
   return "cortes";
 }
 
 function descripcionServicio(servicio) {
-  const categoria = categoriaDe(servicio.name);
-  if (categoria === "barba") return "Contorno limpio y acabado definido.";
-  if (categoria === "tratamientos") return "Trabajo especializado con tiempo reservado.";
-  return "Corte personalizado con acabado prolijo.";
+  const nombre = servicio.name.toLocaleLowerCase("es-CR");
+  if (nombre.includes("mantenimiento de barba")) return "Contorno, largo y forma puestos al día.";
+  if (nombre.includes("barba")) return "Perfilado completo con líneas bien definidas.";
+  if (nombre.includes("ceja")) return "Limpieza sutil para equilibrar el rostro.";
+  if (nombre.includes("mascarilla")) return "Limpieza facial para cerrar con un acabado fresco.";
+  if (nombre.includes("color") || nombre.includes("rayito")) return "Diagnóstico de tono y trabajo técnico personalizado.";
+  if (nombre.includes("tinte")) return "Color uniforme con preparación y acabado profesional.";
+  return "Corte a tu medida, con terminaciones limpias.";
 }
 
 export default function ServiceMenu({ servicios, extras, reserva, onServicio, onExtra }) {
@@ -36,7 +45,8 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Servicios y precios</span>
-          <h2>Elige tu servicio. El precio está claro.</h2>
+          <h2>El menú, claro desde el inicio.</h2>
+          <p>Escoge el servicio principal y suma solo los extras que quieras.</p>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>
           <Image size={18} />

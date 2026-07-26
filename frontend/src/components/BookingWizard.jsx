@@ -19,6 +19,16 @@ const pasos = [
   { id: 4, label: "Tus datos" },
 ];
 
+function fechaReserva(value) {
+  if (!value) return "Por elegir";
+  return new Intl.DateTimeFormat("es-CR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "America/Costa_Rica",
+  }).format(new Date(`${value}T12:00:00`));
+}
+
 export default function BookingWizard({
   reserva,
   setReserva,
@@ -67,8 +77,8 @@ export default function BookingWizard({
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Reserva online</span>
-          <h2>Tu cita, lista en cuatro pasos.</h2>
-          <p>Cada barbero tiene su propia agenda. Solo verás espacios realmente libres.</p>
+          <h2>Tu espacio, listo en cuatro pasos.</h2>
+          <p>Elige a tu barbero, encuentra una hora y confirma.</p>
         </div>
       </div>
 
@@ -93,8 +103,8 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>1 de 4</span>
-                <h3>¿Con quién quieres reservar?</h3>
-                <p>Elige a tu barbero para consultar sus horarios.</p>
+                <h3>¿Con quién te atiendes?</h3>
+                <p>Escoge una agenda y sigue.</p>
               </div>
               <div className="booking-barber-grid">
                 {barberos.map((item) => {
@@ -133,8 +143,8 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>2 de 4</span>
-                <h3>¿Qué quieres hacerte?</h3>
-                <p>Escoge el servicio principal. Los extras suman precio, no tiempo.</p>
+                <h3>¿Qué te hacemos hoy?</h3>
+                <p>Primero elige el servicio principal. Después puedes sumar extras.</p>
               </div>
 
               <div className="barber-choice">
@@ -147,19 +157,31 @@ export default function BookingWizard({
                 <CircleCheckBig size={22} />
               </div>
 
-              <div className="campo">
-                <label htmlFor="booking-service">Servicio principal</label>
-                <select
-                  id="booking-service"
-                  value={reserva.service_id}
-                  onChange={(event) => onServicio(event.target.value)}
-                >
-                  {servicios.map((servicio) => (
-                    <option key={servicio.id} value={servicio.id}>
-                      {servicio.name} - {dinero(servicio.price)}
-                    </option>
-                  ))}
-                </select>
+              <div className="booking-service-picker">
+                <label>Servicio principal</label>
+                <div className="booking-service-list">
+                  {servicios.map((servicio) => {
+                    const activo = reserva.service_id === servicio.id;
+                    return (
+                      <button
+                        className={activo ? "activo" : ""}
+                        key={servicio.id}
+                        type="button"
+                        aria-pressed={activo}
+                        onClick={() => onServicio(servicio.id)}
+                      >
+                        <span className="booking-service-check">
+                          {activo ? <Check size={15} /> : <Scissors size={15} />}
+                        </span>
+                        <span>
+                          <strong>{servicio.name}</strong>
+                          <small>{servicio.duration_min} min</small>
+                        </span>
+                        <strong>{dinero(servicio.price)}</strong>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {extras.length > 0 && (
@@ -208,8 +230,8 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>3 de 4</span>
-                <h3>¿Cuándo te queda mejor?</h3>
-                <p>Estas horas están disponibles con {barbero?.name}.</p>
+                <h3>Elige tu hora.</h3>
+                <p>Estos son los espacios libres con {barbero?.name}.</p>
               </div>
               <div className="campo">
                 <label htmlFor="booking-date">Fecha</label>
@@ -265,7 +287,7 @@ export default function BookingWizard({
               <div className="stage-heading">
                 <span>4 de 4</span>
                 <h3>¿A nombre de quién?</h3>
-                <p>Usaremos estos datos para identificar tu cita.</p>
+                <p>Déjanos tus datos y la reserva queda lista.</p>
               </div>
               <div className="campo">
                 <label htmlFor="client-name">Nombre completo</label>
@@ -314,7 +336,7 @@ export default function BookingWizard({
                   id="client-notes"
                   maxLength={240}
                   value={reserva.notes}
-                  placeholder="Ej: bajo en los lados, arriba con textura"
+                  placeholder="Ej.: bajo en los lados y textura arriba"
                   onChange={(event) => actualizar("notes", event.target.value)}
                 />
               </div>
@@ -341,7 +363,7 @@ export default function BookingWizard({
           <h3>{resumen.servicio?.name || "Escoge un servicio"}</h3>
           <ul>
             <li><span>Barbero</span><strong>{barbero?.name || "Por elegir"}</strong></li>
-            <li><span>Fecha</span><strong>{reserva.date}</strong></li>
+            <li><span>Fecha</span><strong>{fechaReserva(reserva.date)}</strong></li>
             <li><span>Hora</span><strong>{resumen.hora || "Por elegir"}</strong></li>
             <li><span>Duración</span><strong>{resumen.duracion || 0} min</strong></li>
           </ul>

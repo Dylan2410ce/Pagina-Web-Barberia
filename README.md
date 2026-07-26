@@ -110,8 +110,8 @@ VITE_BARBERO_EMAIL=CORREO_QUE_RECIBE_LAS_RESERVAS
 Coloca y confirma en Git estos dos archivos:
 
 ```txt
-frontend/public/assets/fotosbarberias/Sebastian.jpg
-frontend/public/assets/fotosbarberias/Gabriel.jpg
+frontend/public/assets/fotosbarberias/Sebastian.png
+frontend/public/assets/fotosbarberias/Gabriel.png
 ```
 
 Respeta exactamente mayúsculas, extensión y nombres. Si una imagen todavía no

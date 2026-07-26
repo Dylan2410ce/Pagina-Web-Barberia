@@ -7,8 +7,8 @@ export default function ClientAppointments({ telefono, setTelefono, citas, barbe
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Mis citas</span>
-          <h2>Consulta, cambia o cancela.</h2>
-          <p>Usa el mismo número de WhatsApp con el que reservaste.</p>
+          <h2>Tu cita sigue en tus manos.</h2>
+          <p>Consulta, cambia o cancela con el mismo número que usaste al reservar.</p>
         </div>
       </div>
       <div className="client-search-layout reveal">
@@ -27,7 +27,7 @@ export default function ClientAppointments({ telefono, setTelefono, citas, barbe
             />
             <button className="btn btn-principal" type="submit"><Search size={17} />Buscar citas</button>
           </div>
-          <small>No necesitas crear una cuenta.</small>
+          <small>Sin cuentas ni contraseñas.</small>
         </form>
 
         <div className="lista-citas">

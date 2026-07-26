@@ -4,32 +4,30 @@ import {
   CalendarCheck2,
   CalendarDays,
   CalendarOff,
-  CheckCircle2,
   Clock3,
   Database,
   Home,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
-  MoveRight,
   Plus,
   Scissors,
-  Search,
   ShieldCheck,
   Users,
   XCircle,
 } from "lucide-react";
 import {
-  claseEstado,
   diasSemana,
   dinero,
-  fechaCorta,
   fechaHumana,
   horaAMinutos,
   hoyISO,
   minutosAHora,
-  textoEstado,
 } from "../utils/format";
+import AdminAgenda from "./admin/AdminAgenda";
+import AdminClients from "./admin/AdminClients";
+import AdminDashboard from "./admin/AdminDashboard";
+import PageHead from "./admin/AdminPageHead";
 
 const secciones = [
   { id: "resumen", label: "Resumen", icon: LayoutDashboard },
@@ -55,6 +53,7 @@ export default function AdminPanel({
   onGuardarServicio,
   onGuardarHorario,
   onChangePassword,
+  onBloqueoRapido,
 }) {
   if (!admin.token) {
     return <Login onLogin={onLogin} onResetPassword={onResetPassword} />;
@@ -97,9 +96,17 @@ export default function AdminPanel({
         </aside>
 
         <main className="admin-content">
-          {admin.tab === "resumen" && <Dashboard data={admin.dashboard} stats={admin.stats} perfil={admin.perfil} onTab={onTab} />}
+          {admin.tab === "resumen" && (
+            <AdminDashboard
+              data={admin.dashboard}
+              stats={admin.stats}
+              perfil={admin.perfil}
+              onTab={onTab}
+              onBloqueoRapido={onBloqueoRapido}
+            />
+          )}
           {admin.tab === "agenda" && (
-            <Agenda admin={admin} onFiltrar={onFiltrar} onEstado={onEstado} onMover={onMover} />
+            <AdminAgenda admin={admin} onFiltrar={onFiltrar} onEstado={onEstado} onMover={onMover} />
           )}
           {admin.tab === "bloqueos" && (
             <Bloqueos
@@ -111,7 +118,7 @@ export default function AdminPanel({
           )}
           {admin.tab === "servicios" && <Servicios servicios={admin.servicios} onGuardar={onGuardarServicio} />}
           {admin.tab === "horarios" && <Horarios horarios={admin.horarios} onGuardar={onGuardarHorario} />}
-          {admin.tab === "clientes" && <Clientes clientes={admin.clientes} />}
+          {admin.tab === "clientes" && <AdminClients clientes={admin.clientes} />}
           {admin.tab === "reportes" && <Reportes stats={admin.stats} />}
           {admin.tab === "seguridad" && <Seguridad onChangePassword={onChangePassword} />}
         </main>
@@ -223,118 +230,6 @@ function Login({ onLogin, onResetPassword }) {
   );
 }
 
-function PageHead({ eyebrow, title, text, action }) {
-  return (
-    <div className="admin-page-head">
-      <div>
-        <span>{eyebrow}</span>
-        <h1>{title}</h1>
-        <p>{text}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function Dashboard({ data, stats, perfil, onTab }) {
-  const safe = data || {};
-  const monthly = stats || {};
-  const proximas = safe.upcoming || [];
-
-  return (
-    <>
-      <PageHead
-        eyebrow="Resumen"
-        title={`Buen día, ${perfil?.name || "barbero"}.`}
-        text="Esto es lo importante de hoy y del mes actual."
-        action={<button className="btn btn-principal" type="button" onClick={() => onTab("bloqueos")}><CalendarOff size={17} />Bloquear agenda</button>}
-      />
-      <div className="admin-metrics">
-        <article><span>Citas hoy</span><strong>{safe.appointments_today || 0}</strong><small>{safe.pending_today || 0} pendientes</small></article>
-        <article><span>Generado hoy</span><strong>{dinero(safe.income_today || 0)}</strong><small>{dinero(safe.projected_today || 0)} proyectado</small></article>
-        <article><span>Generado este mes</span><strong>{dinero(monthly.income || 0)}</strong><small>{monthly.attended || 0} citas completadas</small></article>
-        <article><span>Ticket promedio</span><strong>{dinero(monthly.average_ticket || 0)}</strong><small>{monthly.attendance_rate || 0}% asistencia</small></article>
-      </div>
-      <div className="dashboard-grid">
-        <section className="admin-panel">
-          <div className="admin-panel-head">
-            <div><span>Agenda</span><h2>Próximas citas</h2></div>
-            <button className="btn btn-linea" type="button" onClick={() => onTab("agenda")}>Ver agenda</button>
-          </div>
-          <div className="upcoming-list">
-            {proximas.slice(0, 6).map((cita) => (
-              <article key={cita.id}>
-                <div className="time-badge"><Clock3 size={16} /></div>
-                <div><strong>{cita.client_name}</strong><span>{cita.service_name}</span></div>
-                <div><strong>{fechaHumana(cita.starts_at)}</strong><small>{dinero(cita.total_price)}</small></div>
-              </article>
-            ))}
-            {proximas.length === 0 && <EmptyState text="No hay citas próximas." />}
-          </div>
-        </section>
-        <aside className="admin-panel month-snapshot">
-          <div className="admin-panel-head"><div><span>Mes actual</span><h2>Rendimiento</h2></div></div>
-          <div className="snapshot-row"><span>Servicio más pedido</span><strong>{monthly.top_service || "Sin datos"}</strong></div>
-          <div className="snapshot-row"><span>Ingresos proyectados</span><strong>{dinero(monthly.projected_income || 0)}</strong></div>
-          <div className="snapshot-row"><span>Cancelaciones</span><strong>{monthly.cancellation_rate || 0}%</strong></div>
-          <button className="btn btn-secundario btn-ancho" type="button" onClick={() => onTab("reportes")}>Abrir reportes</button>
-        </aside>
-      </div>
-    </>
-  );
-}
-
-function Agenda({ admin, onFiltrar, onEstado, onMover }) {
-  return (
-    <>
-      <PageHead eyebrow="Agenda" title="Citas y asistencia" text="Busca una reserva, confirma la visita o cambia la hora." />
-      <section className="admin-panel">
-        <form className="admin-filters" onSubmit={onFiltrar}>
-          <div className="filter-search"><Search size={17} /><input name="q" placeholder="Cliente, teléfono o servicio" defaultValue={admin.filtros.q || ""} /></div>
-          <input name="date" type="date" defaultValue={admin.filtros.date || hoyISO()} aria-label="Fecha" />
-          <select name="status" defaultValue={admin.filtros.status || ""} aria-label="Estado">
-            <option value="">Todos los estados</option>
-            {["booked", "present", "noshow", "cancelled", "blocked"].map((status) => (
-              <option value={status} key={status}>{textoEstado(status)}</option>
-            ))}
-          </select>
-          <button className="btn btn-principal" type="submit">Aplicar filtros</button>
-        </form>
-        <div className="appointments-table">
-          {admin.citas.length === 0 && <EmptyState text="No hay citas para esos filtros." />}
-          {admin.citas.map((cita) => (
-            <article className="appointment-row" key={cita.id}>
-              <div className="appointment-main">
-                <span className={claseEstado(cita.status)}>{textoEstado(cita.status)}</span>
-                <h3>{cita.client_name}</h3>
-                <p>{cita.client_phone} | {cita.service_name}</p>
-              </div>
-              <div className="appointment-time">
-                <strong>{fechaHumana(cita.starts_at)}</strong>
-                <span>{dinero(cita.total_price)}</span>
-              </div>
-              <div className="appointment-actions">
-                {cita.status === "booked" && (
-                  <>
-                    <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "present")}><CheckCircle2 size={16} />Asistió</button>
-                    <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "noshow")}><XCircle size={16} />No asistió</button>
-                  </>
-                )}
-                {["booked", "blocked"].includes(cita.status) && (
-                  <>
-                    <button className="icon-btn" type="button" onClick={() => onMover(cita)} title="Mover cita" aria-label="Mover cita"><MoveRight size={17} /></button>
-                    <button className="icon-btn danger" type="button" onClick={() => onEstado(cita.id, "cancelled")} title="Cancelar o liberar" aria-label="Cancelar o liberar"><XCircle size={17} /></button>
-                  </>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
 function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
   const [modo, setModo] = useState("horas");
   const [fecha, setFecha] = useState(hoyISO());
@@ -415,7 +310,7 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
                 maxLength={240}
                 value={motivo}
                 onChange={(event) => setMotivo(event.target.value)}
-                placeholder={modo === "dia" ? "Ej: descanso o vacaciones" : "Ej: cita manual o diligencia"}
+                placeholder={modo === "dia" ? "Ej.: descanso o vacaciones" : "Ej.: cita manual o diligencia"}
               />
             </div>
             {error && <p className="form-error" role="alert">{error}</p>}
@@ -506,7 +401,7 @@ function Servicios({ servicios, onGuardar }) {
 function Horarios({ horarios, onGuardar }) {
   return (
     <>
-      <PageHead eyebrow="Semana" title="Horario de reservas" text="Los clientes solo veran horas dentro de estos rangos." />
+      <PageHead eyebrow="Semana" title="Horario de reservas" text="Los clientes solo verán horas dentro de estos rangos." />
       <section className="admin-panel">
         <div className="business-hours-list">
           {horarios.map((hora) => (
@@ -617,27 +512,6 @@ function Seguridad({ onChangePassword }) {
   );
 }
 
-function Clientes({ clientes }) {
-  return (
-    <>
-      <PageHead eyebrow="Clientes" title="Historial de visitas" text="Identifica clientes frecuentes y revisa cuanto han generado." />
-      <section className="admin-panel">
-        <div className="clients-list">
-          {clientes.length === 0 && <EmptyState text="Todavia no hay clientes registrados." />}
-          {clientes.map((cliente) => (
-            <article className="client-row" key={cliente.phone}>
-              <span className="client-avatar">{cliente.name?.slice(0, 1).toUpperCase()}</span>
-              <div><h3>{cliente.name}</h3><p>{cliente.phone}{cliente.email ? ` | ${cliente.email}` : ""}</p><small>Ultima visita: {cliente.last_visit ? fechaCorta(cliente.last_visit) : "Sin visitas"}</small></div>
-              <div><strong>{cliente.appointments}</strong><span>citas</span></div>
-              <div><strong>{dinero(cliente.spent)}</strong><span>generado</span></div>
-            </article>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
 function Reportes({ stats }) {
   const safe = stats || {};
   const serviceBreakdown = safe.service_breakdown || [];
@@ -664,7 +538,7 @@ function Reportes({ stats }) {
                 <div className="chart-track"><i style={{ width: `${Math.max((item.count / maxServicio) * 100, 6)}%` }} /></div>
               </article>
             ))}
-            {serviceBreakdown.length === 0 && <EmptyState text="Aun no hay datos para este mes." />}
+            {serviceBreakdown.length === 0 && <EmptyState text="Aún no hay datos para este mes." />}
           </div>
         </section>
         <section className="admin-panel">
@@ -676,7 +550,7 @@ function Reportes({ stats }) {
                 <div className="chart-track"><i style={{ width: `${Math.max((item.income / maxDia) * 100, 6)}%` }} /></div>
               </article>
             ))}
-            {dailyIncome.length === 0 && <EmptyState text="Aun no hay ingresos completados." />}
+            {dailyIncome.length === 0 && <EmptyState text="Aún no hay ingresos completados." />}
           </div>
         </section>
       </div>

@@ -11,14 +11,16 @@ function horaCorta(minutos) {
 
 export default function LocationSection({ location, horarios = [], barbero, onMapa }) {
   const telefono = String(barbero?.phone || "").replace(/\D/g, "");
-  const whatsappUrl = telefono && telefono !== "88887777" ? `https://wa.me/506${telefono}` : "";
+  const whatsappUrl = /^[24678]\d{7}$/.test(telefono) && !/^0+$/.test(telefono)
+    ? `https://wa.me/506${telefono}`
+    : "";
 
   return (
     <section id="ubicacion" className="location-band">
       <div className="seccion location-grid">
         <div className="location-copy reveal">
           <span className="eyebrow"><MapPinned size={14} />Ubicación</span>
-          <h2>Nos vemos en Barrio Maranonal.</h2>
+          <h2>Nos vemos en Barrio Marañonal.</h2>
           <p>{location.address}</p>
           <div className="location-actions">
             <button className="btn btn-principal" type="button" onClick={onMapa}>
@@ -42,7 +44,7 @@ export default function LocationSection({ location, horarios = [], barbero, onMa
             <Clock3 size={20} />
             <div>
               <strong>Horario de {barbero?.name || "Sebastián"}</strong>
-              <span>Selecciona otro barbero para consultar su horario.</span>
+              <span>Agenda semanal del barbero seleccionado.</span>
             </div>
           </div>
           <div className="hours-list">

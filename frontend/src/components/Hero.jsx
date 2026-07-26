@@ -8,12 +8,12 @@ export default function Hero({ barberos = [], barbero, primerSlot, onMapa }) {
         <div className="hero-copy reveal">
           <span className="hero-status">
             <span />
-            {primerSlot ? `Próxima hora libre: ${primerSlot}` : "Dos agendas disponibles"}
+            {primerSlot ? `Próxima hora libre: ${primerSlot}` : "Reservas abiertas"}
           </span>
           <p className="hero-kicker">Barbería en Esparza</p>
           <h1>Sebas Barber</h1>
           <p className="hero-lead">
-            Cortes limpios, barba precisa y una cita que reservas desde el celular en menos de un minuto.
+            Cortes precisos, barba bien definida y tu espacio reservado desde el celular.
           </p>
           <div className="hero-acciones">
             <a className="btn btn-principal btn-grande" href="#reserva">

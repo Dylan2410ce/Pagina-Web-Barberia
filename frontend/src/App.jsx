@@ -5,17 +5,27 @@ import AdminPanel from "./components/AdminPanel";
 import BookingSuccessModal from "./components/BookingSuccessModal";
 import BookingWizard from "./components/BookingWizard";
 import ClientAppointments from "./components/ClientAppointments";
+import ConfirmDialog from "./components/ConfirmDialog";
+import FloatingContact from "./components/FloatingContact";
 import Gallery from "./components/Gallery";
 import Hero from "./components/Hero";
 import LocationSection from "./components/LocationSection";
 import MapModal from "./components/MapModal";
 import Navbar from "./components/Navbar";
+import RescheduleModal from "./components/RescheduleModal";
 import ServiceMenu from "./components/ServiceMenu";
 import ScrollToTop from "./components/ScrollToTop";
 import TeamSection from "./components/TeamSection";
 import Toasts from "./components/Toasts";
 import { enviarCorreosCita } from "./services/emailjsService";
-import { hoyISO, horaAMinutos, limpiarTelefono, mesActual, validarTelefono } from "./utils/format";
+import {
+  fechaHumana,
+  hoyISO,
+  horaAMinutos,
+  limpiarTelefono,
+  mesActual,
+  validarTelefono,
+} from "./utils/format";
 
 const reservaInicial = {
   barber_id: "",
@@ -66,6 +76,7 @@ export default function App() {
   const [admin, setAdmin] = useState(() => ({ ...adminBase, token: obtenerToken() }));
   const [modalReprogramar, setModalReprogramar] = useState(null);
   const [citaConfirmada, setCitaConfirmada] = useState(null);
+  const [confirmacion, setConfirmacion] = useState(null);
 
   const avisar = useCallback((tipo, titulo, mensaje = "") => {
     const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
@@ -74,6 +85,12 @@ export default function App() {
   }, []);
 
   const cerrarToast = (id) => setToastList((items) => items.filter((item) => item.id !== id));
+
+  const confirmarAccion = () => {
+    const accion = confirmacion?.onConfirm;
+    setConfirmacion(null);
+    accion?.();
+  };
 
   const servicioActivo = useMemo(
     () => datos.services.find((servicio) => servicio.id === reserva.service_id),
@@ -266,11 +283,11 @@ export default function App() {
       });
       enviarCorreosCita(citaCreada, resumen).then((resultado) => {
         if (resultado.fallos) {
-          avisar("warning", "Cita guardada", "La reserva quedo lista, pero algun correo no salio.");
+          avisar("warning", "Cita guardada", "La reserva quedó lista, pero algún correo no salió.");
         }
       });
       setCitaConfirmada(citaCreada);
-      avisar("ok", "Cita lista", "Tu cita quedo reservada.");
+      avisar("ok", "Cita lista", "Tu espacio quedó reservado.");
       const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
       setReserva(limpia);
       await cargarSlots(limpia);
@@ -298,9 +315,8 @@ export default function App() {
     }
   };
 
-  const cancelarCliente = async (id) => {
+  const ejecutarCancelacionCliente = async (id) => {
     if (!telefonoBusqueda) return avisar("warning", "Busca primero por teléfono");
-    if (!confirm("¿Quieres cancelar esta cita?")) return;
     setProcesando("Liberando el espacio...");
     try {
       await publicoApi.cancelarCita(id, { phone: telefonoBusqueda, reason: "Cancelada desde la web" });
@@ -312,6 +328,20 @@ export default function App() {
     } finally {
       setProcesando("");
     }
+  };
+
+  const cancelarCliente = (id) => {
+    if (!telefonoBusqueda) {
+      avisar("warning", "Busca primero por teléfono");
+      return;
+    }
+    setConfirmacion({
+      title: "¿Cancelar esta cita?",
+      message: "El horario volverá a quedar disponible para otra persona.",
+      confirmLabel: "Sí, cancelar",
+      danger: true,
+      onConfirm: () => ejecutarCancelacionCliente(id),
+    });
   };
 
   const abrirReprogramar = async (cita, modo) => {
@@ -443,16 +473,21 @@ export default function App() {
     avisar("ok", "Sesión cerrada");
   };
 
-  const cambiarTabAdmin = async (tab) => {
+  const cambiarTabAdmin = (tab) => {
     setAdmin((actual) => ({ ...actual, tab }));
-    await cargarAdmin();
   };
 
-  const filtrarAdmin = async (event) => {
-    event.preventDefault();
-    const filtros = Object.fromEntries(new FormData(event.currentTarget));
+  const filtrarAdmin = async (filtros) => {
+    const limpiar = Object.fromEntries(
+      Object.entries(filtros).filter(([, valor]) => valor !== ""),
+    );
     setAdmin((actual) => ({ ...actual, filtros }));
-    await cargarAdmin(admin.token, filtros);
+    try {
+      const citas = await adminApi.citas(admin.token, limpiar);
+      setAdmin((actual) => ({ ...actual, citas }));
+    } catch (error) {
+      avisar("error", "No pudimos filtrar la agenda", error.message);
+    }
   };
 
   const cambiarEstadoAdmin = async (id, status) => {
@@ -469,6 +504,34 @@ export default function App() {
     }
   };
 
+  const solicitarEstadoAdmin = (id, status) => {
+    if (!["cancelled", "noshow"].includes(status)) {
+      cambiarEstadoAdmin(id, status);
+      return;
+    }
+    const cita = [...admin.citas, ...admin.bloqueos].find((item) => item.id === id);
+    const esBloqueo = cita?.status === "blocked";
+    setConfirmacion({
+      title: esBloqueo
+        ? "¿Liberar este horario?"
+        : status === "noshow"
+          ? "¿Marcar como ausencia?"
+          : "¿Cancelar esta cita?",
+      message: esBloqueo
+        ? "El espacio volverá a aparecer disponible en la agenda."
+        : status === "noshow"
+          ? "La cita quedará registrada como no asistida."
+          : "La reserva se cancelará y el horario quedará libre.",
+      confirmLabel: esBloqueo
+        ? "Liberar horario"
+        : status === "noshow"
+          ? "Marcar ausencia"
+          : "Cancelar cita",
+      danger: true,
+      onConfirm: () => cambiarEstadoAdmin(id, status),
+    });
+  };
+
   const crearBloqueo = async (data) => {
     setProcesando("Bloqueando espacio...");
     try {
@@ -483,6 +546,36 @@ export default function App() {
     } finally {
       setProcesando("");
     }
+  };
+
+  const bloquearProximoEspacio = async () => {
+    setProcesando("Buscando el próximo espacio...");
+    try {
+      const bloqueo = await adminApi.bloqueoRapido(admin.token, {
+        duration_min: 45,
+        horizon_days: 14,
+        notes: "Bloqueo rápido desde el panel",
+      });
+      await cargarAdmin();
+      await cargarSlots();
+      avisar("ok", "Espacio bloqueado", fechaHumana(bloqueo.starts_at));
+    } catch (error) {
+      avisar("error", "No se pudo crear el bloqueo", error.message);
+    } finally {
+      setProcesando("");
+    }
+  };
+
+  const elegirEstilo = (estilo) => {
+    const referencia = `Referencia: ${estilo.nombre}`;
+    setReserva((actual) => ({
+      ...actual,
+      notes: actual.notes.includes(referencia)
+        ? actual.notes
+        : [referencia, actual.notes].filter(Boolean).join(". ").slice(0, 240),
+    }));
+    avisar("ok", "Referencia guardada", "La verás en el último paso de tu reserva.");
+    document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const guardarServicio = async (event, id = null) => {
@@ -547,12 +640,13 @@ export default function App() {
     onSalir: cerrarAdmin,
     onTab: cambiarTabAdmin,
     onFiltrar: filtrarAdmin,
-    onEstado: cambiarEstadoAdmin,
+    onEstado: solicitarEstadoAdmin,
     onMover: (cita) => abrirReprogramar(cita, "admin"),
     onBloqueo: crearBloqueo,
     onGuardarServicio: guardarServicio,
     onGuardarHorario: guardarHorario,
     onChangePassword: cambiarPassword,
+    onBloqueoRapido: bloquearProximoEspacio,
   };
 
   if (ruta.startsWith("/admin")) {
@@ -569,39 +663,18 @@ export default function App() {
             </div>
           </div>
         )}
-        {modalReprogramar && (
-          <div className="modal-backdrop">
-            <section className="modal">
-              <header>
-                <strong>Elige una nueva hora</strong>
-                <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)} aria-label="Cerrar">X</button>
-              </header>
-              <div className="modal-body formulario">
-                <div className="campo">
-                  <label>Nueva fecha</label>
-                  <input type="date" min={hoyISO()} value={modalReprogramar.date} onChange={(event) => cambiarFechaModal(event.target.value)} />
-                </div>
-                <div className="slots">
-                  {modalReprogramar.cargando && <div className="slots-vacio"><span className="spinner" /> Buscando horas...</div>}
-                  {!modalReprogramar.cargando && modalReprogramar.slots.map((slot) => (
-                    <button
-                      key={slot.start_min}
-                      className={`slot ${modalReprogramar.start_min === slot.start_min ? "activo" : ""}`}
-                      type="button"
-                      onClick={() => setModalReprogramar((actual) => ({ ...actual, start_min: slot.start_min }))}
-                    >
-                      {slot.label}
-                    </button>
-                  ))}
-                  {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese día.</div>}
-                </div>
-                <button className="btn btn-principal btn-ancho" type="button" onClick={confirmarReprogramacion}>
-                  Guardar cambio
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
+        <RescheduleModal
+          data={modalReprogramar}
+          onClose={() => setModalReprogramar(null)}
+          onDate={cambiarFechaModal}
+          onSlot={(startMin) => setModalReprogramar((actual) => ({ ...actual, start_min: startMin }))}
+          onConfirm={confirmarReprogramacion}
+        />
+        <ConfirmDialog
+          config={confirmacion}
+          onCancel={() => setConfirmacion(null)}
+          onConfirm={confirmarAccion}
+        />
         <Toasts items={toastList} onClose={cerrarToast} />
       </>
     );
@@ -629,7 +702,7 @@ export default function App() {
           onServicio={seleccionarServicio}
           onExtra={toggleExtra}
         />
-        <Gallery />
+        <Gallery onElegirEstilo={elegirEstilo} />
         <BookingWizard
           reserva={reserva}
           setReserva={setReserva}
@@ -680,10 +753,11 @@ export default function App() {
           <small>© {new Date().getFullYear()} Sebas Barber. Todos los derechos reservados.</small>
           <small className="footer-credit">
             <Code2 size={14} />
-            Desarrollado por <span>Dylan Calvo Escobar</span> | Innovación y tecnología.
+            Desarrollado por <span>Dylan Calvo Escobar</span> · Innovación y tecnología.
           </small>
         </div>
       </footer>
+      <FloatingContact barberos={datos.barbers} seleccionado={reserva.barber_id} />
       <ScrollToTop />
       {modalMapa && <MapModal location={datos.location} onClose={() => setModalMapa(false)} />}
       {citaConfirmada && (
@@ -693,39 +767,13 @@ export default function App() {
           onClose={() => setCitaConfirmada(null)}
         />
       )}
-      {modalReprogramar && (
-        <div className="modal-backdrop">
-          <section className="modal">
-            <header>
-              <strong>Elige una nueva hora</strong>
-              <button className="icon-btn" type="button" onClick={() => setModalReprogramar(null)} aria-label="Cerrar">X</button>
-            </header>
-            <div className="modal-body formulario">
-              <div className="campo">
-                <label>Nueva fecha</label>
-                <input type="date" min={hoyISO()} value={modalReprogramar.date} onChange={(event) => cambiarFechaModal(event.target.value)} />
-              </div>
-              <div className="slots">
-                {modalReprogramar.cargando && <div className="slots-vacio"><span className="spinner" /> Buscando horas...</div>}
-                {!modalReprogramar.cargando && modalReprogramar.slots.map((slot) => (
-                  <button
-                    key={slot.start_min}
-                    className={`slot ${modalReprogramar.start_min === slot.start_min ? "activo" : ""}`}
-                    type="button"
-                    onClick={() => setModalReprogramar((actual) => ({ ...actual, start_min: slot.start_min }))}
-                  >
-                    {slot.label}
-                  </button>
-                ))}
-                {!modalReprogramar.cargando && modalReprogramar.slots.length === 0 && <div className="slots-vacio">No hay horas libres ese día.</div>}
-              </div>
-              <button className="btn btn-principal btn-ancho" type="button" onClick={confirmarReprogramacion}>
-                Guardar cambio
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <RescheduleModal
+        data={modalReprogramar}
+        onClose={() => setModalReprogramar(null)}
+        onDate={cambiarFechaModal}
+        onSlot={(startMin) => setModalReprogramar((actual) => ({ ...actual, start_min: startMin }))}
+        onConfirm={confirmarReprogramacion}
+      />
       {procesando && (
         <div className="loader-global">
           <div>
@@ -734,6 +782,11 @@ export default function App() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        config={confirmacion}
+        onCancel={() => setConfirmacion(null)}
+        onConfirm={confirmarAccion}
+      />
       <Toasts items={toastList} onClose={cerrarToast} />
     </>
   );

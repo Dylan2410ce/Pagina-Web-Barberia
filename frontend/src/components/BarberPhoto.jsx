@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 const FOTOS = {
-  sebastian: "/assets/fotosbarberias/Sebastian.jpg",
-  gabriel: "/assets/fotosbarberias/Gabriel.jpg",
+  sebastian: "/assets/fotosbarberias/Sebastian.png",
+  gabriel: "/assets/fotosbarberias/Gabriel.png",
 };
 
 function claveFoto(nombre = "") {

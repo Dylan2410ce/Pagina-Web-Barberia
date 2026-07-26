@@ -145,6 +145,8 @@ export const adminApi = {
     api(`/api/admin/appointments/${id}/status${query({ status: estado })}`, { method: "PATCH", token }),
   moverCita: (token, id, datos) => api(`/api/admin/appointments/${id}/reschedule`, { method: "PATCH", token, body: datos }),
   crearBloqueo: (token, datos) => api("/api/admin/blocks", { method: "POST", token, body: datos }),
+  bloqueoRapido: (token, datos = {}) =>
+    api("/api/admin/blocks/next-available", { method: "POST", token, body: datos }),
   bloqueos: (token) => api("/api/admin/blocks", { token }),
   servicios: (token) => api("/api/admin/services", { token }),
   crearServicio: (token, datos) => api("/api/admin/services", { method: "POST", token, body: datos }),
