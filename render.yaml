@@ -11,11 +11,15 @@ services:
         value: 3.12.11
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_SSL
+        value: require
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
         value: https://sebasbarber.netlify.app
       - key: ADMIN_DEFAULT_PASSWORD
+        sync: false
+      - key: GABRIEL_DEFAULT_PASSWORD
         sync: false
       - key: MASTER_RESET_CODE
         sync: false
@@ -29,3 +33,5 @@ services:
         value: "true"
       - key: APPOINTMENT_BUFFER_MIN
         value: "0"
+      - key: SERVICE_CACHE_TTL_SECONDS
+        value: "300"

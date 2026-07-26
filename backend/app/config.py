@@ -1,32 +1,67 @@
 import os
+import secrets
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 def normalize_database_url(value: str) -> str:
     value = value.strip()
-    if value.startswith("postgres://"):
-        return value.replace("postgres://", "postgresql+psycopg2://", 1)
-    if value.startswith("postgresql://"):
-        return value.replace("postgresql://", "postgresql+psycopg2://", 1)
-    return value
+    if value.startswith("sqlite://") and not value.startswith("sqlite+aiosqlite://"):
+        return value.replace("sqlite://", "sqlite+aiosqlite://", 1)
 
+    postgres_prefixes = (
+        "postgres://",
+        "postgresql://",
+        "postgresql+psycopg2://",
+        "postgresql+asyncpg://",
+    )
+    if not value.startswith(postgres_prefixes):
+        return value
 
-class Config:
-    DATABASE_URL = normalize_database_url(
-        os.getenv(
-            "DATABASE_URL",
-            "postgresql+psycopg2://USER:PASSWORD@HOST.neon.tech/neondb?sslmode=require",
+    parts = urlsplit(value)
+    query = [
+        (key, item)
+        for key, item in parse_qsl(parts.query, keep_blank_values=True)
+        if key not in {"sslmode", "channel_binding"}
+    ]
+    return urlunsplit(
+        (
+            "postgresql+asyncpg",
+            parts.netloc,
+            parts.path,
+            urlencode(query),
+            parts.fragment,
         )
     )
 
-    SECRET_KEY = os.getenv("SECRET_KEY", "sebas_barber_default_super_secret_key_2026")
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sebasbarber.netlify.app")
-    MASTER_RESET_CODE = os.getenv(
-        "MASTER_RESET_CODE",
-        "SBs7LVAiZawpHfA1fgH2czClGt2iDVjU6xmOYJC8hoCK9wBv",
+
+class Config:
+    MISSING_SECURITY_ENV = tuple(
+        name
+        for name in (
+            "SECRET_KEY",
+            "ADMIN_DEFAULT_PASSWORD",
+            "GABRIEL_DEFAULT_PASSWORD",
+            "MASTER_RESET_CODE",
+        )
+        if not os.getenv(name)
     )
 
-    ADMIN_DEFAULT_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin12345")
+    DATABASE_URL = normalize_database_url(
+        os.getenv(
+            "DATABASE_URL",
+            "postgresql+asyncpg://USER:PASSWORD@HOST.neon.tech/neondb",
+        )
+    )
+    DATABASE_SSL = os.getenv("DATABASE_SSL", "require")
+
+    SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sebasbarber.netlify.app")
+    MASTER_RESET_CODE = os.getenv("MASTER_RESET_CODE") or secrets.token_hex(32)
+
+    ADMIN_DEFAULT_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD") or secrets.token_urlsafe(24)
     ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
+    GABRIEL_DEFAULT_PASSWORD = os.getenv("GABRIEL_DEFAULT_PASSWORD") or secrets.token_urlsafe(24)
+    GABRIEL_PASSWORD_HASH = os.getenv("GABRIEL_PASSWORD_HASH", "")
 
     GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "sebasbarberg2021@gmail.com")
     GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "")
@@ -43,8 +78,11 @@ class Config:
         "https://calendar.google.com/calendar/embed?src=sebasbarberg2021%40gmail.com&ctz=America%2FCosta_Rica",
     )
     CALENDAR_ENABLED = os.getenv("CALENDAR_ENABLED", "true").lower() == "true"
-    APPOINTMENT_BUFFER_MIN = int(os.getenv("APPOINTMENT_BUFFER_MIN", "0"))
     CALENDAR_REQUIRED = os.getenv("CALENDAR_REQUIRED", "true").lower() == "true"
+
+    APPOINTMENT_BUFFER_MIN = int(os.getenv("APPOINTMENT_BUFFER_MIN", "0"))
+    SERVICE_CACHE_TTL_SECONDS = int(os.getenv("SERVICE_CACHE_TTL_SECONDS", "300"))
+
     EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "emailjs").lower()
     NOTIFY_EMAILS_ENABLED = os.getenv("NOTIFY_EMAILS_ENABLED", "false").lower() == "true"
     SMTP_HOST = os.getenv("SMTP_HOST", "")

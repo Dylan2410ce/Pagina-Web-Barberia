@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -9,14 +11,30 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import config
 from app.controllers import admin_controller, public_controller
-from app.database import SessionLocal, init_db
+from app.database import AsyncSessionLocal, engine, init_db
+from app.routers import bookings
 from app.services.calendar_service import CalendarService
 from app.services.seed_service import seed_data
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("sebas_barber.api")
 
-app = FastAPI(title="Sebas Barber API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    if config.MISSING_SECURITY_ENV:
+        logger.warning(
+            "Faltan variables de seguridad; se usaron valores aleatorios de cierre seguro: %s",
+            ", ".join(config.MISSING_SECURITY_ENV),
+        )
+    await init_db()
+    async with AsyncSessionLocal() as db:
+        await seed_data(db)
+    yield
+    await engine.dispose()
+
+
+app = FastAPI(title="Sebas Barber API", version="2.0.0", lifespan=lifespan)
 
 allowed_origins = {
     config.FRONTEND_URL.rstrip("/"),
@@ -56,7 +74,11 @@ async def http_exception_handler(_: Request, exc: StarletteHTTPException):
 async def validation_exception_handler(_: Request, exc: RequestValidationError):
     details = [
         {
-            "field": ".".join(str(part) for part in error["loc"] if part not in {"body", "query"}),
+            "field": ".".join(
+                str(part)
+                for part in error["loc"]
+                if part not in {"body", "query"}
+            ),
             "message": error["msg"],
             "type": error["type"],
         }
@@ -103,34 +125,26 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
         },
     )
 
+
 app.include_router(public_controller.router)
+app.include_router(bookings.router)
 app.include_router(admin_controller.router)
 
 
-@app.on_event("startup")
-def startup():
-    init_db()
-    db = SessionLocal()
-    try:
-        seed_data(db)
-    finally:
-        db.close()
-
-
 @app.get("/")
-def root():
+async def root():
     return {"app": "Sebas Barber API", "status": "online"}
 
 
 @app.get("/health")
-def health():
+async def health():
     return {"status": "ok"}
 
 
 @app.get("/health/calendar")
-def calendar_health():
+async def calendar_health():
     calendar = CalendarService()
-    client_available = calendar.is_available()
+    client_available = await asyncio.to_thread(calendar.is_available)
     return {
         "enabled": calendar.enabled,
         "calendar_id_configured": bool(config.GOOGLE_CALENDAR_ID),
@@ -146,4 +160,8 @@ def calendar_health():
         "client_available": client_available,
         "required": config.CALENDAR_REQUIRED,
         "timezone": "America/Costa_Rica",
+        "profiles": {
+            "sebastian": "google_calendar",
+            "gabriel": "postgresql",
+        },
     }

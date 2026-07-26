@@ -16,6 +16,8 @@ class BarberOut(BaseModel):
     name: str
     role: str
     phone: str
+    instagram_url: str | None = None
+    calendar_sync: bool = False
 
 
 class ServiceOut(BaseModel):
@@ -32,6 +34,7 @@ class ServiceOut(BaseModel):
 class BusinessHourOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    barber_id: UUID
     weekday: int
     is_open: bool
     open_min: int

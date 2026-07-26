@@ -1,4 +1,7 @@
-from sqlalchemy.orm import Session
+import asyncio
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
 from app.models import Barber, BusinessHour, Service
@@ -16,14 +19,35 @@ SERVICES = [
 ]
 
 BARBERS = [
-    ("Sebastian", "Master Barber", "88887777", "sebas"),
+    {
+        "name": "Sebastian",
+        "role": "Master Barber",
+        "phone": "83778700",
+        "username": "sebas",
+        "calendar_sync": True,
+        "instagram_url": "https://www.instagram.com/andres29?igsh=dnVxdnNkYm16OXU1",
+        "password": lambda: config.ADMIN_DEFAULT_PASSWORD,
+        "password_hash": lambda: config.ADMIN_PASSWORD_HASH,
+    },
+    {
+        "name": "Gabriel",
+        "role": "Barbero",
+        "phone": "00000000",
+        "username": "gabriel",
+        "calendar_sync": False,
+        "instagram_url": "https://www.instagram.com/gabriel_madriz01?igsh=dmk4NnZ2cGg3Z21q",
+        "password": lambda: config.GABRIEL_DEFAULT_PASSWORD,
+        "password_hash": lambda: config.GABRIEL_PASSWORD_HASH,
+    },
 ]
 
 
-def seed_data(db: Session):
-    service_names = {name for name, _, _, _ in SERVICES}
-    if db.query(Service).count() == 0:
-        for name, duration, price, is_addon in SERVICES:
+async def seed_data(db: AsyncSession):
+    services_result = await db.execute(select(Service))
+    services = list(services_result.scalars().all())
+    existing_service_names = {service.name for service in services}
+    for name, duration, price, is_addon in SERVICES:
+        if name not in existing_service_names:
             db.add(
                 Service(
                     name=name,
@@ -31,59 +55,59 @@ def seed_data(db: Session):
                     base_price=max(price - 1000, 0),
                     price=price,
                     is_addon=is_addon,
+                    is_active=True,
                 )
             )
-    else:
-        service_map = {name: (duration, price, is_addon) for name, duration, price, is_addon in SERVICES}
-        for service in db.query(Service).all():
-            if service.name in service_map:
-                duration, price, is_addon = service_map[service.name]
-                service.is_addon = is_addon
-                service.duration_min = 0 if is_addon else duration
-                service.price = price
-                service.base_price = max(price - 1000, 0)
-                service.is_active = True
-            elif service.name not in service_names:
-                service.is_active = False
-        existing_names = {service.name for service in db.query(Service).all()}
-        for name, duration, price, is_addon in SERVICES:
-            if name not in existing_names:
+
+    barbers_result = await db.execute(select(Barber))
+    existing_barbers = {barber.username: barber for barber in barbers_result.scalars().all()}
+    active_usernames = {item["username"] for item in BARBERS}
+    active_barbers: list[Barber] = []
+
+    for profile in BARBERS:
+        barber = existing_barbers.get(profile["username"])
+        if not barber:
+            configured_hash = profile["password_hash"]()
+            password_hash = configured_hash or await asyncio.to_thread(
+                hash_password,
+                profile["password"](),
+            )
+            barber = Barber(
+                username=profile["username"],
+                password_hash=password_hash,
+            )
+            db.add(barber)
+
+        barber.name = profile["name"]
+        barber.role = profile["role"]
+        barber.phone = profile["phone"]
+        barber.calendar_sync = profile["calendar_sync"]
+        barber.instagram_url = profile["instagram_url"]
+        barber.is_active = True
+        active_barbers.append(barber)
+
+    for username, barber in existing_barbers.items():
+        if username not in active_usernames:
+            barber.is_active = False
+
+    await db.flush()
+
+    hours_result = await db.execute(select(BusinessHour))
+    existing_hours = {
+        (item.barber_id, item.weekday): item
+        for item in hours_result.scalars().all()
+    }
+    for barber in active_barbers:
+        for weekday in range(7):
+            if (barber.id, weekday) not in existing_hours:
                 db.add(
-                    Service(
-                        name=name,
-                        duration_min=duration,
-                        base_price=max(price - 1000, 0),
-                        price=price,
-                        is_addon=is_addon,
-                        is_active=True,
+                    BusinessHour(
+                        barber_id=barber.id,
+                        weekday=weekday,
+                        is_open=weekday not in (0, 6),
+                        open_min=config.OPEN_MIN,
+                        close_min=config.CLOSE_MIN,
                     )
                 )
 
-    password_hash = config.ADMIN_PASSWORD_HASH or hash_password(config.ADMIN_DEFAULT_PASSWORD)
-    active_usernames = {username for _, _, _, username in BARBERS}
-
-    for name, role, phone, username in BARBERS:
-        barber = db.query(Barber).filter(Barber.username == username).first()
-        if barber:
-            barber.name = name
-            barber.role = role
-            barber.phone = phone
-            barber.is_active = True
-        else:
-            db.add(Barber(name=name, role=role, phone=phone, username=username, password_hash=password_hash))
-
-    for barber in db.query(Barber).filter(~Barber.username.in_(active_usernames)).all():
-        barber.is_active = False
-
-    if db.query(BusinessHour).count() == 0:
-        for weekday in range(7):
-            db.add(
-                BusinessHour(
-                    weekday=weekday,
-                    is_open=weekday not in (0, 6),
-                    open_min=config.OPEN_MIN,
-                    close_min=config.CLOSE_MIN,
-                )
-            )
-
-    db.commit()
+    await db.commit()

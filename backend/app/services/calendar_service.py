@@ -148,6 +148,10 @@ class CalendarService:
             )
         except Exception as exc:
             log_google_error("error leyendo eventos ocupados", exc)
+            if config.CALENDAR_REQUIRED:
+                raise CalendarError(
+                    "No pudimos verificar Google Calendar en este momento."
+                ) from exc
             return []
 
         busy = []

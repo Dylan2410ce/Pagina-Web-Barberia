@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,9 +27,15 @@ class Barber(Base):
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    calendar_sync: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    instagram_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     appointments: Mapped[list["Appointment"]] = relationship(back_populates="barber")
+    business_hours: Mapped[list["BusinessHour"]] = relationship(
+        back_populates="barber",
+        cascade="all, delete-orphan",
+    )
 
 
 class Service(Base):
@@ -46,6 +52,10 @@ class Service(Base):
 
 class Appointment(Base):
     __tablename__ = "appointments"
+    __table_args__ = (
+        Index("ix_appointments_barber_status_start", "barber_id", "status", "starts_at"),
+        Index("ix_appointments_phone_start", "client_phone", "starts_at"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     barber_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("barbers.id"), index=True)
@@ -67,9 +77,20 @@ class Appointment(Base):
 
 class BusinessHour(Base):
     __tablename__ = "business_hours"
+    __table_args__ = (
+        UniqueConstraint("barber_id", "weekday", name="uq_business_hours_barber_weekday"),
+        Index("ix_business_hours_barber_weekday", "barber_id", "weekday"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    weekday: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    barber_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("barbers.id"),
+        nullable=False,
+    )
+    weekday: Mapped[int] = mapped_column(Integer, nullable=False)
     is_open: Mapped[bool] = mapped_column(Boolean, default=True)
     open_min: Mapped[int] = mapped_column(Integer, default=8 * 60)
     close_min: Mapped[int] = mapped_column(Integer, default=19 * 60)
+
+    barber: Mapped[Barber] = relationship(back_populates="business_hours")
