@@ -112,7 +112,7 @@ async def database_exception_handler(request: Request, exc: SQLAlchemyError):
         content={
             "error": {
                 "code": "database_unavailable",
-                "message": "La agenda esta despertando. Intenta de nuevo en unos segundos.",
+                "message": "La agenda está despertando. Intenta de nuevo en unos segundos.",
                 "details": None,
             }
         },

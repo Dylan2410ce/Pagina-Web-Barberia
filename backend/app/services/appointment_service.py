@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -12,7 +12,7 @@ from app.models import Appointment, AppointmentStatus, Barber, BusinessHour
 from app.repositories.appointment_repository import ACTIVE, AppointmentRepository
 from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
-from app.schemas import AppointmentCreate, BlockCreate
+from app.schemas import AppointmentCreate, BlockCreate, QuickBlockCreate
 from app.services.calendar_service import CalendarError, CalendarService, parse_calendar_datetime
 from app.services.date_service import TZ, day_range, label_from_minutes, range_from_minutes
 from app.services.email_service import EmailService
@@ -52,7 +52,7 @@ class AppointmentService:
     ) -> tuple[str, list[str], int, int]:
         service = await self.services.by_id(service_id)
         if not service or service.is_addon:
-            raise HTTPException(status_code=400, detail="Servicio invalido")
+            raise HTTPException(status_code=400, detail="Servicio inválido")
 
         addons = [item for item in await self.services.by_ids(addon_ids) if item.is_addon]
         duration = service.duration_min
@@ -166,7 +166,7 @@ class AppointmentService:
         if not barber:
             raise HTTPException(status_code=404, detail="Barbero no encontrado")
         if duration <= 0:
-            raise HTTPException(status_code=400, detail="El servicio necesita una duracion valida")
+            raise HTTPException(status_code=400, detail="El servicio necesita una duración válida")
 
         business_hours = await self.business_hours_for(barber.id, day)
         if not business_hours or not business_hours.is_open:
@@ -220,21 +220,21 @@ class AppointmentService:
         end_min = start_min + blocked_duration
 
         if duration <= 0:
-            raise HTTPException(status_code=400, detail="El servicio necesita una duracion valida")
+            raise HTTPException(status_code=400, detail="El servicio necesita una duración válida")
         if day < now.date():
             raise HTTPException(status_code=400, detail="No se pueden reservar fechas pasadas")
         if not business_hours or not business_hours.is_open:
-            raise HTTPException(status_code=400, detail="Ese dia esta cerrado")
+            raise HTTPException(status_code=400, detail="Ese día está cerrado")
         if (start_min - business_hours.open_min) % config.SLOT_STEP != 0:
             raise HTTPException(status_code=400, detail="La hora no pertenece a un bloque disponible")
         if start_min < business_hours.open_min or end_min > business_hours.close_min:
-            raise HTTPException(status_code=400, detail="La hora esta fuera del horario de atencion")
+            raise HTTPException(status_code=400, detail="La hora está fuera del horario de atención")
         if start_min < config.LUNCH_START < end_min or config.LUNCH_START <= start_min < config.LUNCH_END:
             raise HTTPException(status_code=400, detail="Ese espacio cruza la hora de almuerzo")
         if day == now.date() and start_min < (now.hour * 60 + now.minute + 30):
             raise HTTPException(
                 status_code=400,
-                detail="Selecciona una hora con al menos 30 minutos de anticipacion",
+                detail="Selecciona una hora con al menos 30 minutos de anticipación",
             )
 
     async def create(self, data: AppointmentCreate) -> Appointment:
@@ -334,7 +334,7 @@ class AppointmentService:
         if start_min < open_min or start_min + duration > close_min:
             raise HTTPException(
                 status_code=400,
-                detail="El bloqueo debe estar dentro del horario de atencion",
+                detail="El bloqueo debe estar dentro del horario de atención",
             )
 
         starts_at, ends_at = range_from_minutes(data.date, start_min, duration)
@@ -395,6 +395,40 @@ class AppointmentService:
                 detail="El bloqueo choca con una cita existente",
             ) from exc
 
+    async def create_next_available_block(
+        self,
+        barber_id: UUID,
+        data: QuickBlockCreate,
+    ) -> Appointment:
+        first_day = datetime.now(TZ).date()
+
+        for day_offset in range(data.horizon_days):
+            target_day = first_day + timedelta(days=day_offset)
+            slots = await self.availability(
+                barber_id,
+                target_day,
+                data.duration_min,
+            )
+            for slot in slots:
+                try:
+                    return await self.create_block(
+                        barber_id,
+                        BlockCreate(
+                            date=target_day,
+                            start_min=slot["start_min"],
+                            end_min=slot["start_min"] + data.duration_min,
+                            notes=data.notes,
+                        ),
+                    )
+                except HTTPException as exc:
+                    if exc.status_code != 409:
+                        raise
+
+        raise HTTPException(
+            status_code=404,
+            detail="No encontramos un espacio libre para bloquear en los próximos días",
+        )
+
     async def update_status(
         self,
         appointment_id: UUID,
@@ -420,7 +454,7 @@ class AppointmentService:
         if next_status not in allowed_transitions.get(appointment.status, set()):
             raise HTTPException(
                 status_code=400,
-                detail="Ese cambio de estado no esta permitido",
+                detail="Ese cambio de estado no está permitido",
             )
 
         event_id = appointment.calendar_event_id
@@ -454,7 +488,7 @@ class AppointmentService:
     ) -> Appointment:
         appointment = await self.appointments.by_id(appointment_id)
         if not appointment or appointment.client_phone != phone:
-            raise HTTPException(status_code=404, detail="Cita no encontrada para ese telefono")
+            raise HTTPException(status_code=404, detail="Cita no encontrada para ese teléfono")
         if appointment.status != AppointmentStatus.booked:
             raise HTTPException(
                 status_code=400,
@@ -565,7 +599,7 @@ class AppointmentService:
     ) -> Appointment:
         appointment = await self.appointments.by_id(appointment_id)
         if not appointment or appointment.client_phone != phone:
-            raise HTTPException(status_code=404, detail="Cita no encontrada para ese telefono")
+            raise HTTPException(status_code=404, detail="Cita no encontrada para ese teléfono")
         if appointment.status != AppointmentStatus.booked:
             raise HTTPException(
                 status_code=400,

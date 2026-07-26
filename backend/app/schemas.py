@@ -85,7 +85,7 @@ class AppointmentCreate(StrictInput):
         if value is None or value == "":
             return None
         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
-            raise ValueError("El correo no tiene un formato valido")
+            raise ValueError("El correo no tiene un formato válido")
         return value.lower()
 
 
@@ -138,10 +138,16 @@ class BlockCreate(StrictInput):
     @model_validator(mode="after")
     def validate_range(self):
         if not self.all_day and self.end_min is None and self.duration_min is None:
-            raise ValueError("Indica la hora final o la duracion del bloqueo")
+            raise ValueError("Indica la hora final o la duración del bloqueo")
         if not self.all_day and self.end_min is not None and self.end_min <= self.start_min:
             raise ValueError("La hora final debe ser mayor a la inicial")
         return self
+
+
+class QuickBlockCreate(StrictInput):
+    duration_min: int = Field(default=45, ge=15, le=180)
+    horizon_days: int = Field(default=14, ge=1, le=31)
+    notes: str | None = Field(default="Imprevisto", max_length=240)
 
 
 class AppointmentUpdate(StrictInput):
@@ -162,7 +168,7 @@ class PasswordChangeIn(StrictInput):
     @model_validator(mode="after")
     def validate_new_password(self):
         if self.current_password == self.new_password:
-            raise ValueError("La nueva contrasena debe ser diferente")
+            raise ValueError("La nueva contraseña debe ser diferente")
         return self
 
 
@@ -185,7 +191,7 @@ class ServiceCreate(StrictInput):
     @model_validator(mode="after")
     def validate_duration(self):
         if not self.is_addon and self.duration_min <= 0:
-            raise ValueError("Un servicio principal necesita una duracion")
+            raise ValueError("Un servicio principal necesita una duración")
         return self
 
 

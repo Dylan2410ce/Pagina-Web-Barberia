@@ -1,13 +1,13 @@
 import unittest
 from datetime import date, datetime
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 from pydantic import ValidationError
 
 from app.config import normalize_database_url
-from app.schemas import AppointmentCreate
+from app.schemas import AppointmentCreate, QuickBlockCreate
 from app.services.appointment_service import AppointmentService
 from app.services.calendar_service import (
     CR_TZ,
@@ -107,6 +107,32 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
                 client_name="<script>alert(1)</script>",
                 client_phone="88887777",
             )
+
+    async def test_quick_block_uses_first_available_slot(self):
+        self.service.availability = AsyncMock(
+            return_value=[{"start_min": 570, "label": "9:30 AM"}]
+        )
+        self.service.create_block = AsyncMock(return_value="bloqueo-creado")
+
+        result = await self.service.create_next_available_block(
+            self.gabriel.id,
+            QuickBlockCreate(notes="Descanso"),
+        )
+
+        self.assertEqual(result, "bloqueo-creado")
+        self.service.availability.assert_awaited_once_with(
+            self.gabriel.id,
+            self.service.availability.call_args.args[1],
+            45,
+        )
+        self.assertEqual(
+            self.service.create_block.call_args.args[0],
+            self.gabriel.id,
+        )
+        block = self.service.create_block.call_args.args[1]
+        self.assertEqual(block.start_min, 570)
+        self.assertEqual(block.end_min, 615)
+        self.assertEqual(block.notes, "Descanso")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import asyncio
-from datetime import date, datetime
+from collections import Counter
+from datetime import date, datetime, timedelta
 from hmac import compare_digest
 from uuid import UUID
 
@@ -23,6 +24,7 @@ from app.schemas import (
     LoginIn,
     PasswordChangeIn,
     PasswordResetIn,
+    QuickBlockCreate,
     ServiceCreate,
     ServiceOut,
     ServiceUpdate,
@@ -46,7 +48,7 @@ async def admin_login(data: LoginIn, db: AsyncSession = Depends(get_db)):
 @router.post("/reset-password")
 async def reset_password(data: PasswordResetIn, db: AsyncSession = Depends(get_db)):
     if not compare_digest(data.master_code, config.MASTER_RESET_CODE):
-        raise HTTPException(status_code=401, detail="Codigo maestro invalido")
+        raise HTTPException(status_code=401, detail="Código maestro inválido")
 
     barber = await BarberRepository(db).by_username(data.username)
     if not barber:
@@ -55,7 +57,7 @@ async def reset_password(data: PasswordResetIn, db: AsyncSession = Depends(get_d
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     barber.credentials_initialized = True
     await db.commit()
-    return {"ok": True, "message": "Password actualizado"}
+    return {"ok": True, "message": "Contraseña actualizada"}
 
 
 @router.post("/change-password")
@@ -70,12 +72,12 @@ async def change_password(
         barber.password_hash,
     )
     if not password_ok:
-        raise HTTPException(status_code=401, detail="La contrasena actual no es correcta")
+        raise HTTPException(status_code=401, detail="La contraseña actual no es correcta")
 
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     barber.credentials_initialized = True
     await db.commit()
-    return {"ok": True, "message": "Contrasena actualizada"}
+    return {"ok": True, "message": "Contraseña actualizada"}
 
 
 @router.get("/me")
@@ -99,8 +101,21 @@ async def dashboard(
 ):
     now = datetime.now(TZ)
     today = now.date()
-    start, end = day_range(today)
-    today_items = await AppointmentRepository(db).list_by_barber(barber.id, start, end)
+    today_start, today_end = day_range(today)
+    week_start_day = today - timedelta(days=today.weekday())
+    week_end_day = week_start_day + timedelta(days=7)
+    week_start, _ = day_range(week_start_day)
+    week_end, _ = day_range(week_end_day)
+    week_items = await AppointmentRepository(db).list_by_barber(
+        barber.id,
+        week_start,
+        week_end,
+    )
+    today_items = [
+        item
+        for item in week_items
+        if today_start <= item.starts_at < today_end
+    ]
     active_today = [
         item
         for item in today_items
@@ -112,6 +127,25 @@ async def dashboard(
     completed_today = [
         item for item in today_items if item.status == AppointmentStatus.present
     ]
+    visible_week = [
+        item
+        for item in week_items
+        if item.status
+        in [
+            AppointmentStatus.booked,
+            AppointmentStatus.present,
+            AppointmentStatus.noshow,
+        ]
+    ]
+    completed_week = [
+        item for item in week_items if item.status == AppointmentStatus.present
+    ]
+    booked_week = [
+        item for item in week_items if item.status == AppointmentStatus.booked
+    ]
+    top_service_week = Counter(
+        item.service_name for item in visible_week
+    ).most_common(1)
 
     upcoming_result = await db.execute(
         select(Appointment)
@@ -134,6 +168,13 @@ async def dashboard(
         "projected_today": sum(
             item.total_price for item in booked_today + completed_today
         ),
+        "appointments_week": len(visible_week),
+        "completed_week": len(completed_week),
+        "income_week": sum(item.total_price for item in completed_week),
+        "projected_week": sum(
+            item.total_price for item in booked_week + completed_week
+        ),
+        "top_service_week": top_service_week[0][0] if top_service_week else "",
         "upcoming": [AppointmentOut.model_validate(item) for item in upcoming],
     }
 
@@ -200,6 +241,22 @@ async def create_block(
     db: AsyncSession = Depends(get_db),
 ):
     return await AppointmentService(db).create_block(barber.id, data)
+
+
+@router.post(
+    "/blocks/next-available",
+    response_model=AppointmentOut,
+    status_code=201,
+)
+async def create_next_available_block(
+    data: QuickBlockCreate,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    return await AppointmentService(db).create_next_available_block(
+        barber.id,
+        data,
+    )
 
 
 @router.get("/blocks", response_model=list[AppointmentOut])
@@ -273,7 +330,7 @@ async def update_service(
     if not next_is_addon and next_duration <= 0:
         raise HTTPException(
             status_code=400,
-            detail="Un servicio principal necesita una duracion",
+            detail="Un servicio principal necesita una duración",
         )
     if next_is_addon:
         payload["duration_min"] = 0
@@ -315,7 +372,7 @@ async def update_business_hour(
     db: AsyncSession = Depends(get_db),
 ):
     if weekday != data.weekday:
-        raise HTTPException(status_code=400, detail="El dia de la ruta no coincide")
+        raise HTTPException(status_code=400, detail="El día de la ruta no coincide")
     if data.is_open and data.close_min <= data.open_min:
         raise HTTPException(
             status_code=400,
@@ -377,9 +434,11 @@ async def clients(
             {
                 "id": item.id,
                 "service": item.service_name,
+                "addons": item.addons,
                 "status": item.status,
                 "starts_at": item.starts_at,
                 "total_price": item.total_price,
+                "notes": item.notes,
             }
         )
     return sorted(

@@ -24,9 +24,9 @@ def password_fingerprint(password_hash: str) -> str:
 async def login(db: AsyncSession, username: str, password: str) -> str:
     barber = await BarberRepository(db).by_username(username)
     if not barber:
-        raise HTTPException(status_code=401, detail="Usuario o password incorrecto")
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
     if not await asyncio.to_thread(verify_password, password, barber.password_hash):
-        raise HTTPException(status_code=401, detail="Usuario o password incorrecto")
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
     payload = {
         "sub": str(barber.id),
@@ -47,13 +47,13 @@ async def current_barber(
         payload = jwt.decode(credentials.credentials, config.SECRET_KEY, algorithms=["HS256"])
         barber_id = payload.get("sub")
     except JWTError as exc:
-        raise HTTPException(status_code=401, detail="Token invalido") from exc
+        raise HTTPException(status_code=401, detail="Token inválido") from exc
 
     barber = await BarberRepository(db).by_id(barber_id)
     if not barber:
-        raise HTTPException(status_code=401, detail="Token invalido")
+        raise HTTPException(status_code=401, detail="Token inválido")
     if not hmac.compare_digest(str(payload.get("username", "")), barber.username):
-        raise HTTPException(status_code=401, detail="Token invalido")
+        raise HTTPException(status_code=401, detail="Token inválido")
     token_fingerprint = str(payload.get("pwd", ""))
     if not hmac.compare_digest(token_fingerprint, password_fingerprint(barber.password_hash)):
         raise HTTPException(status_code=401, detail="La sesion ya no es valida")
