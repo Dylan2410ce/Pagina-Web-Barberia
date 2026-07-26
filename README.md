@@ -1,10 +1,11 @@
 # Sebas Barber
 
-App de barberia para Sebastian.
+Sistema de reservas para Sebastian y Gabriel.
 
-- Frontend: React + Tailwind CSS + CSS3 + Vite, deploy en Netlify.
-- Backend: FastAPI + SQLAlchemy + Pydantic + PostgreSQL Neon, deploy en Render.
-- Agenda: PostgreSQL + Google Calendar API como fuente externa de disponibilidad.
+- Frontend: React 19, Vite, Tailwind CSS, CSS3 y Lucide.
+- Backend: FastAPI, Pydantic v2 y SQLAlchemy Async.
+- Base de datos: PostgreSQL en Neon.
+- Calendarios: Sebastian usa PostgreSQL + Google Calendar; Gabriel usa solo PostgreSQL.
 
 ## Estructura
 
@@ -14,6 +15,7 @@ sebas-barber/
 |   |-- app/
 |   |   |-- controllers/
 |   |   |-- repositories/
+|   |   |-- routers/
 |   |   |-- services/
 |   |   |-- config.py
 |   |   |-- database.py
@@ -23,6 +25,7 @@ sebas-barber/
 |   |-- .python-version
 |   `-- requirements.txt
 |-- frontend/
+|   |-- public/
 |   |-- src/
 |   |   |-- api/
 |   |   |-- components/
@@ -34,48 +37,46 @@ sebas-barber/
 |   |-- index.html
 |   |-- netlify.toml
 |   `-- package.json
+|-- .env.example
 `-- render.yaml
 ```
 
 ## Render
 
-Root directory:
+Configuracion del servicio:
 
 ```txt
-backend
+Root Directory: backend
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Health Check Path: /health
 ```
 
-Build command:
-
-```bash
-pip install -r requirements.txt
-```
-
-Start command:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
-Variables necesarias:
+Variables que deben existir en Render:
 
 ```txt
 PYTHON_VERSION=3.12.11
-DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST/neondb?sslmode=require
+DATABASE_URL=postgresql://USUARIO:CLAVE@HOST-POOLER/neondb?sslmode=require
+DATABASE_SSL=require
 FRONTEND_URL=https://sebasbarber.netlify.app
-SECRET_KEY=clave_larga
-ADMIN_DEFAULT_PASSWORD=clave_inicial
-MASTER_RESET_CODE=SBs7LVAiZawpHfA1fgH2czClGt2iDVjU6xmOYJC8hoCK9wBv
+SECRET_KEY=una_clave_aleatoria_larga
+ADMIN_DEFAULT_PASSWORD=clave_inicial_de_sebastian
+GABRIEL_DEFAULT_PASSWORD=clave_inicial_de_gabriel
+MASTER_RESET_CODE=codigo_alfanumerico_largo
 GOOGLE_CALENDAR_ID=sebasbarberg2021@gmail.com
+GOOGLE_CREDENTIALS_JSON=contenido_completo_del_json
 CALENDAR_ENABLED=true
 CALENDAR_REQUIRED=true
 APPOINTMENT_BUFFER_MIN=0
-GOOGLE_CREDENTIALS_JSON=contenido_completo_del_json
-EMAIL_PROVIDER=emailjs
+SERVICE_CACHE_TTL_SECONDS=300
 NOTIFY_EMAILS_ENABLED=false
 ```
 
-No subas el JSON al repo. Tambien podes cargarlo en Render como Secret File con cualquiera de estos nombres:
+`ADMIN_PASSWORD_HASH` y `GABRIEL_PASSWORD_HASH` son alternativas opcionales a
+las claves iniciales. No configures ambos mecanismos para la misma cuenta.
+
+El JSON de Google nunca se sube al repositorio. Tambien se puede cargar como
+Secret File con uno de estos nombres:
 
 ```txt
 barberiasebas-65af4656c417.json
@@ -84,48 +85,37 @@ google-calendar.json
 service-account.json
 ```
 
-Render lo monta en `/etc/secrets` y la API lo detecta sola. En Google Calendar, comparti el calendario `sebasbarberg2021@gmail.com` con el `client_email` del service account y dale permisos para modificar eventos.
+La cuenta de servicio solo modifica la agenda de Sebastian. Gabriel no llama a
+Google Calendar.
 
-Diagnostico despues del deploy:
+Diagnostico:
 
 ```txt
+https://pagina-web-barberia.onrender.com/health
 https://pagina-web-barberia.onrender.com/health/calendar
 ```
 
-Healthcheck ultraligero para Render y cron-job.org:
+URL exacta para cron-job.org:
 
 ```txt
 https://pagina-web-barberia.onrender.com/health
 ```
 
-En cron-job.org configura esa URL con metodo `GET`. La respuesta esperada es
-`{"status":"ok"}` con codigo `200`.
+Metodo `GET`, respuesta `{"status":"ok"}`, codigo `200`.
 
 ## Netlify
 
-Base directory:
-
-```txt
-frontend
-```
-
-Build command:
+Para el deploy manual:
 
 ```bash
+cd frontend
 npm run build
 ```
 
-Publish directory:
-
-```txt
-dist
-```
-
-Para un deploy manual, ejecuta `npm run build` dentro de `frontend` y arrastra
-el contenido generado en `frontend/dist` a Netlify Drop. La carpeta preparada
-en el escritorio contiene exactamente ese resultado.
-
-Variable:
+Arrastra el contenido de `frontend/dist` a Netlify Drop. El frontend ya tiene
+la URL publica de la API y la configuracion publica de EmailJS como valores de
+respaldo, por lo que no necesita variables en Netlify para funcionar. Se pueden
+sobrescribir con:
 
 ```txt
 VITE_API_URL=https://pagina-web-barberia.onrender.com
@@ -138,10 +128,12 @@ VITE_BARBERO_EMAIL=sebasbarberg2021@gmail.com
 
 ## Admin
 
-Usuario inicial:
-
 ```txt
-sebas
+Sebastian: usuario sebas
+Gabriel: usuario gabriel
 ```
 
-La clave inicial sale de `ADMIN_DEFAULT_PASSWORD`. Si se olvida, usar `MASTER_RESET_CODE` desde la pantalla de recuperacion.
+Cada token queda asociado al ID de su barbero. El panel, los bloqueos, horarios,
+clientes y reportes se filtran en el servidor por ese ID. El codigo de
+recuperacion configurado en `MASTER_RESET_CODE` permite cambiar cualquiera de
+las dos claves desde `/admin`.
