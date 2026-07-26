@@ -503,6 +503,155 @@ label {
   max-width: 680px;
 }
 
+.team-section {
+  padding-bottom: 34px;
+}
+
+.team-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.team-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: transform 0.24s ease, border-color 0.24s ease, background 0.24s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(240, 207, 114, 0.42);
+  background: #202426;
+}
+
+.team-card.activo {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.2), var(--shadow);
+}
+
+.team-visual {
+  position: relative;
+  min-height: 156px;
+  overflow: hidden;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding: 20px;
+  color: var(--text);
+  isolation: isolate;
+}
+
+.team-visual::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(120deg, rgba(16, 18, 19, 0.18), rgba(16, 18, 19, 0.78)),
+    repeating-linear-gradient(135deg, transparent 0 24px, rgba(255, 255, 255, 0.035) 24px 25px);
+  content: "";
+}
+
+.team-visual-1 {
+  background: #98712d;
+}
+
+.team-visual-2 {
+  background: #326b72;
+}
+
+.team-visual > span {
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-size: 6rem;
+  font-weight: 700;
+  line-height: 0.78;
+  opacity: 0.94;
+}
+
+.team-visual > svg {
+  color: var(--gold-light);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.team-card-body {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.team-card-head {
+  min-width: 0;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.team-card-head > div {
+  min-width: 0;
+}
+
+.team-card-head > div > span {
+  color: var(--gold-light);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.team-card-head h3 {
+  margin-top: 2px;
+  font-size: 1.8rem;
+}
+
+.team-card-body > p {
+  min-height: 52px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.team-selected {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 6px 8px;
+  color: #102019;
+  background: var(--green);
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+.team-contact {
+  display: flex;
+  gap: 8px;
+}
+
+.team-contact a {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: var(--text-soft);
+  background: #202427;
+  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.team-contact a:hover,
+.team-contact a:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--gold);
+  outline: none;
+  color: #18140a;
+  background: var(--gold-light);
+}
+
 .filtros-servicios {
   display: flex;
   gap: 8px;
@@ -779,7 +928,7 @@ label {
 
 .wizard-steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 16px;
@@ -864,6 +1013,71 @@ label {
 .form-doble {
   display: grid;
   gap: 14px;
+}
+
+.booking-barber-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-barber-option {
+  min-width: 0;
+  min-height: 76px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  color: var(--text);
+  text-align: left;
+  background: #202427;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.booking-barber-option:hover {
+  transform: translateY(-2px);
+  border-color: rgba(240, 207, 114, 0.55);
+  background: #292e31;
+}
+
+.booking-barber-option.activo {
+  border-color: var(--gold);
+  background: rgba(212, 175, 55, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.18);
+}
+
+.booking-barber-option > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.booking-barber-option small {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.booking-barber-option > svg {
+  color: var(--muted);
+}
+
+.booking-barber-option.activo > svg {
+  color: var(--green);
+}
+
+.booking-barber-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: #17130a;
+  background: var(--gold-light);
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
 }
 
 .barber-choice {
@@ -1914,6 +2128,77 @@ label {
   background: #fff;
 }
 
+.local-agenda-state {
+  min-height: 420px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 28px;
+  text-align: center;
+  background:
+    linear-gradient(rgba(34, 39, 42, 0.9), rgba(26, 30, 32, 0.98)),
+    repeating-linear-gradient(135deg, transparent 0 28px, rgba(255, 255, 255, 0.03) 28px 29px);
+}
+
+.local-agenda-state > svg {
+  color: var(--blue);
+}
+
+.local-agenda-state h3 {
+  font-size: 1.65rem;
+}
+
+.local-agenda-state p {
+  max-width: 430px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.block-overview {
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.block-overview .admin-panel-head > strong {
+  min-width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: #17130a;
+  background: var(--gold-light);
+}
+
+.block-list {
+  display: grid;
+  gap: 8px;
+}
+
+.block-list article {
+  min-width: 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding-top: 11px;
+}
+
+.block-list article > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.block-list article span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .service-create,
 .service-admin-row,
 .business-hour-row {
@@ -2173,6 +2458,7 @@ label {
   }
 
   .booking-extras > div,
+  .booking-barber-grid,
   .block-times {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2235,6 +2521,18 @@ label {
 
   .menu-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-card {
+    grid-template-columns: minmax(145px, 0.7fr) minmax(0, 1.3fr);
+  }
+
+  .team-visual {
+    min-height: 100%;
   }
 
   .extras-strip {

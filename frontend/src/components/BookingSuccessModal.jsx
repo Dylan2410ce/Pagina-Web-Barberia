@@ -1,7 +1,7 @@
 import { CalendarCheck2, Check, X } from "lucide-react";
 import { dinero, fechaHumana } from "../utils/format";
 
-export default function BookingSuccessModal({ cita, onClose }) {
+export default function BookingSuccessModal({ cita, barbero, onClose }) {
   return (
     <div className="modal-backdrop booking-success-backdrop" role="presentation">
       <section
@@ -22,6 +22,7 @@ export default function BookingSuccessModal({ cita, onClose }) {
 
         <dl className="booking-success-summary grid gap-3">
           <div><dt>Servicio</dt><dd>{cita.service_name}</dd></div>
+          <div><dt>Barbero</dt><dd>{barbero?.name || "Sebas Barber"}</dd></div>
           <div><dt>Fecha y hora</dt><dd>{fechaHumana(cita.starts_at)}</dd></div>
           <div><dt>A nombre de</dt><dd>{cita.client_name}</dd></div>
           <div><dt>Total</dt><dd>{dinero(cita.total_price)}</dd></div>

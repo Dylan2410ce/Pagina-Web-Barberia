@@ -1,7 +1,7 @@
 import { CalendarClock, Search, Trash2 } from "lucide-react";
 import { claseEstado, dinero, fechaHumana, limpiarTelefono, textoEstado } from "../utils/format";
 
-export default function ClientAppointments({ telefono, setTelefono, citas, onBuscar, onCancelar, onReprogramar }) {
+export default function ClientAppointments({ telefono, setTelefono, citas, barberos = [], onBuscar, onCancelar, onReprogramar }) {
   return (
     <section id="mis-citas" className="seccion bloque client-area">
       <div className="cabecera-seccion reveal">
@@ -43,7 +43,11 @@ export default function ClientAppointments({ telefono, setTelefono, citas, onBus
               <div>
                 <span className={claseEstado(cita.status)}>{textoEstado(cita.status)}</span>
                 <h3>{cita.service_name}</h3>
-                <p>{fechaHumana(cita.starts_at)} · {dinero(cita.total_price)}</p>
+                <p>
+                  {barberos.find((item) => item.id === cita.barber_id)?.name || "Sebas Barber"}
+                  {" | "}
+                  {fechaHumana(cita.starts_at)} | {dinero(cita.total_price)}
+                </p>
               </div>
               {cita.status === "booked" ? (
                 <div className="acciones-card">

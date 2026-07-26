@@ -4,7 +4,7 @@ import { dinero, fechaHumana } from "../utils/format";
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || "service_o9hd76x";
 const EMAILJS_TEMPLATE_CLIENTE = import.meta.env.VITE_EMAILJS_TEMPLATE_CLIENTE || "template_t0wm7yn";
 const EMAILJS_TEMPLATE_BARBERO = import.meta.env.VITE_EMAILJS_TEMPLATE_BARBERO || "template_4zjh1wk";
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "";
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "Q1abm6KXrqLgnkHFR";
 const BARBERO_EMAIL = import.meta.env.VITE_BARBERO_EMAIL || "sebasbarberg2021@gmail.com";
 
 const UBICACION = "C. 19, Provincia de Puntarenas, Espiritu Santo, Barrio Maranonal";
@@ -26,6 +26,8 @@ function parametrosBase(cita, resumen = {}) {
     client_email: cita.client_email || "",
     to_email: cita.client_email || "",
     barber_email: BARBERO_EMAIL,
+    barber_name: resumen.barbero?.name || "Sebas Barber",
+    barber: resumen.barbero?.name || "Sebas Barber",
     service_name: cita.service_name,
     service: cita.service_name,
     addons: extras,

@@ -41,8 +41,8 @@ export default function LocationSection({ location, horarios = [], barbero, onMa
           <div className="hours-head">
             <Clock3 size={20} />
             <div>
-              <strong>Horario semanal</strong>
-              <span>La disponibilidad final aparece al reservar.</span>
+              <strong>Horario de {barbero?.name || "Sebastian"}</strong>
+              <span>Selecciona otro barbero para consultar su horario.</span>
             </div>
           </div>
           <div className="hours-list">

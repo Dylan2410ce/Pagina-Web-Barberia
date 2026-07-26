@@ -10,6 +10,7 @@ import LocationSection from "./components/LocationSection";
 import MapModal from "./components/MapModal";
 import Navbar from "./components/Navbar";
 import ServiceMenu from "./components/ServiceMenu";
+import TeamSection from "./components/TeamSection";
 import Toasts from "./components/Toasts";
 import { enviarCorreosCita } from "./services/emailjsService";
 import { hoyISO, horaAMinutos, limpiarTelefono, mesActual, validarTelefono } from "./utils/format";
@@ -31,6 +32,7 @@ const adminBase = {
   perfil: null,
   dashboard: null,
   citas: [],
+  bloqueos: [],
   servicios: [],
   horarios: [],
   clientes: [],
@@ -81,13 +83,24 @@ export default function App() {
     [datos.addons, reserva.addon_ids],
   );
 
+  const barberoActivo = useMemo(
+    () => datos.barbers.find((barbero) => barbero.id === reserva.barber_id),
+    [datos.barbers, reserva.barber_id],
+  );
+
+  const horariosActivos = useMemo(() => {
+    const barberId = barberoActivo?.id || datos.barbers[0]?.id;
+    return datos.business_hours.filter((item) => item.barber_id === barberId);
+  }, [barberoActivo, datos.barbers, datos.business_hours]);
+
   const resumen = useMemo(() => ({
+    barbero: barberoActivo,
     servicio: servicioActivo,
     extras: extrasActivos,
     total: (servicioActivo?.price || 0) + extrasActivos.reduce((sum, item) => sum + item.price, 0),
     duracion: (servicioActivo?.duration_min || 0) + extrasActivos.reduce((sum, item) => sum + item.duration_min, 0),
     hora: slots.find((slot) => slot.start_min === reserva.start_min)?.label || "",
-  }), [servicioActivo, extrasActivos, reserva.start_min, slots]);
+  }), [barberoActivo, servicioActivo, extrasActivos, reserva.start_min, slots]);
 
   const cargarSlots = useCallback(async (override = {}) => {
     const siguiente = { ...reserva, ...override };
@@ -121,6 +134,7 @@ export default function App() {
       const resultados = await Promise.allSettled([
         adminApi.dashboard(tokenActual),
         adminApi.citas(tokenActual, limpiar),
+        adminApi.bloqueos(tokenActual),
         adminApi.servicios(tokenActual),
         adminApi.horarios(tokenActual),
         adminApi.clientes(tokenActual),
@@ -136,10 +150,11 @@ export default function App() {
         perfil,
         dashboard: valor(0, actual.dashboard || {}),
         citas: valor(1, actual.citas || []),
-        servicios: valor(2, actual.servicios || []),
-        horarios: valor(3, actual.horarios || []),
-        clientes: valor(4, actual.clientes || []),
-        stats: valor(5, actual.stats || {}),
+        bloqueos: valor(2, actual.bloqueos || []),
+        servicios: valor(3, actual.servicios || []),
+        horarios: valor(4, actual.horarios || []),
+        clientes: valor(5, actual.clientes || []),
+        stats: valor(6, actual.stats || {}),
       }));
 
       if (cargaParcial) {
@@ -156,7 +171,7 @@ export default function App() {
     async function iniciar() {
       try {
         const bootstrap = await publicoApi.iniciar();
-        const barbers = (bootstrap.barbers || []).filter((barbero) => barbero.name.toLowerCase().includes("sebastian"));
+        const barbers = bootstrap.barbers || [];
         const normalizados = {
           ...bootstrap,
           barbers,
@@ -167,12 +182,10 @@ export default function App() {
         setDatos(normalizados);
         const primeraReserva = {
           ...reservaInicial,
-          barber_id: barbers[0]?.id || "",
           service_id: normalizados.services[0]?.id || "",
         };
         setReserva(primeraReserva);
         setCargando(false);
-        await cargarSlots(primeraReserva);
         const tokenGuardado = obtenerToken();
         if (tokenGuardado) await cargarAdmin(tokenGuardado, adminBase.filtros);
       } catch (error) {
@@ -204,6 +217,15 @@ export default function App() {
     return () => observer.disconnect();
   }, [admin.tab, cargando, ruta]);
 
+  const seleccionarBarbero = async (id, desplazar = false) => {
+    const siguiente = { barber_id: id, start_min: null };
+    setReserva((actual) => ({ ...actual, ...siguiente }));
+    await cargarSlots(siguiente);
+    if (desplazar) {
+      document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   const seleccionarServicio = async (id) => {
     const siguiente = { service_id: id, start_min: null };
     setReserva((actual) => ({ ...actual, ...siguiente }));
@@ -227,6 +249,7 @@ export default function App() {
   const crearCita = async (event) => {
     event.preventDefault();
     const telefono = limpiarTelefono(reserva.client_phone);
+    if (!barberoActivo) return avisar("warning", "Escoge un barbero");
     if (!servicioActivo) return avisar("warning", "Escoge un servicio");
     if (reserva.start_min === null) return avisar("warning", "Escoge una hora");
     if (!validarTelefono(telefono)) return avisar("warning", "Revisa el telefono", "Usa 8 digitos de Costa Rica.");
@@ -290,11 +313,24 @@ export default function App() {
   };
 
   const abrirReprogramar = async (cita, modo) => {
-    setModalReprogramar({ cita, modo, date: hoyISO(), start_min: null, slots: [], cargando: true });
+    const barberId = modo === "admin" ? admin.perfil?.id : cita.barber_id;
+    if (!barberId) {
+      avisar("error", "No identificamos la agenda de esta cita");
+      return;
+    }
+    setModalReprogramar({
+      cita,
+      modo,
+      barber_id: barberId,
+      date: hoyISO(),
+      start_min: null,
+      slots: [],
+      cargando: true,
+    });
     try {
       const servicio = datos.services.find((item) => item.name === cita.service_name) || datos.services[0];
       const disponibles = await publicoApi.disponibilidad({
-        barberId: reserva.barber_id,
+        barberId,
         fecha: hoyISO(),
         serviceId: servicio?.id,
         addonIds: [],
@@ -312,7 +348,7 @@ export default function App() {
     try {
       const servicio = datos.services.find((item) => item.name === modalReprogramar.cita.service_name) || datos.services[0];
       const disponibles = await publicoApi.disponibilidad({
-        barberId: reserva.barber_id,
+        barberId: modalReprogramar.barber_id,
         fecha: date,
         serviceId: servicio?.id,
         addonIds: [],
@@ -574,9 +610,15 @@ export default function App() {
       <Navbar abierto={menuAbierto} solida={navSolida} onToggle={() => setMenuAbierto((value) => !value)} />
       <main>
         <Hero
-          barbero={datos.barbers[0]}
+          barberos={datos.barbers}
+          barbero={barberoActivo}
           primerSlot={slots[0]?.label}
           onMapa={() => setModalMapa(true)}
+        />
+        <TeamSection
+          barberos={datos.barbers}
+          seleccionado={reserva.barber_id}
+          onSeleccionar={seleccionarBarbero}
         />
         <ServiceMenu
           servicios={datos.services}
@@ -592,11 +634,13 @@ export default function App() {
           resumen={resumen}
           servicios={datos.services}
           extras={datos.addons}
-          barbero={datos.barbers[0]}
+          barberos={datos.barbers}
+          barbero={barberoActivo}
           slots={slots}
           cargandoSlots={cargandoSlots}
           minFecha={hoyISO()}
           onFecha={cambiarFecha}
+          onBarbero={seleccionarBarbero}
           onServicio={seleccionarServicio}
           onExtra={toggleExtra}
           onSubmit={crearCita}
@@ -605,21 +649,22 @@ export default function App() {
           telefono={telefonoBusqueda}
           setTelefono={setTelefonoBusqueda}
           citas={citasCliente}
+          barberos={datos.barbers}
           onBuscar={buscarCitas}
           onCancelar={cancelarCliente}
           onReprogramar={(cita) => abrirReprogramar(cita, "cliente")}
         />
         <LocationSection
           location={datos.location}
-          horarios={datos.business_hours}
-          barbero={datos.barbers[0]}
+          horarios={horariosActivos}
+          barbero={barberoActivo || datos.barbers[0]}
           onMapa={() => setModalMapa(true)}
         />
       </main>
       <footer className="footer">
         <div>
           <strong>Sebas Barber</strong>
-          <span>Agenda simple, cortes precisos y trato relajado.</span>
+          <span>Dos barberos, horarios claros y una reserva sin vueltas.</span>
         </div>
         <small>Pagina web creada y desarrollada por Dylan Calvo Escobar, 2026. Todos los derechos reservados.</small>
       </footer>
@@ -627,6 +672,7 @@ export default function App() {
       {citaConfirmada && (
         <BookingSuccessModal
           cita={citaConfirmada}
+          barbero={datos.barbers.find((item) => item.id === citaConfirmada.barber_id)}
           onClose={() => setCitaConfirmada(null)}
         />
       )}

@@ -6,6 +6,7 @@ import {
   CalendarOff,
   CheckCircle2,
   Clock3,
+  Database,
   Home,
   LayoutDashboard,
   LockKeyhole,
@@ -98,11 +99,18 @@ export default function AdminPanel({
         </aside>
 
         <main className="admin-content">
-          {admin.tab === "resumen" && <Dashboard data={admin.dashboard} stats={admin.stats} onTab={onTab} />}
+          {admin.tab === "resumen" && <Dashboard data={admin.dashboard} stats={admin.stats} perfil={admin.perfil} onTab={onTab} />}
           {admin.tab === "agenda" && (
             <Agenda admin={admin} onFiltrar={onFiltrar} onEstado={onEstado} onMover={onMover} />
           )}
-          {admin.tab === "bloqueos" && <Bloqueos onBloqueo={onBloqueo} />}
+          {admin.tab === "bloqueos" && (
+            <Bloqueos
+              perfil={admin.perfil}
+              bloqueos={admin.bloqueos}
+              onBloqueo={onBloqueo}
+              onLiberar={(id) => onEstado(id, "cancelled")}
+            />
+          )}
           {admin.tab === "servicios" && <Servicios servicios={admin.servicios} onGuardar={onGuardarServicio} />}
           {admin.tab === "horarios" && <Horarios horarios={admin.horarios} onGuardar={onGuardarHorario} />}
           {admin.tab === "clientes" && <Clientes clientes={admin.clientes} />}
@@ -115,9 +123,9 @@ export default function AdminPanel({
 }
 
 function Login({ onLogin, onResetPassword }) {
-  const [loginForm, setLoginForm] = useState({ username: "sebas", password: "" });
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [resetForm, setResetForm] = useState({
-    username: "sebas",
+    username: "",
     master_code: "",
     new_password: "",
   });
@@ -131,7 +139,7 @@ function Login({ onLogin, onResetPassword }) {
     event.preventDefault();
     const actualizado = await onResetPassword(resetForm);
     if (actualizado) {
-      setResetForm({ username: "sebas", master_code: "", new_password: "" });
+      setResetForm({ username: "", master_code: "", new_password: "" });
     }
   };
 
@@ -148,7 +156,7 @@ function Login({ onLogin, onResetPassword }) {
         <div className="admin-login-form">
           <div>
             <h2>Iniciar sesion</h2>
-            <p>Ingresa con la cuenta de Sebastian.</p>
+            <p>Usa tu cuenta personal para abrir solamente tu agenda.</p>
           </div>
           <form className="formulario grid gap-4" onSubmit={enviarLogin}>
             <div className="campo">
@@ -157,6 +165,7 @@ function Login({ onLogin, onResetPassword }) {
                 id="admin-user"
                 name="username"
                 value={loginForm.username}
+                placeholder="sebas o gabriel"
                 autoComplete="username"
                 required
                 onChange={(event) => setLoginForm((actual) => ({ ...actual, username: event.target.value }))}
@@ -183,6 +192,7 @@ function Login({ onLogin, onResetPassword }) {
               <input
                 name="username"
                 value={resetForm.username}
+                placeholder="Usuario"
                 aria-label="Usuario"
                 required
                 onChange={(event) => setResetForm((actual) => ({ ...actual, username: event.target.value }))}
@@ -228,7 +238,7 @@ function PageHead({ eyebrow, title, text, action }) {
   );
 }
 
-function Dashboard({ data, stats, onTab }) {
+function Dashboard({ data, stats, perfil, onTab }) {
   const safe = data || {};
   const monthly = stats || {};
   const proximas = safe.upcoming || [];
@@ -237,7 +247,7 @@ function Dashboard({ data, stats, onTab }) {
     <>
       <PageHead
         eyebrow="Resumen"
-        title="Buen dia, Sebastian."
+        title={`Buen dia, ${perfil?.name || "barbero"}.`}
         text="Esto es lo importante de hoy y del mes actual."
         action={<button className="btn btn-principal" type="button" onClick={() => onTab("bloqueos")}><CalendarOff size={17} />Bloquear agenda</button>}
       />
@@ -327,7 +337,7 @@ function Agenda({ admin, onFiltrar, onEstado, onMover }) {
   );
 }
 
-function Bloqueos({ onBloqueo }) {
+function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
   const [modo, setModo] = useState("horas");
   const [fecha, setFecha] = useState(hoyISO());
   const [inicio, setInicio] = useState("08:00");
@@ -415,8 +425,47 @@ function Bloqueos({ onBloqueo }) {
           </form>
         </section>
         <section className="admin-panel calendar-panel">
-          <div className="admin-panel-head"><div><span>Google Calendar</span><h2>Semana visible</h2></div></div>
-          <iframe className="admin-calendar-frame" title="Google Calendar Sebas Barber" src={CALENDAR_EMBED_URL} />
+          {perfil?.calendar_sync ? (
+            <>
+              <div className="admin-panel-head"><div><span>Agenda conectada</span><h2>Semana visible</h2></div></div>
+              <iframe className="admin-calendar-frame" title="Calendario de Sebastian" src={CALENDAR_EMBED_URL} />
+            </>
+          ) : (
+            <div className="local-agenda-state">
+              <span><Database size={24} /></span>
+              <div>
+                <small>Agenda personal</small>
+                <h2>Todo queda en este panel.</h2>
+                <p>Las citas y bloqueos de {perfil?.name || "este barbero"} se gestionan aqui y no se mezclan con otra agenda.</p>
+              </div>
+            </div>
+          )}
+          <div className="block-overview">
+            <div className="admin-panel-head">
+              <div><span>Proximos</span><h2>Bloqueos activos</h2></div>
+              <strong>{bloqueos.length}</strong>
+            </div>
+            <div className="block-list">
+              {bloqueos.map((bloqueo) => (
+                <article key={bloqueo.id}>
+                  <div>
+                    <strong>{fechaHumana(bloqueo.starts_at)}</strong>
+                    <span>{bloqueo.notes || bloqueo.service_name}</span>
+                  </div>
+                  <button
+                    className="icon-btn danger"
+                    type="button"
+                    onClick={() => onLiberar(bloqueo.id)}
+                    aria-label="Liberar horario"
+                    title="Liberar horario"
+                  >
+                    <XCircle size={17} />
+                  </button>
+                </article>
+              ))}
+              {bloqueos.length === 0 && <EmptyState text="No hay bloqueos pendientes." />}
+            </div>
+          </div>
         </section>
       </div>
     </>

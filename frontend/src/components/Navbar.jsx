@@ -22,8 +22,8 @@ export default function Navbar({ abierto, solida, onToggle }) {
           {abierto ? <X size={22} /> : <Menu size={22} />}
         </button>
         <div className={`nav-links ${abierto ? "abierto" : ""}`}>
+          <a href="#equipo" onClick={cerrar}>Equipo</a>
           <a href="#servicios" onClick={cerrar}>Servicios</a>
-          <a href="#trabajos" onClick={cerrar}>Trabajos</a>
           <a href="#ubicacion" onClick={cerrar}>Ubicacion</a>
           <a className="nav-reservar" href="#reserva" onClick={cerrar}>Reservar</a>
           <a href="#mis-citas" onClick={cerrar}>Mis citas</a>
