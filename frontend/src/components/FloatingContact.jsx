@@ -1,4 +1,5 @@
 import { MessageCircle } from "lucide-react";
+import useFormSectionVisible from "../hooks/useFormSectionVisible";
 
 function telefonoValido(value) {
   const phone = String(value || "").replace(/\D/g, "");
@@ -6,6 +7,7 @@ function telefonoValido(value) {
 }
 
 export default function FloatingContact({ barberos = [], seleccionado }) {
+  const formVisible = useFormSectionVisible();
   const preferido = barberos.find((item) => item.id === seleccionado);
   const contacto = [preferido, ...barberos].find((item) => telefonoValido(item?.phone));
   const phone = telefonoValido(contacto?.phone);
@@ -18,7 +20,7 @@ export default function FloatingContact({ barberos = [], seleccionado }) {
 
   return (
     <a
-      className="floating-contact"
+      className={`floating-contact ${formVisible ? "context-hidden" : ""}`}
       href={`https://wa.me/506${phone}?text=${message}`}
       target="_blank"
       rel="noreferrer"

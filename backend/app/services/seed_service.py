@@ -9,7 +9,7 @@ from app.services.password_service import hash_password
 
 SERVICES = [
     ("Corte de Cabello", 45, 5000, False),
-    ("Corte de Cabello Sebastián", 45, 6000, False),
+    ("Corte Premium", 45, 6000, False),
     ("Barba Completa", 45, 3000, False),
     ("Mantenimiento de Barba", 45, 2000, False),
     ("Perfilado de Cejas", 0, 1000, True),
@@ -45,20 +45,38 @@ BARBERS = [
     },
 ]
 
+SERVICE_RENAMES = {
+    "Corte de Cabello Sebastian": "Corte Premium",
+    "Corte de Cabello Sebastián": "Corte Premium",
+    "Corte Sebastian": "Corte Premium",
+    "Corte Sebastián": "Corte Premium",
+    "Colorimetria / Rayitos": "Colorimetría / Rayitos",
+}
+
+
+def normalized_service_name(name: str, price: int) -> str:
+    normalized = SERVICE_RENAMES.get(name)
+    if normalized:
+        return normalized
+
+    key = name.casefold()
+    if price == 6000 and key.startswith("corte") and "sebasti" in key:
+        return "Corte Premium"
+    return name
+
 
 async def seed_data(db: AsyncSession):
     services_result = await db.execute(select(Service))
     services = list(services_result.scalars().all())
-    service_renames = {
-        "Corte de Cabello Sebastian": "Corte de Cabello Sebastián",
-        "Colorimetria / Rayitos": "Colorimetría / Rayitos",
-    }
     current_names = {service.name for service in services}
     for service in services:
-        new_name = service_renames.get(service.name)
-        if new_name and new_name not in current_names:
+        new_name = normalized_service_name(service.name, service.price)
+        if new_name != service.name and new_name not in current_names:
+            current_names.discard(service.name)
             service.name = new_name
             current_names.add(new_name)
+        elif new_name != service.name:
+            service.is_active = False
 
     existing_service_names = {service.name for service in services}
     for name, duration, price, is_addon in SERVICES:

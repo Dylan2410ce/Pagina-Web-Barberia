@@ -21,7 +21,12 @@ function telefonoDisponible(phone) {
   return /^[24678]\d{7}$/.test(limpio) && !/^0+$/.test(limpio);
 }
 
-export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
+export default function TeamSection({
+  barberos,
+  seleccionado,
+  onSeleccionar,
+  onContinuar,
+}) {
   return (
     <section id="equipo" className="seccion bloque team-section">
       <div className="cabecera-seccion reveal">
@@ -36,7 +41,11 @@ export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
         {barberos.map((barbero, index) => {
           const activo = seleccionado === barbero.id;
           return (
-            <article className={`team-card ${activo ? "activo" : ""}`} key={barbero.id}>
+            <article
+              className={`team-card ${activo ? "activo" : ""}`}
+              key={barbero.id}
+              data-selected={activo || undefined}
+            >
               <div className={`team-visual team-visual-${index + 1}`}>
                 <BarberPhoto nombre={barbero.name} />
                 <span className="team-photo-accent"><Scissors size={24} /></span>
@@ -90,10 +99,11 @@ export default function TeamSection({ barberos, seleccionado, onSeleccionar }) {
                 <button
                   className={`btn btn-ancho ${activo ? "btn-secundario" : "btn-principal"}`}
                   type="button"
-                  onClick={() => onSeleccionar(barbero.id, true)}
+                  aria-pressed={activo}
+                  onClick={() => (activo ? onContinuar?.() : onSeleccionar(barbero.id))}
                 >
                   <CalendarCheck2 size={18} />
-                  {activo ? `Continuar con ${barbero.name}` : `Reservar con ${barbero.name}`}
+                  {activo ? `Continuar con ${barbero.name}` : `Elegir a ${barbero.name}`}
                 </button>
               </div>
             </article>

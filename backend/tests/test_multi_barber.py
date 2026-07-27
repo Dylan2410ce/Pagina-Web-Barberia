@@ -15,6 +15,7 @@ from app.services.calendar_service import (
     rfc3339_costa_rica,
 )
 from app.services.password_service import verify_password
+from app.services.seed_service import normalized_service_name
 
 
 class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
@@ -96,6 +97,20 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
 
     def test_unconfigured_account_cannot_authenticate(self):
         self.assertFalse(verify_password("cualquier-clave", "unconfigured"))
+
+    def test_legacy_premium_service_is_renamed(self):
+        self.assertEqual(
+            normalized_service_name("Corte de Cabello Sebastián", 6000),
+            "Corte Premium",
+        )
+        self.assertEqual(
+            normalized_service_name("Corte Sebastian", 6000),
+            "Corte Premium",
+        )
+        self.assertEqual(
+            normalized_service_name("Corte de Cabello", 5000),
+            "Corte de Cabello",
+        )
 
     def test_booking_schema_rejects_html_input(self):
         with self.assertRaises(ValidationError):

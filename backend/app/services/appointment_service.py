@@ -316,8 +316,8 @@ class AppointmentService:
             start_min = business_hours.open_min if business_hours else config.OPEN_MIN
             close_min = business_hours.close_min if business_hours else config.CLOSE_MIN
             duration = close_min - start_min
-            client_name = "Dia bloqueado"
-            service_name = "Bloqueo de dia"
+            client_name = "Día bloqueado"
+            service_name = "Bloqueo de día"
         else:
             start_min = data.start_min
             duration = data.end_min - data.start_min if data.end_min is not None else data.duration_min

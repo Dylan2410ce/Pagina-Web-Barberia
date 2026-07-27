@@ -217,7 +217,7 @@ class CalendarService:
             "summary": f"{appointment.service_name} - {appointment.client_name}",
             "description": (
                 f"Cliente: {appointment.client_name}\n"
-                f"Telefono: {appointment.client_phone}\n"
+                f"Teléfono: {appointment.client_phone}\n"
                 f"Servicio: {appointment.service_name}\n"
                 f"Precio: {appointment.total_price}\n"
                 f"Notas: {appointment.notes or ''}"

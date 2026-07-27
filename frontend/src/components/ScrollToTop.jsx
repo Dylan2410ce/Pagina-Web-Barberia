@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
+import useFormSectionVisible from "../hooks/useFormSectionVisible";
 
 export default function ScrollToTop() {
   const [visible, setVisible] = useState(false);
+  const formVisible = useFormSectionVisible();
 
   useEffect(() => {
     const actualizar = () => setVisible(window.scrollY > 560);
@@ -13,7 +15,7 @@ export default function ScrollToTop() {
 
   return (
     <button
-      className={`scroll-top ${visible ? "visible" : ""}`}
+      className={`scroll-top ${visible && !formVisible ? "visible" : ""}`}
       type="button"
       aria-label="Volver arriba"
       title="Volver arriba"

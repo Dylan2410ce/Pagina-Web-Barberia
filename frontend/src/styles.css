@@ -12,13 +12,16 @@
   --text: #f8f4eb;
   --text-soft: #dcd7cd;
   --muted: #aaa49a;
-  --gold: #c9a34e;
-  --gold-light: #efd480;
-  --amber: #dc9a55;
+  --gold: #e1a72f;
+  --gold-light: #f7d778;
+  --amber: #f59e0b;
   --copper: #c97962;
   --green: #78c39d;
-  --blue: #7eafc5;
+  --blue: #6599ed;
   --red: #e47c76;
+  --gold-glow: rgba(245, 158, 11, 0.22);
+  --blue-glow: rgba(59, 130, 246, 0.16);
+  --primary-gradient: linear-gradient(135deg, #f9dc83 0%, #f2b53c 58%, #dc8743 100%);
   --shadow: 0 20px 52px rgba(0, 0, 0, 0.28);
   --motion: 280ms cubic-bezier(0.22, 1, 0.36, 1);
   color: var(--text);
@@ -205,15 +208,16 @@ label {
 }
 
 .btn-principal {
-  border-color: #e1bb4a;
+  border-color: rgba(249, 220, 131, 0.8);
   color: #17130a;
-  background: var(--gold-light);
-  box-shadow: 0 12px 30px rgba(212, 175, 55, 0.18);
+  background: var(--primary-gradient);
+  box-shadow: 0 12px 30px var(--gold-glow);
 }
 
 .btn-principal:hover {
   color: #17130a;
-  background: #f7d985;
+  background: linear-gradient(135deg, #ffe699 0%, #f8c04c 58%, #e4934d 100%);
+  box-shadow: 0 16px 36px rgba(245, 158, 11, 0.3);
 }
 
 .btn-secundario {
@@ -271,9 +275,11 @@ label {
   place-items: center;
   color: var(--text);
   background: #272c2f;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion), color var(--motion);
 }
 
 .icon-btn:hover {
+  transform: translateY(-1px);
   border-color: var(--gold);
   background: #31373a;
 }
@@ -288,15 +294,16 @@ label {
   inset: 0 0 auto;
   z-index: 40;
   border-bottom: 1px solid transparent;
-  background: rgba(13, 15, 16, 0.45);
-  backdrop-filter: blur(12px);
-  transition: background 0.24s ease, border-color 0.24s ease;
+  background: rgba(13, 15, 16, 0.5);
+  backdrop-filter: blur(16px) saturate(1.18);
+  transition: background var(--motion), border-color var(--motion), box-shadow var(--motion);
 }
 
 .navbar-solida,
 .navbar:has(.nav-links.abierto) {
   border-color: var(--line);
-  background: rgba(16, 18, 19, 0.96);
+  background: rgba(16, 18, 19, 0.91);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
 }
 
 .nav-contenido {
@@ -340,6 +347,13 @@ label {
   place-items: center;
   color: var(--gold-light);
   background: #202426;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion);
+}
+
+.hamburguesa:hover {
+  transform: translateY(-1px);
+  border-color: var(--gold);
+  background: #292e2c;
 }
 
 .nav-links {
@@ -362,16 +376,27 @@ label {
   padding: 0 13px;
   color: var(--text-soft);
   font-weight: 700;
+  transition: color var(--motion), background var(--motion), transform var(--motion);
 }
 
 .nav-links a:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.nav-links a.activo:not(.nav-reservar) {
+  color: var(--gold-light);
+  background: rgba(245, 158, 11, 0.09);
 }
 
 .nav-links .nav-reservar {
   color: #18140a;
-  background: var(--gold-light);
+  background: var(--primary-gradient);
+}
+
+.nav-links .nav-reservar.activo {
+  box-shadow: 0 0 0 2px rgba(249, 220, 131, 0.24), 0 8px 24px var(--gold-glow);
 }
 
 .hero {
@@ -507,6 +532,7 @@ label {
 
 .team-section {
   padding-bottom: 54px;
+  overflow-anchor: none;
 }
 
 .team-grid {
@@ -526,14 +552,21 @@ label {
 }
 
 .team-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(240, 207, 114, 0.42);
+  transform: translateY(-5px) scale(1.012);
+  border-color: rgba(249, 215, 120, 0.52);
   background: #202426;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34), 0 0 28px rgba(59, 130, 246, 0.08);
 }
 
 .team-card.activo {
   border-color: var(--gold);
-  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.2), var(--shadow);
+  background:
+    linear-gradient(145deg, rgba(245, 158, 11, 0.09), transparent 45%),
+    var(--surface);
+  box-shadow:
+    inset 0 0 0 1px rgba(249, 215, 120, 0.22),
+    0 0 28px var(--gold-glow),
+    var(--shadow);
 }
 
 .team-visual {
@@ -658,6 +691,7 @@ label {
   background: var(--green);
   font-size: 0.67rem;
   font-weight: 800;
+  animation: selected-pop var(--motion) both;
 }
 
 .team-contact {
@@ -695,6 +729,11 @@ label {
   scrollbar-width: thin;
 }
 
+#servicios,
+.reserva-section {
+  overflow-anchor: none;
+}
+
 .filtros-servicios button {
   min-height: 40px;
   border: 1px solid var(--line-strong);
@@ -704,17 +743,41 @@ label {
   color: var(--text-soft);
   background: transparent;
   font-weight: 700;
+  transition: color var(--motion), border-color var(--motion), background var(--motion), transform var(--motion);
+}
+
+.filtros-servicios button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(249, 215, 120, 0.52);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .filtros-servicios button.activo {
   border-color: var(--gold);
   color: #18140a;
-  background: var(--gold-light);
+  background: var(--primary-gradient);
+  box-shadow: 0 8px 24px var(--gold-glow);
 }
 
 .menu-grid {
   display: grid;
   gap: 14px;
+}
+
+.menu-empty {
+  grid-column: 1 / -1;
+  min-height: 170px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  padding: 24px;
+  color: var(--text-soft);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .servicio-card {
@@ -731,14 +794,20 @@ label {
 }
 
 .servicio-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(240, 207, 114, 0.42);
+  transform: translateY(-4px) scale(1.015);
+  border-color: rgba(249, 215, 120, 0.5);
   background: #202426;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.32), 0 0 24px rgba(59, 130, 246, 0.07);
 }
 
 .servicio-card.activo {
   border-color: var(--gold);
-  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.28);
+  background:
+    linear-gradient(150deg, rgba(245, 158, 11, 0.1), transparent 44%),
+    var(--surface);
+  box-shadow:
+    inset 0 0 0 1px rgba(249, 215, 120, 0.26),
+    0 0 26px var(--gold-glow);
 }
 
 .servicio-top {
@@ -756,6 +825,13 @@ label {
   place-items: center;
   color: var(--gold-light);
   background: rgba(212, 175, 55, 0.11);
+}
+
+.servicio-card.activo .servicio-icono {
+  color: #17130a;
+  background: var(--primary-gradient);
+  box-shadow: 0 8px 22px var(--gold-glow);
+  animation: selected-pop var(--motion) both;
 }
 
 .servicio-precio {
@@ -818,6 +894,13 @@ label {
   color: var(--text);
   text-align: left;
   background: var(--surface);
+  transition: transform var(--motion), border-color var(--motion), background var(--motion);
+}
+
+.extra-option:hover {
+  transform: translateY(-2px);
+  border-color: rgba(101, 153, 237, 0.48);
+  background: rgba(59, 130, 246, 0.06);
 }
 
 .extra-option > span {
@@ -958,6 +1041,7 @@ label {
 
 .wizard-panel {
   padding: 18px;
+  scroll-margin-top: 82px;
 }
 
 .wizard-steps {
@@ -979,6 +1063,8 @@ label {
   background: transparent;
   font-size: 0.68rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  transition: color var(--motion), opacity var(--motion);
 }
 
 .wizard-steps button > span {
@@ -998,7 +1084,9 @@ label {
 .wizard-steps button.activo > span {
   border-color: var(--gold);
   color: #18140a;
-  background: var(--gold-light);
+  background: var(--primary-gradient);
+  box-shadow: 0 6px 18px var(--gold-glow);
+  animation: selected-pop var(--motion) both;
 }
 
 .wizard-steps button.completo > span {
@@ -1012,11 +1100,28 @@ label {
   opacity: 0.4;
 }
 
+.wizard-progress {
+  height: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wizard-progress > span {
+  height: 100%;
+  display: block;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(90deg, var(--amber), var(--gold-light), var(--blue));
+  box-shadow: 0 0 18px var(--gold-glow);
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .wizard-stage {
+  min-height: 430px;
   display: grid;
+  align-content: start;
   gap: 18px;
   padding-top: 24px;
-  animation: stage-in 0.24s ease;
+  animation: stage-in var(--motion);
 }
 
 .stage-heading {
@@ -1078,8 +1183,12 @@ label {
 
 .booking-barber-option.activo {
   border-color: var(--gold);
-  background: rgba(212, 175, 55, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.18);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.11), rgba(59, 130, 246, 0.05)),
+    #202427;
+  box-shadow:
+    inset 0 0 0 1px rgba(249, 215, 120, 0.2),
+    0 0 22px rgba(245, 158, 11, 0.12);
 }
 
 .booking-barber-option > span:nth-child(2) {
@@ -1098,6 +1207,47 @@ label {
 }
 
 .booking-barber-option.activo > svg {
+  color: var(--green);
+  animation: selected-pop var(--motion) both;
+}
+
+.booking-choice-summary {
+  border: 1px solid rgba(101, 153, 237, 0.3);
+  border-radius: 7px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  background:
+    linear-gradient(135deg, rgba(59, 130, 246, 0.09), rgba(245, 158, 11, 0.05)),
+    #202427;
+}
+
+.booking-choice-summary > span:first-child {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(101, 153, 237, 0.38);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: #dbe8ff;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.booking-choice-summary > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.booking-choice-summary small,
+.booking-choice-summary > div > span {
+  color: var(--muted);
+  font-size: 0.73rem;
+}
+
+.booking-choice-summary > svg {
   color: var(--green);
 }
 
@@ -1611,12 +1761,12 @@ label {
   display: grid;
   place-items: center;
   color: #17130a;
-  background: var(--gold-light);
+  background: var(--primary-gradient);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
   opacity: 0;
   pointer-events: none;
   transform: translateY(12px);
-  transition: opacity 0.22s ease, transform 0.22s ease, background 0.22s ease;
+  transition: opacity var(--motion), transform var(--motion), background var(--motion);
 }
 
 .scroll-top.visible {
@@ -2610,6 +2760,17 @@ label {
   }
 }
 
+@keyframes selected-pop {
+  from {
+    opacity: 0.45;
+    transform: scale(0.72);
+  }
+
+  70% {
+    transform: scale(1.08);
+  }
+}
+
 @media (min-width: 480px) {
   .menu-grid,
   .extras-grid,
@@ -3020,7 +3181,7 @@ label {
   color: var(--text);
   text-align: left;
   background: #212624;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion), box-shadow var(--motion);
 }
 
 .booking-service-list > button:hover {
@@ -3031,8 +3192,12 @@ label {
 
 .booking-service-list > button.activo {
   border-color: var(--gold);
-  background: rgba(201, 163, 78, 0.11);
-  box-shadow: inset 0 0 0 1px rgba(201, 163, 78, 0.16);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.11), rgba(59, 130, 246, 0.04)),
+    #212624;
+  box-shadow:
+    inset 0 0 0 1px rgba(249, 215, 120, 0.18),
+    0 0 20px rgba(245, 158, 11, 0.11);
 }
 
 .booking-service-list > button > span:nth-child(2) {
@@ -3065,7 +3230,9 @@ label {
 .booking-service-list > button.activo .booking-service-check {
   border-color: var(--gold-light);
   color: #17130a;
-  background: var(--gold-light);
+  background: var(--primary-gradient);
+  box-shadow: 0 7px 18px var(--gold-glow);
+  animation: selected-pop var(--motion) both;
 }
 
 .lookbook-section {
@@ -3268,12 +3435,18 @@ label {
   color: #102018;
   background: #8ad6ad;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform var(--motion), background var(--motion), opacity var(--motion);
 }
 
 .floating-contact:hover {
   transform: translateY(-3px);
   background: #9ce3bb;
+}
+
+.floating-contact.context-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
 }
 
 .floating-contact > span:first-child {

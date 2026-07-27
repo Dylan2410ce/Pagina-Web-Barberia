@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,10 +13,10 @@ import { dinero, limpiarTelefono } from "../utils/format";
 import BarberPhoto from "./BarberPhoto";
 
 const pasos = [
-  { id: 1, label: "Barbero" },
-  { id: 2, label: "Servicio" },
-  { id: 3, label: "Fecha y hora" },
-  { id: 4, label: "Tus datos" },
+  { id: 1, label: "Servicio" },
+  { id: 2, label: "Barbero" },
+  { id: 3, label: "Fecha" },
+  { id: 4, label: "Confirmación" },
 ];
 
 function fechaReserva(value) {
@@ -47,10 +47,11 @@ export default function BookingWizard({
   onSubmit,
 }) {
   const [paso, setPaso] = useState(1);
+  const panelRef = useRef(null);
 
   useEffect(() => {
-    if (!reserva.barber_id && paso > 1) setPaso(1);
-    else if (!reserva.service_id && paso > 2) setPaso(2);
+    if (!reserva.service_id && paso > 1) setPaso(1);
+    else if (!reserva.barber_id && paso > 2) setPaso(2);
     else if (reserva.start_min === null && paso > 3) setPaso(3);
   }, [paso, reserva.barber_id, reserva.service_id, reserva.start_min]);
 
@@ -63,13 +64,25 @@ export default function BookingWizard({
 
   const puedeAbrir = (numero) => {
     if (numero === 1) return true;
-    if (numero === 2) return Boolean(reserva.barber_id);
-    if (numero === 3) return Boolean(reserva.barber_id && reserva.service_id);
+    if (numero === 2) return Boolean(reserva.service_id);
+    if (numero === 3) return Boolean(reserva.service_id && reserva.barber_id);
     return Boolean(
-      reserva.barber_id
-      && reserva.service_id
+      reserva.service_id
+      && reserva.barber_id
       && reserva.start_min !== null
     );
+  };
+
+  const cambiarPaso = (numero) => {
+    if (!puedeAbrir(numero)) return;
+    setPaso(numero);
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => {
+      panelRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    });
   };
 
   return (
@@ -77,13 +90,13 @@ export default function BookingWizard({
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Reserva online</span>
-          <h2>Tu espacio, listo en cuatro pasos.</h2>
-          <p>Elige a tu barbero, encuentra una hora y confirma.</p>
+          <h2>Reserva tu espacio sin complicarte.</h2>
+          <p>Elige el servicio, tu barbero y la hora que mejor te funcione.</p>
         </div>
       </div>
 
       <div className="reserva-grid">
-        <div className="panel wizard-panel reveal">
+        <div className="panel wizard-panel reveal" ref={panelRef}>
           <nav className="wizard-steps" aria-label="Pasos de reserva">
             {pasos.map((item) => (
               <button
@@ -91,70 +104,31 @@ export default function BookingWizard({
                 key={item.id}
                 type="button"
                 disabled={!puedeAbrir(item.id)}
-                onClick={() => setPaso(item.id)}
+                onClick={() => cambiarPaso(item.id)}
+                aria-current={paso === item.id ? "step" : undefined}
               >
                 <span>{paso > item.id ? <Check size={15} /> : item.id}</span>
                 {item.label}
               </button>
             ))}
           </nav>
+          <div
+            className="wizard-progress"
+            role="progressbar"
+            aria-label={`Paso ${paso} de ${pasos.length}`}
+            aria-valuemin="1"
+            aria-valuemax={pasos.length}
+            aria-valuenow={paso}
+          >
+            <span style={{ width: `${(paso / pasos.length) * 100}%` }} />
+          </div>
 
           {paso === 1 && (
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>1 de 4</span>
-                <h3>¿Con quién te atiendes?</h3>
-                <p>Escoge una agenda y sigue.</p>
-              </div>
-              <div className="booking-barber-grid">
-                {barberos.map((item) => {
-                  const activo = reserva.barber_id === item.id;
-                  return (
-                    <button
-                      className={`booking-barber-option ${activo ? "activo" : ""}`}
-                      key={item.id}
-                      type="button"
-                      aria-pressed={activo}
-                      onClick={() => onBarbero(item.id)}
-                    >
-                      <BarberPhoto nombre={item.name} compacta />
-                      <span>
-                        <strong>{item.name}</strong>
-                        <small>{item.role}</small>
-                      </span>
-                      <CircleCheckBig size={21} />
-                    </button>
-                  );
-                })}
-              </div>
-              <button
-                className="btn btn-principal btn-ancho"
-                type="button"
-                onClick={() => setPaso(2)}
-                disabled={!reserva.barber_id}
-              >
-                Elegir servicio
-                <ArrowRight size={18} />
-              </button>
-            </div>
-          )}
-
-          {paso === 2 && (
-            <div className="wizard-stage">
-              <div className="stage-heading">
-                <span>2 de 4</span>
                 <h3>¿Qué te hacemos hoy?</h3>
-                <p>Primero elige el servicio principal. Después puedes sumar extras.</p>
-              </div>
-
-              <div className="barber-choice">
-                <span className="avatar-barber"><Scissors size={20} /></span>
-                <div>
-                  <small>Tu barbero</small>
-                  <strong>{barbero?.name}</strong>
-                  <span>{barbero?.role}</span>
-                </div>
-                <CircleCheckBig size={22} />
+                <p>Escoge el servicio principal y suma extras solo si los quieres.</p>
               </div>
 
               <div className="booking-service-picker">
@@ -208,16 +182,68 @@ export default function BookingWizard({
                 </div>
               )}
 
+              <button
+                className="btn btn-principal btn-ancho"
+                type="button"
+                onClick={() => cambiarPaso(2)}
+                disabled={!reserva.service_id}
+              >
+                Elegir barbero
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
+
+          {paso === 2 && (
+            <div className="wizard-stage">
+              <div className="stage-heading">
+                <span>2 de 4</span>
+                <h3>¿Con quién te atiendes?</h3>
+                <p>Elige la agenda de Sebastián o Gabriel.</p>
+              </div>
+
+              <div className="booking-choice-summary" aria-live="polite">
+                <span><Scissors size={19} /></span>
+                <div>
+                  <small>Servicio elegido</small>
+                  <strong>{resumen.servicio?.name}</strong>
+                  <span>{resumen.duracion} min · {dinero(resumen.total)}</span>
+                </div>
+                <CircleCheckBig size={21} />
+              </div>
+
+              <div className="booking-barber-grid">
+                {barberos.map((item) => {
+                  const activo = reserva.barber_id === item.id;
+                  return (
+                    <button
+                      className={`booking-barber-option ${activo ? "activo" : ""}`}
+                      key={item.id}
+                      type="button"
+                      aria-pressed={activo}
+                      onClick={() => onBarbero(item.id)}
+                    >
+                      <BarberPhoto nombre={item.name} compacta />
+                      <span>
+                        <strong>{item.name}</strong>
+                        <small>{item.role}</small>
+                      </span>
+                      <CircleCheckBig size={21} />
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="wizard-actions">
-                <button className="btn btn-linea" type="button" onClick={() => setPaso(1)}>
+                <button className="btn btn-linea" type="button" onClick={() => cambiarPaso(1)}>
                   <ArrowLeft size={18} />
                   Volver
                 </button>
                 <button
                   className="btn btn-principal"
                   type="button"
-                  onClick={() => setPaso(3)}
-                  disabled={!reserva.service_id}
+                  onClick={() => cambiarPaso(3)}
+                  disabled={!reserva.barber_id}
                 >
                   Elegir fecha
                   <ArrowRight size={18} />
@@ -254,6 +280,7 @@ export default function BookingWizard({
                       key={slot.start_min}
                       className={`slot ${reserva.start_min === slot.start_min ? "activo" : ""}`}
                       type="button"
+                      aria-pressed={reserva.start_min === slot.start_min}
                       onClick={() => setReserva((actual) => ({ ...actual, start_min: slot.start_min }))}
                     >
                       {slot.label}
@@ -265,14 +292,14 @@ export default function BookingWizard({
                 </div>
               </div>
               <div className="wizard-actions">
-                <button className="btn btn-linea" type="button" onClick={() => setPaso(2)}>
+                <button className="btn btn-linea" type="button" onClick={() => cambiarPaso(2)}>
                   <ArrowLeft size={18} />
                   Volver
                 </button>
                 <button
                   className="btn btn-principal"
                   type="button"
-                  onClick={() => setPaso(4)}
+                  onClick={() => cambiarPaso(4)}
                   disabled={reserva.start_min === null}
                 >
                   Continuar
@@ -287,7 +314,7 @@ export default function BookingWizard({
               <div className="stage-heading">
                 <span>4 de 4</span>
                 <h3>¿A nombre de quién?</h3>
-                <p>Déjanos tus datos y la reserva queda lista.</p>
+                <p>Déjanos tus datos y revisa el resumen antes de confirmar.</p>
               </div>
               <div className="campo">
                 <label htmlFor="client-name">Nombre completo</label>
@@ -345,7 +372,7 @@ export default function BookingWizard({
                 Tus datos se usan únicamente para gestionar esta cita.
               </div>
               <div className="wizard-actions">
-                <button className="btn btn-linea" type="button" onClick={() => setPaso(3)}>
+                <button className="btn btn-linea" type="button" onClick={() => cambiarPaso(3)}>
                   <ArrowLeft size={18} />
                   Volver
                 </button>

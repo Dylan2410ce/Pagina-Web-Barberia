@@ -26,6 +26,7 @@ import {
   mesActual,
   validarTelefono,
 } from "./utils/format";
+import { normalizarServicios } from "./utils/services";
 
 const reservaInicial = {
   barber_id: "",
@@ -194,16 +195,12 @@ export default function App() {
         const normalizados = {
           ...bootstrap,
           barbers,
-          services: bootstrap.services || [],
-          addons: bootstrap.addons || [],
+          services: normalizarServicios(bootstrap.services || []),
+          addons: normalizarServicios(bootstrap.addons || []),
           business_hours: bootstrap.business_hours || [],
         };
         setDatos(normalizados);
-        const primeraReserva = {
-          ...reservaInicial,
-          service_id: normalizados.services[0]?.id || "",
-        };
-        setReserva(primeraReserva);
+        setReserva({ ...reservaInicial });
         setCargando(false);
         const tokenGuardado = obtenerToken();
         if (tokenGuardado) await cargarAdmin(tokenGuardado, adminBase.filtros);
@@ -236,20 +233,24 @@ export default function App() {
     return () => observer.disconnect();
   }, [admin.tab, cargando, ruta]);
 
-  const seleccionarBarbero = async (id, desplazar = false) => {
+  const irAReserva = useCallback(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelector("#reserva")?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }, []);
+
+  const seleccionarBarbero = async (id) => {
     const siguiente = { barber_id: id, start_min: null };
     setReserva((actual) => ({ ...actual, ...siguiente }));
     await cargarSlots(siguiente);
-    if (desplazar) {
-      document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" });
-    }
   };
 
   const seleccionarServicio = async (id) => {
     const siguiente = { service_id: id, start_min: null };
     setReserva((actual) => ({ ...actual, ...siguiente }));
     await cargarSlots(siguiente);
-    document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const toggleExtra = async (id) => {
@@ -600,7 +601,7 @@ export default function App() {
         : [referencia, actual.notes].filter(Boolean).join(". ").slice(0, 240),
     }));
     avisar("ok", "Referencia guardada", "La verás en el último paso de tu reserva.");
-    document.querySelector("#reserva")?.scrollIntoView({ behavior: "smooth" });
+    irAReserva();
   };
 
   const guardarServicio = async (event, id = null) => {
@@ -719,6 +720,7 @@ export default function App() {
           barberos={datos.barbers}
           seleccionado={reserva.barber_id}
           onSeleccionar={seleccionarBarbero}
+          onContinuar={irAReserva}
         />
         <ServiceMenu
           servicios={datos.services}
@@ -726,6 +728,7 @@ export default function App() {
           reserva={reserva}
           onServicio={seleccionarServicio}
           onExtra={toggleExtra}
+          onContinuar={irAReserva}
         />
         <Gallery onElegirEstilo={elegirEstilo} />
         <BookingWizard

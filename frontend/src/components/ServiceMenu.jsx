@@ -1,16 +1,28 @@
 import { useMemo, useState } from "react";
-import { Check, Clock3, Image, Plus, Sparkles, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Clock3,
+  Image,
+  Plus,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { dinero } from "../utils/format";
 
 const categorias = [
   { id: "todos", label: "Todos" },
   { id: "cortes", label: "Cortes" },
   { id: "barba", label: "Barba" },
+  { id: "combos", label: "Combos" },
   { id: "tratamientos", label: "Tratamientos" },
 ];
 
 function categoriaDe(nombre = "") {
   const texto = nombre.toLowerCase();
+  if (texto.includes("combo") || (texto.includes("corte") && texto.includes("barba"))) {
+    return "combos";
+  }
   if (texto.includes("barba")) return "barba";
   if (
     texto.includes("color")
@@ -32,7 +44,14 @@ function descripcionServicio(servicio) {
   return "Corte a tu medida, con terminaciones limpias.";
 }
 
-export default function ServiceMenu({ servicios, extras, reserva, onServicio, onExtra }) {
+export default function ServiceMenu({
+  servicios,
+  extras,
+  reserva,
+  onServicio,
+  onExtra,
+  onContinuar,
+}) {
   const [categoria, setCategoria] = useState("todos");
   const [mostrarPoster, setMostrarPoster] = useState(false);
   const visibles = useMemo(
@@ -70,12 +89,26 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
       </div>
 
       <div className="menu-grid reveal">
+        {visibles.length === 0 && (
+          <div className="menu-empty">
+            <strong>Aún no hay servicios en esta categoría.</strong>
+            <button className="btn btn-linea" type="button" onClick={() => setCategoria("todos")}>
+              Ver todos
+            </button>
+          </div>
+        )}
         {visibles.map((servicio) => {
           const activo = reserva.service_id === servicio.id;
           return (
-            <article className={`servicio-card ${activo ? "activo" : ""}`} key={servicio.id}>
+            <article
+              className={`servicio-card ${activo ? "activo" : ""}`}
+              key={servicio.id}
+              data-selected={activo || undefined}
+            >
               <div className="servicio-top">
-                <span className="servicio-icono"><Sparkles size={18} /></span>
+                <span className="servicio-icono">
+                  {activo ? <Check size={18} /> : <Sparkles size={18} />}
+                </span>
                 <span className="servicio-precio">{dinero(servicio.price)}</span>
               </div>
               <div>
@@ -90,10 +123,10 @@ export default function ServiceMenu({ servicios, extras, reserva, onServicio, on
                 className={`btn ${activo ? "btn-principal" : "btn-linea"}`}
                 type="button"
                 aria-pressed={activo}
-                onClick={() => onServicio(servicio.id)}
+                onClick={() => (activo ? onContinuar?.() : onServicio(servicio.id))}
               >
-                {activo ? <Check size={17} /> : <Plus size={17} />}
-                {activo ? "Elegido" : "Elegir servicio"}
+                {activo ? <ArrowRight size={17} /> : <Plus size={17} />}
+                {activo ? "Continuar reserva" : "Elegir servicio"}
               </button>
             </article>
           );
