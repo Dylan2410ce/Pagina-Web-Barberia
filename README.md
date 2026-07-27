@@ -105,6 +105,75 @@ VITE_EMAILJS_TEMPLATE_BARBERO=TEMPLATE_ID_DEL_BARBERO
 VITE_BARBERO_EMAIL=CORREO_QUE_RECIBE_LAS_RESERVAS
 ```
 
+## EmailJS
+
+EmailJS se ejecuta desde el frontend. No requiere variables adicionales en
+Render. En Vercel, las seis variables del bloque anterior deben existir para
+los entornos **Production**, **Preview** y **Development**.
+
+Configura ambos templates con estos campos:
+
+```txt
+To Email: {{to_email}}
+From Name: {{from_name}}
+Reply To: {{reply_to}}
+Subject: {{email_subject}}
+```
+
+Template del cliente:
+
+```txt
+{{email_title}}
+
+{{email_message}}
+```
+
+Template del barbero:
+
+```txt
+{{email_title}}
+
+{{email_message}}
+```
+
+Cada envío recibe también las variables individuales de la cita:
+
+```txt
+{{appointment_id}}
+{{shop_name}}
+{{barber_name}}
+{{barber_email}}
+{{client_name}}
+{{client_phone}}
+{{client_email}}
+{{service_name}}
+{{addons}}
+{{appointment_date}}
+{{appointment_time}}
+{{appointment_datetime}}
+{{duration}}
+{{total_price}}
+{{notes}}
+{{location}}
+{{maps_url}}
+{{waze_url}}
+{{manage_url}}
+{{notification_type}}
+{{recipient_name}}
+```
+
+Los templates antiguos pueden seguir usando estos alias compatibles:
+
+```txt
+{{customer_name}}
+{{phone}}
+{{barber}}
+{{service}}
+{{extras}}
+{{starts_at}}
+{{total}}
+```
+
 ## Fotos
 
 Coloca y confirma en Git estos dos archivos:

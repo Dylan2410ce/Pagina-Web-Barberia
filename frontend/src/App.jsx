@@ -281,13 +281,30 @@ export default function App() {
         client_email: reserva.client_email.trim() || null,
         notes: reserva.notes.trim() || null,
       });
-      enviarCorreosCita(citaCreada, resumen).then((resultado) => {
-        if (resultado.fallos) {
-          avisar("warning", "Cita guardada", "La reserva quedó lista, pero algún correo no salió.");
-        }
-      });
-      setCitaConfirmada(citaCreada);
-      avisar("ok", "Cita lista", "Tu espacio quedó reservado.");
+      const resultadoCorreo = await enviarCorreosCita(citaCreada, resumen);
+      let avisoReserva = {
+        tipo: "ok",
+        titulo: "Cita confirmada",
+        mensaje: reserva.client_email.trim()
+          ? "Tu espacio quedó reservado y enviamos la confirmación por correo."
+          : "Tu espacio quedó reservado.",
+      };
+
+      if (!resultadoCorreo.configurado) {
+        avisoReserva = {
+          tipo: "warning",
+          titulo: "Cita confirmada",
+          mensaje: "Tu espacio quedó reservado, aunque el correo no está disponible.",
+        };
+      } else if (resultadoCorreo.fallos) {
+        avisoReserva = {
+          tipo: "warning",
+          titulo: "Cita confirmada",
+          mensaje: "Tu espacio quedó reservado, aunque algún correo no pudo enviarse.",
+        };
+      }
+
+      setCitaConfirmada({ cita: citaCreada, aviso: avisoReserva });
       const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
       setReserva(limpia);
       await cargarSlots(limpia);
@@ -342,6 +359,14 @@ export default function App() {
       danger: true,
       onConfirm: () => ejecutarCancelacionCliente(id),
     });
+  };
+
+  const cerrarConfirmacionCita = () => {
+    const aviso = citaConfirmada?.aviso;
+    setCitaConfirmada(null);
+    if (aviso) {
+      avisar(aviso.tipo, aviso.titulo, aviso.mensaje);
+    }
   };
 
   const abrirReprogramar = async (cita, modo) => {
@@ -762,9 +787,9 @@ export default function App() {
       {modalMapa && <MapModal location={datos.location} onClose={() => setModalMapa(false)} />}
       {citaConfirmada && (
         <BookingSuccessModal
-          cita={citaConfirmada}
-          barbero={datos.barbers.find((item) => item.id === citaConfirmada.barber_id)}
-          onClose={() => setCitaConfirmada(null)}
+          cita={citaConfirmada.cita}
+          barbero={datos.barbers.find((item) => item.id === citaConfirmada.cita.barber_id)}
+          onClose={cerrarConfirmacionCita}
         />
       )}
       <RescheduleModal

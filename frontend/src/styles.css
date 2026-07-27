@@ -20,6 +20,7 @@
   --blue: #7eafc5;
   --red: #e47c76;
   --shadow: 0 20px 52px rgba(0, 0, 0, 0.28);
+  --motion: 280ms cubic-bezier(0.22, 1, 0.36, 1);
   color: var(--text);
   background: var(--bg);
   font-family: "Inter", system-ui, sans-serif;
@@ -105,7 +106,7 @@ select {
   outline: none;
   color: var(--text);
   background: #202427;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color var(--motion), box-shadow var(--motion), background var(--motion);
 }
 
 input:focus,
@@ -176,7 +177,7 @@ label {
   color: var(--text);
   background: #252a2d;
   font-weight: 800;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion), box-shadow var(--motion);
 }
 
 .btn:hover {
@@ -521,7 +522,7 @@ label {
   display: grid;
   background: var(--surface);
   box-shadow: var(--shadow);
-  transition: transform 0.24s ease, border-color 0.24s ease, background 0.24s ease;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion), box-shadow var(--motion);
 }
 
 .team-card:hover {
@@ -673,7 +674,7 @@ label {
   place-items: center;
   color: var(--text-soft);
   background: #202427;
-  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition: transform var(--motion), border-color var(--motion), color var(--motion), background var(--motion);
 }
 
 .team-contact a:hover,
@@ -726,7 +727,7 @@ label {
   gap: 18px;
   padding: 20px;
   background: var(--surface);
-  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion), box-shadow var(--motion);
 }
 
 .servicio-card:hover {
@@ -1066,7 +1067,7 @@ label {
   color: var(--text);
   text-align: left;
   background: #202427;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion), box-shadow var(--motion);
 }
 
 .booking-barber-option:hover {
@@ -1174,6 +1175,13 @@ label {
   color: var(--text);
   text-align: left;
   background: #202426;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion);
+}
+
+.booking-extras button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(240, 207, 114, 0.46);
+  background: #292e2b;
 }
 
 .booking-extras button > span {
@@ -1214,7 +1222,7 @@ label {
   background: #22272a;
   font-size: 0.86rem;
   font-weight: 800;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: transform var(--motion), border-color var(--motion), background var(--motion), color var(--motion);
 }
 
 .slot:hover,
@@ -1641,6 +1649,10 @@ label {
   gap: 12px;
 }
 
+.modal-backdrop {
+  animation: backdrop-in 220ms ease-out both;
+}
+
 .loader-global > div {
   display: grid;
   justify-items: center;
@@ -1677,7 +1689,7 @@ label {
   border-radius: 8px;
   background: var(--surface-raised);
   box-shadow: var(--shadow);
-  animation: stage-in 0.22s ease;
+  animation: modal-in var(--motion) both;
 }
 
 .modal > header {
@@ -1713,7 +1725,7 @@ label {
   background:
     linear-gradient(145deg, rgba(212, 175, 55, 0.08), transparent 42%),
     var(--surface-raised);
-  animation: stage-in 0.24s ease;
+  animation: modal-in var(--motion) both;
 }
 
 .booking-success-close {
@@ -2582,6 +2594,19 @@ label {
   from {
     opacity: 0;
     transform: translateY(10px);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
   }
 }
 
