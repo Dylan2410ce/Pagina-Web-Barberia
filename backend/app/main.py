@@ -1,16 +1,19 @@
 import asyncio
 import logging
+from datetime import datetime, timezone
+from time import perf_counter
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import config
-from app.controllers import admin_controller, public_controller
+from app.controllers import admin_controller, public_controller, tasks_controller
 from app.database import AsyncSessionLocal, engine, init_db
 from app.routers import bookings
 from app.services.calendar_service import CalendarService
@@ -34,7 +37,7 @@ async def lifespan(_: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="Sebas Barber API", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="Sebas Barber API", version="3.0.0", lifespan=lifespan)
 
 allowed_origins = {
     config.FRONTEND_URL.rstrip("/"),
@@ -47,7 +50,7 @@ app.add_middleware(
     allow_origins=sorted(allowed_origins),
     allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -137,6 +140,7 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
 app.include_router(public_controller.router)
 app.include_router(bookings.router)
 app.include_router(admin_controller.router)
+app.include_router(tasks_controller.router)
 
 
 @app.get("/")
@@ -146,7 +150,36 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    started_at = perf_counter()
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+        latency_ms = round((perf_counter() - started_at) * 1000, 2)
+        return {
+            "status": "ok",
+            "service": "sebas-barber-api",
+            "version": app.version,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "database": {
+                "status": "connected",
+                "latency_ms": latency_ms,
+            },
+        }
+    except SQLAlchemyError as exc:
+        logger.exception("Healthcheck sin conexión a PostgreSQL", exc_info=exc)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "service": "sebas-barber-api",
+                "version": app.version,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "database": {
+                    "status": "unavailable",
+                    "latency_ms": None,
+                },
+            },
+        )
 
 
 @app.get("/health/calendar")

@@ -69,7 +69,7 @@ function mensajeCliente(data) {
   return [
     `Hola, ${data.client_name}.`,
     "",
-    `Tu cita en ${SHOP_NAME} quedó confirmada.`,
+    `Tu reserva en ${SHOP_NAME} quedó registrada.`,
     "",
     `Barbero: ${data.barber_name}`,
     `Servicio: ${data.service_name}`,
@@ -166,8 +166,8 @@ export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBER
     to_email: clientEmail,
     recipient_name: base.client_name,
     reply_to: base.barber_email,
-    email_subject: `Tu cita con ${base.barber_name} está confirmada`,
-    email_title: "Reserva confirmada",
+    email_subject: `Recibimos tu reserva con ${base.barber_name}`,
+    email_title: "Reserva recibida",
   };
   cliente.email_message = mensajeCliente(cliente);
 

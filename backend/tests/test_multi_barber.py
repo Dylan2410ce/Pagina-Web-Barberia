@@ -1,13 +1,19 @@
 import unittest
 from datetime import date, datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+from fastapi import HTTPException
 from pydantic import ValidationError
 
-from app.config import normalize_database_url
-from app.schemas import AppointmentCreate, QuickBlockCreate
+from app.config import config, normalize_database_url
+from app.models import AppointmentStatus
+from app.schemas import (
+    AppointmentCreate,
+    AvailabilityExceptionCreate,
+    QuickBlockCreate,
+)
 from app.services.appointment_service import AppointmentService
 from app.services.calendar_service import (
     CR_TZ,
@@ -15,6 +21,7 @@ from app.services.calendar_service import (
     rfc3339_costa_rica,
 )
 from app.services.password_service import verify_password
+from app.services.reminder_service import ReminderService
 from app.services.seed_service import BARBERS, normalized_service_name
 
 
@@ -133,6 +140,81 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
                 client_phone="88887777",
             )
 
+    def test_legacy_statuses_map_to_new_business_states(self):
+        self.assertEqual(
+            AppointmentStatus("booked"),
+            AppointmentStatus.pending,
+        )
+        self.assertEqual(
+            AppointmentStatus("present"),
+            AppointmentStatus.completed,
+        )
+        self.assertEqual(
+            AppointmentStatus("noshow"),
+            AppointmentStatus.no_show,
+        )
+
+    def test_availability_exception_rejects_invalid_ranges(self):
+        with self.assertRaises(ValidationError):
+            AvailabilityExceptionCreate(
+                start_date=date(2026, 8, 10),
+                end_date=date(2026, 8, 9),
+                title="Vacaciones",
+            )
+
+        with self.assertRaises(ValidationError):
+            AvailabilityExceptionCreate(
+                start_date=date(2026, 8, 10),
+                end_date=date(2026, 8, 10),
+                all_day=False,
+                start_min=600,
+                end_min=540,
+                title="Diligencia",
+            )
+
+    async def test_admin_cannot_change_another_barber_appointment(self):
+        appointment = SimpleNamespace(
+            id=uuid4(),
+            barber_id=uuid4(),
+            status=AppointmentStatus.pending,
+        )
+        self.service.appointments.by_id = AsyncMock(
+            return_value=appointment,
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            await self.service.update_status(
+                appointment.id,
+                self.gabriel.id,
+                AppointmentStatus.confirmed.value,
+            )
+
+        self.assertEqual(context.exception.status_code, 403)
+
+    async def test_pending_appointment_can_be_confirmed(self):
+        appointment = SimpleNamespace(
+            id=uuid4(),
+            barber_id=self.gabriel.id,
+            status=AppointmentStatus.pending,
+            calendar_event_id=None,
+        )
+        self.service.appointments.by_id = AsyncMock(
+            return_value=appointment,
+        )
+        self.service.barbers.by_id = AsyncMock(return_value=self.gabriel)
+        self.service.db.commit = AsyncMock()
+        self.service.db.refresh = AsyncMock()
+        self.service.audit = MagicMock()
+
+        result = await self.service.update_status(
+            appointment.id,
+            self.gabriel.id,
+            AppointmentStatus.confirmed.value,
+        )
+
+        self.assertEqual(result.status, AppointmentStatus.confirmed)
+        self.service.audit.record.assert_called_once()
+
     async def test_quick_block_uses_first_available_slot(self):
         self.service.availability = AsyncMock(
             return_value=[{"start_min": 570, "label": "9:30 AM"}]
@@ -158,6 +240,60 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(block.start_min, 570)
         self.assertEqual(block.end_min, 615)
         self.assertEqual(block.notes, "Descanso")
+
+    async def test_failed_reminder_is_not_marked_as_sent(self):
+        appointment = SimpleNamespace(
+            client_email="cliente@example.com",
+            reminder_sent_at=None,
+        )
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = [appointment]
+        db = MagicMock()
+        db.execute = AsyncMock(return_value=result)
+        db.commit = AsyncMock()
+        service = ReminderService(db)
+        service.email = MagicMock()
+        service.email.smtp_available.return_value = True
+        service.email.appointment_reminder.return_value = False
+
+        with patch.object(config, "REMINDERS_ENABLED", True):
+            summary = await service.process_due()
+
+        self.assertEqual(summary["processed"], 0)
+        self.assertEqual(summary["skipped"], 1)
+        self.assertIsNone(appointment.reminder_sent_at)
+
+    async def test_slot_is_locked_and_rechecked_before_insert(self):
+        data = AppointmentCreate(
+            barber_id=self.gabriel.id,
+            service_id=uuid4(),
+            date=date(2026, 7, 28),
+            start_min=480,
+            client_name="Cliente prueba",
+            client_phone="88887777",
+        )
+        self.service.barbers.by_id = AsyncMock(return_value=self.gabriel)
+        self.service.get_duration_and_price = AsyncMock(
+            return_value=("Corte Premium", [], 45, 6000)
+        )
+        self.service.validate_booking_window = AsyncMock()
+        self.service.lock_schedule = AsyncMock()
+        self.service.appointments.has_overlap = AsyncMock(return_value=True)
+        self.service.db.rollback = AsyncMock()
+
+        with self.assertRaises(HTTPException) as context:
+            await self.service.create(data)
+
+        self.assertEqual(context.exception.status_code, 409)
+        self.service.lock_schedule.assert_awaited_once_with(
+            self.gabriel.id,
+            data.date,
+        )
+        self.assertEqual(
+            self.service.validate_booking_window.await_count,
+            2,
+        )
+        self.service.db.rollback.assert_awaited_once()
 
 
 if __name__ == "__main__":

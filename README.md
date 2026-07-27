@@ -1,11 +1,12 @@
 # Sebas Barber
 
-Sistema de reservas para Sebastián y Gabriel.
+Sistema de reservas, agenda y CRM para Sebastián y Gabriel.
 
 - Frontend: React 19, Vite, CSS3, Tailwind CSS y Lucide.
 - Backend: FastAPI, Pydantic v2 y SQLAlchemy Async.
 - Base de datos: PostgreSQL en Neon.
 - Calendarios: Google Calendar independiente para cada barbero.
+- Operación: PWA instalable, auditoría, CRM y disponibilidad especial.
 
 ## Estructura
 
@@ -68,6 +69,10 @@ CALENDAR_REQUIRED=true
 APPOINTMENT_BUFFER_MIN=0
 SERVICE_CACHE_TTL_SECONDS=300
 NOTIFY_EMAILS_ENABLED=false
+REMINDERS_ENABLED=false
+REMINDER_LEAD_HOURS=24
+REMINDER_BATCH_SIZE=50
+REMINDER_TASK_TOKEN=TOKEN_ALEATORIO_LARGO
 ```
 
 `ADMIN_PASSWORD_HASH` y `GABRIEL_PASSWORD_HASH` son alternativas opcionales a
@@ -82,6 +87,38 @@ Diagnóstico:
 ```txt
 https://TU-SERVICIO.onrender.com/health
 https://TU-SERVICIO.onrender.com/health/calendar
+```
+
+`/health` comprueba la conexión con PostgreSQL y devuelve `503` cuando Neon no
+está disponible. Las tablas, índices y migraciones compatibles se aplican al
+iniciar Render; no hay un comando manual de migración.
+
+Los recordatorios quedan desactivados por defecto. Para activarlos configura
+SMTP, cambia `REMINDERS_ENABLED=true` y ejecuta periódicamente:
+
+```txt
+EMAIL_PROVIDER=smtp
+NOTIFY_EMAILS_ENABLED=false
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=usuario_smtp
+SMTP_PASSWORD=clave_smtp
+SMTP_FROM=reservas@tu-dominio.com
+```
+
+`NOTIFY_EMAILS_ENABLED=false` conserva EmailJS para las confirmaciones
+inmediatas y usa SMTP únicamente para recordatorios. La tarea protegida es:
+
+```txt
+POST https://TU-SERVICIO.onrender.com/api/tasks/reminders
+X-Task-Token: valor_de_REMINDER_TASK_TOKEN
+```
+
+Para mantener despierto el servicio gratuito configura en cron-job.org una
+solicitud `GET` cada 10 minutos a:
+
+```txt
+https://pagina-web-barberia.onrender.com/health
 ```
 
 ## Vercel
@@ -195,3 +232,28 @@ Gabriel: usuario gabriel
 
 Cada sesión queda asociada a un barbero. Citas, horarios, bloqueos, clientes,
 reportes y calendario se filtran en el servidor por ese perfil.
+
+El panel incluye estados de cita, exportación CSV, historial y frecuencia de
+clientes, feriados, vacaciones y una bitácora independiente por barbero.
+
+## PWA y legales
+
+La web puede instalarse desde el navegador móvil. El manifiesto, los iconos y
+el Service Worker viven en `frontend/public/`. Las páginas legales son:
+
+```txt
+/privacidad
+/terminos-reserva
+/aviso-cancelacion
+```
+
+## Pruebas
+
+```txt
+cd frontend
+npm test
+npm run build
+
+cd ../backend
+python -m unittest discover -s tests -v
+```

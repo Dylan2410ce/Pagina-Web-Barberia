@@ -1,0 +1,52 @@
+{
+  "name": "Sebas Barber",
+  "short_name": "Sebas Barber",
+  "description": "Reserva y administra citas de Sebas Barber.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#141715",
+  "theme_color": "#141715",
+  "lang": "es-CR",
+  "categories": ["business", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Reservar cita",
+      "short_name": "Reservar",
+      "url": "/#reserva",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Mis citas",
+      "short_name": "Mis citas",
+      "url": "/#mis-citas",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

@@ -16,9 +16,9 @@ export default function BookingSuccessModal({ cita, barbero, onClose }) {
         <div className="booking-success-icon">
           <Check size={30} strokeWidth={3} />
         </div>
-        <span className="eyebrow"><CalendarCheck2 size={14} />Reserva confirmada</span>
-        <h2 id="booking-success-title">Tu espacio ya es tuyo.</h2>
-        <p>Te esperamos en Sebas Barber. Guarda estos datos para tenerlos a mano.</p>
+        <span className="eyebrow"><CalendarCheck2 size={14} />Reserva recibida</span>
+        <h2 id="booking-success-title">Tu horario quedó apartado.</h2>
+        <p>El barbero podrá confirmarlo desde su agenda. Guarda estos datos para tenerlos a mano.</p>
 
         <dl className="booking-success-summary grid gap-3">
           <div><dt>Servicio</dt><dd>{cita.service_name}</dd></div>

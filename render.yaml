@@ -37,3 +37,11 @@ services:
         value: "0"
       - key: SERVICE_CACHE_TTL_SECONDS
         value: "300"
+      - key: REMINDERS_ENABLED
+        value: "false"
+      - key: REMINDER_LEAD_HOURS
+        value: "24"
+      - key: REMINDER_BATCH_SIZE
+        value: "50"
+      - key: REMINDER_TASK_TOKEN
+        sync: false

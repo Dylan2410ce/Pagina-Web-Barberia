@@ -49,7 +49,7 @@ export default function ClientAppointments({ telefono, setTelefono, citas, barbe
                   {fechaHumana(cita.starts_at)} | {dinero(cita.total_price)}
                 </p>
               </div>
-              {cita.status === "booked" ? (
+              {["pending", "confirmed", "booked"].includes(cita.status) ? (
                 <div className="acciones-card">
                   <button className="btn btn-linea" type="button" onClick={() => onReprogramar(cita)}>
                     <CalendarClock size={16} />

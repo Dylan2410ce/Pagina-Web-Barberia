@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Code2 } from "lucide-react";
 import { adminApi, borrarToken, guardarToken, obtenerToken, publicoApi } from "./api/client";
-import AdminPanel from "./components/AdminPanel";
 import BookingSuccessModal from "./components/BookingSuccessModal";
 import BookingWizard from "./components/BookingWizard";
 import ClientAppointments from "./components/ClientAppointments";
@@ -29,6 +35,14 @@ import {
 import { normalizarBarberos } from "./utils/barbers";
 import { normalizarServicios } from "./utils/services";
 
+const AdminPanel = lazy(() => import("./components/AdminPanel"));
+const LegalPage = lazy(() => import("./components/LegalPage"));
+const LEGAL_ROUTES = new Set([
+  "/privacidad",
+  "/terminos-reserva",
+  "/aviso-cancelacion",
+]);
+
 const reservaInicial = {
   barber_id: "",
   service_id: "",
@@ -49,7 +63,9 @@ const adminBase = {
   bloqueos: [],
   servicios: [],
   horarios: [],
+  ausencias: [],
   clientes: [],
+  actividad: [],
   stats: null,
   tab: "resumen",
   filtros: { date: hoyISO(), status: "", q: "" },
@@ -57,6 +73,7 @@ const adminBase = {
 
 export default function App() {
   const [ruta, setRuta] = useState(() => window.location.pathname);
+  const esRutaLegal = LEGAL_ROUTES.has(ruta);
   const [datos, setDatos] = useState({
     barbers: [],
     services: [],
@@ -66,7 +83,7 @@ export default function App() {
   });
   const [reserva, setReserva] = useState(reservaInicial);
   const [slots, setSlots] = useState([]);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(!esRutaLegal);
   const [cargandoSlots, setCargandoSlots] = useState(false);
   const [procesando, setProcesando] = useState("");
   const [toastList, setToastList] = useState([]);
@@ -158,8 +175,10 @@ export default function App() {
         adminApi.bloqueos(tokenActual),
         adminApi.servicios(tokenActual),
         adminApi.horarios(tokenActual),
+        adminApi.ausencias(tokenActual),
         adminApi.clientes(tokenActual),
         adminApi.stats(tokenActual, year, month),
+        adminApi.actividad(tokenActual),
       ]);
 
       const valor = (index, fallback) => resultados[index].status === "fulfilled" ? resultados[index].value : fallback;
@@ -174,8 +193,10 @@ export default function App() {
         bloqueos: valor(2, actual.bloqueos || []),
         servicios: valor(3, actual.servicios || []),
         horarios: valor(4, actual.horarios || []),
-        clientes: valor(5, actual.clientes || []),
-        stats: valor(6, actual.stats || {}),
+        ausencias: valor(5, actual.ausencias || []),
+        clientes: valor(6, actual.clientes || []),
+        stats: valor(7, actual.stats || {}),
+        actividad: valor(8, actual.actividad || []),
       }));
 
       if (cargaParcial) {
@@ -189,6 +210,8 @@ export default function App() {
   }, [admin.filtros, admin.token, avisar]);
 
   useEffect(() => {
+    if (esRutaLegal) return undefined;
+
     async function iniciar() {
       try {
         const bootstrap = await publicoApi.iniciar();
@@ -211,7 +234,8 @@ export default function App() {
       }
     }
     iniciar();
-  }, []);
+    return undefined;
+  }, [esRutaLegal]);
 
   useEffect(() => {
     const onScroll = () => setNavSolida(window.scrollY > 18);
@@ -286,22 +310,22 @@ export default function App() {
       const resultadoCorreo = await enviarCorreosCita(citaCreada, resumen);
       let avisoReserva = {
         tipo: "ok",
-        titulo: "Cita confirmada",
+        titulo: "Reserva recibida",
         mensaje: reserva.client_email.trim()
-          ? "Tu espacio quedó reservado y enviamos la confirmación por correo."
+          ? "Tu espacio quedó apartado y enviamos el resumen por correo."
           : "Tu espacio quedó reservado.",
       };
 
       if (!resultadoCorreo.configurado) {
         avisoReserva = {
           tipo: "warning",
-          titulo: "Cita confirmada",
+          titulo: "Reserva recibida",
           mensaje: "Tu espacio quedó reservado, aunque el correo no está disponible.",
         };
       } else if (resultadoCorreo.fallos) {
         avisoReserva = {
           tipo: "warning",
-          titulo: "Cita confirmada",
+          titulo: "Reserva recibida",
           mensaje: "Tu espacio quedó reservado, aunque algún correo no pudo enviarse.",
         };
       }
@@ -532,7 +556,7 @@ export default function App() {
   };
 
   const solicitarEstadoAdmin = (id, status) => {
-    if (!["cancelled", "noshow"].includes(status)) {
+    if (!["cancelled", "no_show"].includes(status)) {
       cambiarEstadoAdmin(id, status);
       return;
     }
@@ -541,17 +565,17 @@ export default function App() {
     setConfirmacion({
       title: esBloqueo
         ? "¿Liberar este horario?"
-        : status === "noshow"
+        : status === "no_show"
           ? "¿Marcar como ausencia?"
           : "¿Cancelar esta cita?",
       message: esBloqueo
         ? "El espacio volverá a aparecer disponible en la agenda."
-        : status === "noshow"
+        : status === "no_show"
           ? "La cita quedará registrada como no asistida."
           : "La reserva se cancelará y el horario quedará libre.",
       confirmLabel: esBloqueo
         ? "Liberar horario"
-        : status === "noshow"
+        : status === "no_show"
           ? "Marcar ausencia"
           : "Cancelar cita",
       danger: true,
@@ -570,6 +594,36 @@ export default function App() {
     } catch (error) {
       avisar("error", "No se pudo bloquear", error.message);
       return false;
+    } finally {
+      setProcesando("");
+    }
+  };
+
+  const crearAusencia = async (data) => {
+    setProcesando("Guardando disponibilidad...");
+    try {
+      await adminApi.crearAusencia(admin.token, data);
+      await cargarAdmin();
+      await cargarSlots();
+      avisar("ok", "Disponibilidad actualizada");
+      return true;
+    } catch (error) {
+      avisar("error", "No se pudo guardar", error.message);
+      return false;
+    } finally {
+      setProcesando("");
+    }
+  };
+
+  const eliminarAusencia = async (id) => {
+    setProcesando("Actualizando agenda...");
+    try {
+      await adminApi.eliminarAusencia(admin.token, id);
+      await cargarAdmin();
+      await cargarSlots();
+      avisar("ok", "Ausencia eliminada");
+    } catch (error) {
+      avisar("error", "No se pudo eliminar", error.message);
     } finally {
       setProcesando("");
     }
@@ -651,6 +705,14 @@ export default function App() {
     }
   };
 
+  if (esRutaLegal) {
+    return (
+      <Suspense fallback={<main className="pantalla-carga"><span className="spinner grande" /></main>}>
+        <LegalPage path={ruta} />
+      </Suspense>
+    );
+  }
+
   if (cargando) {
     return (
       <main className="pantalla-carga">
@@ -670,6 +732,8 @@ export default function App() {
     onEstado: solicitarEstadoAdmin,
     onMover: (cita) => abrirReprogramar(cita, "admin"),
     onBloqueo: crearBloqueo,
+    onAusencia: crearAusencia,
+    onEliminarAusencia: eliminarAusencia,
     onGuardarServicio: guardarServicio,
     onGuardarHorario: guardarHorario,
     onChangePassword: cambiarPassword,
@@ -680,7 +744,9 @@ export default function App() {
     return (
       <>
         <main className="admin-route">
-          <AdminPanel {...adminProps} standalone />
+          <Suspense fallback={<div className="pantalla-carga"><span className="spinner grande" /></div>}>
+            <AdminPanel {...adminProps} standalone />
+          </Suspense>
         </main>
         {procesando && (
           <div className="loader-global">
@@ -776,6 +842,9 @@ export default function App() {
             <a href="#servicios">Servicios</a>
             <a href="#reserva">Reservar</a>
             <a href="#ubicacion">Ubicación</a>
+            <a href="/privacidad">Privacidad</a>
+            <a href="/terminos-reserva">Términos</a>
+            <a href="/aviso-cancelacion">Cancelaciones</a>
           </nav>
         </div>
         <div className="footer-legal">

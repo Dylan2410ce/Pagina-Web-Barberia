@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Download,
   MoveRight,
   Search,
   XCircle,
@@ -12,10 +13,14 @@ import {
 import {
   claseEstado,
   dinero,
+  fechaHumana,
   hoyISO,
   textoEstado,
 } from "../../utils/format";
+import { descargarCsv } from "../../utils/csv";
 import AdminPageHead from "./AdminPageHead";
+
+const PAGE_SIZE = 8;
 
 const formatoDia = new Intl.DateTimeFormat("es-CR", {
   weekday: "long",
@@ -41,19 +46,32 @@ function moverFecha(value, amount) {
 
 export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
   const [filtros, setFiltros] = useState(admin.filtros);
+  const [pagina, setPagina] = useState(1);
 
   useEffect(() => {
     setFiltros(admin.filtros);
+    setPagina(1);
   }, [admin.filtros]);
 
   const resumen = useMemo(() => {
     const citas = admin.citas.filter((item) => item.status !== "blocked");
     return {
       total: citas.length,
-      pendientes: citas.filter((item) => item.status === "booked").length,
-      completadas: citas.filter((item) => item.status === "present").length,
+      pendientes: citas.filter((item) => (
+        ["pending", "confirmed"].includes(item.status)
+      )).length,
+      completadas: citas.filter((item) => item.status === "completed").length,
     };
   }, [admin.citas]);
+  const totalPaginas = Math.max(1, Math.ceil(admin.citas.length / PAGE_SIZE));
+  const citasVisibles = admin.citas.slice(
+    (pagina - 1) * PAGE_SIZE,
+    pagina * PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    if (pagina > totalPaginas) setPagina(totalPaginas);
+  }, [pagina, totalPaginas]);
 
   const aplicar = (next) => {
     setFiltros(next);
@@ -71,12 +89,37 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
 
   const tituloFecha = formatoDia.format(new Date(`${filtros.date || hoyISO()}T12:00:00`));
 
+  const exportar = () => descargarCsv(
+    `agenda-${filtros.date || hoyISO()}.csv`,
+    admin.citas,
+    [
+      { label: "Fecha", value: (item) => fechaHumana(item.starts_at) },
+      { label: "Cliente", value: (item) => item.client_name },
+      { label: "Teléfono", value: (item) => item.client_phone },
+      { label: "Servicio", value: (item) => item.service_name },
+      { label: "Extras", value: (item) => item.addons },
+      { label: "Estado", value: (item) => textoEstado(item.status) },
+      { label: "Total", value: (item) => item.total_price },
+    ],
+  );
+
   return (
     <>
       <AdminPageHead
         eyebrow="Agenda"
         title="Citas y asistencia"
         text="Revisa el día, encuentra una reserva y registra cada visita."
+        action={(
+          <button
+            className="btn btn-linea"
+            type="button"
+            onClick={exportar}
+            disabled={admin.citas.length === 0}
+          >
+            <Download size={17} />
+            Exportar CSV
+          </button>
+        )}
       />
 
       <section className="admin-panel agenda-panel">
@@ -126,7 +169,7 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
             onChange={(event) => setFiltros((actual) => ({ ...actual, status: event.target.value }))}
           >
             <option value="">Todos los estados</option>
-            {["booked", "present", "noshow", "cancelled", "blocked"].map((status) => (
+            {["pending", "confirmed", "completed", "no_show", "cancelled", "blocked"].map((status) => (
               <option value={status} key={status}>{textoEstado(status)}</option>
             ))}
           </select>
@@ -141,7 +184,7 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
               <span>No hay citas con estos filtros.</span>
             </div>
           )}
-          {admin.citas.map((cita) => {
+          {citasVisibles.map((cita) => {
             const esBloqueo = cita.status === "blocked";
             return (
               <article className={`agenda-event ${esBloqueo ? "agenda-event-blocked" : ""}`} key={cita.id}>
@@ -165,17 +208,22 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
                   )}
                 </div>
                 <div className="appointment-actions">
-                  {cita.status === "booked" && (
+                  {cita.status === "pending" && (
+                    <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "confirmed")}>
+                      <CheckCircle2 size={16} />Confirmar
+                    </button>
+                  )}
+                  {cita.status === "confirmed" && (
                     <>
-                      <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "present")}>
-                        <CheckCircle2 size={16} />Asistió
+                      <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "completed")}>
+                        <CheckCircle2 size={16} />Completar
                       </button>
-                      <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "noshow")}>
+                      <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "no_show")}>
                         <XCircle size={16} />No asistió
                       </button>
                     </>
                   )}
-                  {["booked", "blocked"].includes(cita.status) && (
+                  {["pending", "confirmed", "blocked"].includes(cita.status) && (
                     <>
                       <button className="icon-btn" type="button" onClick={() => onMover(cita)} title="Mover" aria-label="Mover cita o bloqueo">
                         <MoveRight size={17} />
@@ -190,6 +238,29 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
             );
           })}
         </div>
+        {admin.citas.length > PAGE_SIZE && (
+          <nav className="pagination" aria-label="Páginas de citas">
+            <button
+              className="icon-btn"
+              type="button"
+              onClick={() => setPagina((actual) => Math.max(1, actual - 1))}
+              disabled={pagina === 1}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft size={17} />
+            </button>
+            <span>Página {pagina} de {totalPaginas}</span>
+            <button
+              className="icon-btn"
+              type="button"
+              onClick={() => setPagina((actual) => Math.min(totalPaginas, actual + 1))}
+              disabled={pagina === totalPaginas}
+              aria-label="Página siguiente"
+            >
+              <ChevronRight size={17} />
+            </button>
+          </nav>
+        )}
       </section>
     </>
   );

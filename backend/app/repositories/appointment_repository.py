@@ -1,11 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Appointment, AppointmentStatus
 
-ACTIVE = [AppointmentStatus.booked, AppointmentStatus.blocked, AppointmentStatus.present]
+ACTIVE = [
+    AppointmentStatus.pending,
+    AppointmentStatus.confirmed,
+    AppointmentStatus.blocked,
+]
 
 
 class AppointmentRepository:
@@ -24,11 +28,24 @@ class AppointmentRepository:
         start: datetime | None = None,
         end: datetime | None = None,
         active_only: bool = False,
+        status: AppointmentStatus | None = None,
+        query: str | None = None,
         limit: int = 500,
     ) -> list[Appointment]:
         statement = select(Appointment).where(Appointment.barber_id == barber_id)
         if active_only:
             statement = statement.where(Appointment.status.in_(ACTIVE))
+        if status:
+            statement = statement.where(Appointment.status == status)
+        if query:
+            term = f"%{query.strip().lower()}%"
+            statement = statement.where(
+                or_(
+                    func.lower(Appointment.client_name).like(term),
+                    Appointment.client_phone.like(term),
+                    func.lower(Appointment.service_name).like(term),
+                )
+            )
         if start and end:
             statement = statement.where(
                 Appointment.starts_at < end,

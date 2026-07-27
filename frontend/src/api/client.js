@@ -154,6 +154,12 @@ export const adminApi = {
   horarios: (token) => api("/api/admin/business-hours", { token }),
   editarHorario: (token, weekday, datos) =>
     api(`/api/admin/business-hours/${weekday}`, { method: "PUT", token, body: datos }),
+  ausencias: (token) => api("/api/admin/availability-exceptions", { token }),
+  crearAusencia: (token, datos) =>
+    api("/api/admin/availability-exceptions", { method: "POST", token, body: datos }),
+  eliminarAusencia: (token, id) =>
+    api(`/api/admin/availability-exceptions/${id}`, { method: "DELETE", token }),
+  actividad: (token) => api("/api/admin/audit-logs", { token }),
   clientes: (token) => api("/api/admin/clients", { token }),
   stats: (token, year, month) => api(`/api/admin/stats${query({ year, month })}`, { token }),
   resetPassword: (datos) => api("/api/admin/reset-password", { method: "POST", body: datos }),

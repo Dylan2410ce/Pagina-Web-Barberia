@@ -1,21 +1,57 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+JSON_TYPE = JSON().with_variant(JSONB, "postgresql")
+
 
 class AppointmentStatus(str, enum.Enum):
-    booked = "booked"
-    present = "present"
-    noshow = "noshow"
+    pending = "pending"
+    confirmed = "confirmed"
+    completed = "completed"
     cancelled = "cancelled"
+    no_show = "no_show"
     blocked = "blocked"
     rescheduled = "rescheduled"
+
+    booked = "pending"
+    present = "completed"
+    noshow = "no_show"
+
+    @classmethod
+    def _missing_(cls, value):
+        legacy = {
+            "booked": cls.pending,
+            "present": cls.completed,
+            "noshow": cls.no_show,
+        }
+        return legacy.get(value)
+
+
+class AvailabilityKind(str, enum.Enum):
+    holiday = "holiday"
+    vacation = "vacation"
+    personal = "personal"
+    custom = "custom"
 
 
 class Barber(Base):
@@ -39,6 +75,14 @@ class Barber(Base):
 
     appointments: Mapped[list["Appointment"]] = relationship(back_populates="barber")
     business_hours: Mapped[list["BusinessHour"]] = relationship(
+        back_populates="barber",
+        cascade="all, delete-orphan",
+    )
+    availability_exceptions: Mapped[list["AvailabilityException"]] = relationship(
+        back_populates="barber",
+        cascade="all, delete-orphan",
+    )
+    audit_logs: Mapped[list["AuditLog"]] = relationship(
         back_populates="barber",
         cascade="all, delete-orphan",
     )
@@ -69,14 +113,26 @@ class Appointment(Base):
     client_phone: Mapped[str] = mapped_column(String(20), nullable=False)
     client_email: Mapped[str | None] = mapped_column(String(160), nullable=True)
     service_name: Mapped[str] = mapped_column(String(120), nullable=False)
-    addons: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    addons: Mapped[list[str]] = mapped_column(JSON_TYPE, default=list)
     total_price: Mapped[int] = mapped_column(Integer, nullable=False)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     calendar_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    status: Mapped[AppointmentStatus] = mapped_column(Enum(AppointmentStatus), default=AppointmentStatus.booked)
+    status: Mapped[AppointmentStatus] = mapped_column(
+        Enum(
+            AppointmentStatus,
+            name="appointmentstatus",
+            values_callable=lambda enum_class: [item.value for item in enum_class],
+        ),
+        default=AppointmentStatus.pending,
+        nullable=False,
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    reminder_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     barber: Mapped[Barber] = relationship(back_populates="appointments")
 
@@ -100,3 +156,88 @@ class BusinessHour(Base):
     close_min: Mapped[int] = mapped_column(Integer, default=19 * 60)
 
     barber: Mapped[Barber] = relationship(back_populates="business_hours")
+
+
+class AvailabilityException(Base):
+    __tablename__ = "availability_exceptions"
+    __table_args__ = (
+        Index(
+            "ix_availability_exceptions_barber_dates",
+            "barber_id",
+            "start_date",
+            "end_date",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    barber_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("barbers.id"),
+        nullable=False,
+        index=True,
+    )
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    start_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    end_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    kind: Mapped[AvailabilityKind] = mapped_column(
+        Enum(
+            AvailabilityKind,
+            name="availabilitykind",
+            values_callable=lambda enum_class: [item.value for item in enum_class],
+        ),
+        default=AvailabilityKind.custom,
+        nullable=False,
+    )
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    barber: Mapped[Barber] = relationship(
+        back_populates="availability_exceptions",
+    )
+
+    @property
+    def all_day(self) -> bool:
+        return self.start_min is None or self.end_min is None
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_logs_barber_created", "barber_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    barber_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("barbers.id"),
+        nullable=False,
+        index=True,
+    )
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    entity_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        nullable=True,
+    )
+    details: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    barber: Mapped[Barber] = relationship(back_populates="audit_logs")

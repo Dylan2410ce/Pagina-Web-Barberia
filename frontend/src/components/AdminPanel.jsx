@@ -7,12 +7,14 @@ import {
   Clock3,
   Database,
   Home,
+  History,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
   Plus,
   Scissors,
   ShieldCheck,
+  Trash2,
   Users,
   XCircle,
 } from "lucide-react";
@@ -20,6 +22,7 @@ import {
   diasSemana,
   dinero,
   fechaHumana,
+  fechaCorta,
   horaAMinutos,
   hoyISO,
   minutosAHora,
@@ -37,6 +40,7 @@ const secciones = [
   { id: "horarios", label: "Horarios", icon: Clock3 },
   { id: "clientes", label: "Clientes", icon: Users },
   { id: "reportes", label: "Reportes", icon: BarChart3 },
+  { id: "actividad", label: "Actividad", icon: History },
   { id: "seguridad", label: "Seguridad", icon: LockKeyhole },
 ];
 
@@ -50,6 +54,8 @@ export default function AdminPanel({
   onEstado,
   onMover,
   onBloqueo,
+  onAusencia,
+  onEliminarAusencia,
   onGuardarServicio,
   onGuardarHorario,
   onChangePassword,
@@ -112,7 +118,10 @@ export default function AdminPanel({
             <Bloqueos
               perfil={admin.perfil}
               bloqueos={admin.bloqueos}
+              ausencias={admin.ausencias}
               onBloqueo={onBloqueo}
+              onAusencia={onAusencia}
+              onEliminarAusencia={onEliminarAusencia}
               onLiberar={(id) => onEstado(id, "cancelled")}
             />
           )}
@@ -120,6 +129,7 @@ export default function AdminPanel({
           {admin.tab === "horarios" && <Horarios horarios={admin.horarios} onGuardar={onGuardarHorario} />}
           {admin.tab === "clientes" && <AdminClients clientes={admin.clientes} />}
           {admin.tab === "reportes" && <Reportes stats={admin.stats} />}
+          {admin.tab === "actividad" && <Actividad items={admin.actividad} />}
           {admin.tab === "seguridad" && <Seguridad onChangePassword={onChangePassword} />}
         </main>
       </div>
@@ -230,19 +240,35 @@ function Login({ onLogin, onResetPassword }) {
   );
 }
 
-function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
+function Bloqueos({
+  perfil,
+  bloqueos = [],
+  ausencias = [],
+  onBloqueo,
+  onAusencia,
+  onEliminarAusencia,
+  onLiberar,
+}) {
   const [modo, setModo] = useState("horas");
   const [fecha, setFecha] = useState(hoyISO());
   const [inicio, setInicio] = useState("08:00");
   const [fin, setFin] = useState("09:00");
   const [motivo, setMotivo] = useState("");
-  const [error, setError] = useState("");
+  const [blockError, setBlockError] = useState("");
+  const [absenceError, setAbsenceError] = useState("");
+  const [ausencia, setAusencia] = useState({
+    start_date: hoyISO(),
+    end_date: hoyISO(),
+    kind: "vacation",
+    title: "",
+    notes: "",
+  });
 
   const usarRango = (desde, hasta) => {
     setModo("horas");
     setInicio(desde);
     setFin(hasta);
-    setError("");
+    setBlockError("");
   };
 
   const guardarBloqueo = async (event) => {
@@ -251,11 +277,11 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
     const endMin = horaAMinutos(fin);
 
     if (modo === "horas" && endMin <= startMin) {
-      setError("La hora final debe ser posterior a la hora inicial.");
+      setBlockError("La hora final debe ser posterior a la hora inicial.");
       return;
     }
 
-    setError("");
+    setBlockError("");
     const guardado = await onBloqueo({
       date: fecha,
       all_day: modo === "dia",
@@ -264,6 +290,25 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
       notes: motivo.trim() || null,
     });
     if (guardado) setMotivo("");
+  };
+
+  const guardarAusencia = async (event) => {
+    event.preventDefault();
+    if (ausencia.end_date < ausencia.start_date) {
+      setAbsenceError("La fecha final debe ser igual o posterior a la inicial.");
+      return;
+    }
+    const guardado = await onAusencia({
+      ...ausencia,
+      all_day: true,
+      start_min: null,
+      end_min: null,
+      notes: ausencia.notes.trim() || null,
+    });
+    if (guardado) {
+      setAusencia((actual) => ({ ...actual, title: "", notes: "" }));
+      setAbsenceError("");
+    }
   };
 
   return (
@@ -313,7 +358,7 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
                 placeholder={modo === "dia" ? "Ej.: descanso o vacaciones" : "Ej.: cita manual o diligencia"}
               />
             </div>
-            {error && <p className="form-error" role="alert">{error}</p>}
+            {blockError && <p className="form-error" role="alert">{blockError}</p>}
             <button className="btn btn-principal btn-ancho" type="submit"><Plus size={17} />Guardar bloqueo</button>
           </form>
         </section>
@@ -365,6 +410,129 @@ function Bloqueos({ perfil, bloqueos = [], onBloqueo, onLiberar }) {
           </div>
         </section>
       </div>
+      <section className="admin-panel planned-availability">
+        <div className="admin-panel-head">
+          <div>
+            <span>Ausencias planificadas</span>
+            <h2>Feriados y vacaciones</h2>
+          </div>
+          <strong>{ausencias.length}</strong>
+        </div>
+        <div className="planned-availability-grid">
+          <form className="availability-form" onSubmit={guardarAusencia}>
+            <div className="form-doble">
+              <div className="campo">
+                <label htmlFor="absence-start">Desde</label>
+                <input
+                  id="absence-start"
+                  type="date"
+                  min={hoyISO()}
+                  value={ausencia.start_date}
+                  onChange={(event) => setAusencia((actual) => ({
+                    ...actual,
+                    start_date: event.target.value,
+                    end_date: event.target.value > actual.end_date
+                      ? event.target.value
+                      : actual.end_date,
+                  }))}
+                  required
+                />
+              </div>
+              <div className="campo">
+                <label htmlFor="absence-end">Hasta</label>
+                <input
+                  id="absence-end"
+                  type="date"
+                  min={ausencia.start_date}
+                  value={ausencia.end_date}
+                  onChange={(event) => setAusencia((actual) => ({
+                    ...actual,
+                    end_date: event.target.value,
+                  }))}
+                  required
+                />
+              </div>
+            </div>
+            <div className="campo">
+              <label htmlFor="absence-kind">Tipo</label>
+              <select
+                id="absence-kind"
+                value={ausencia.kind}
+                onChange={(event) => setAusencia((actual) => ({
+                  ...actual,
+                  kind: event.target.value,
+                }))}
+              >
+                <option value="vacation">Vacaciones</option>
+                <option value="holiday">Feriado</option>
+                <option value="personal">Asunto personal</option>
+                <option value="custom">Otro cierre</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label htmlFor="absence-title">Nombre</label>
+              <input
+                id="absence-title"
+                value={ausencia.title}
+                maxLength={120}
+                placeholder="Ej.: vacaciones de agosto"
+                onChange={(event) => setAusencia((actual) => ({
+                  ...actual,
+                  title: event.target.value,
+                }))}
+                required
+              />
+            </div>
+            <div className="campo">
+              <label htmlFor="absence-notes">Nota opcional</label>
+              <input
+                id="absence-notes"
+                value={ausencia.notes}
+                maxLength={240}
+                placeholder="Detalle interno"
+                onChange={(event) => setAusencia((actual) => ({
+                  ...actual,
+                  notes: event.target.value,
+                }))}
+              />
+            </div>
+            {absenceError && <p className="form-error" role="alert">{absenceError}</p>}
+            <button className="btn btn-principal" type="submit">
+              <CalendarOff size={17} />
+              Guardar ausencia
+            </button>
+          </form>
+          <div className="availability-list">
+            {ausencias.map((item) => (
+              <article key={item.id}>
+                <span className="history-icon"><CalendarOff size={17} /></span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>
+                    {fechaCorta(`${item.start_date}T12:00:00`)}
+                    {item.end_date !== item.start_date
+                      ? ` al ${fechaCorta(`${item.end_date}T12:00:00`)}`
+                      : ""}
+                  </span>
+                  {item.notes && <small>{item.notes}</small>}
+                </div>
+                <button
+                  className="icon-btn danger"
+                  type="button"
+                  onClick={() => onEliminarAusencia(item.id)}
+                  title="Eliminar ausencia"
+                  aria-label={`Eliminar ${item.title}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </article>
+            ))}
+            {ausencias.length === 0 && (
+              <EmptyState text="No hay feriados o vacaciones programados." />
+            )}
+          </div>
+        </div>
+      </section>
     </>
   );
 }
@@ -554,6 +722,48 @@ function Reportes({ stats }) {
           </div>
         </section>
       </div>
+    </>
+  );
+}
+
+function Actividad({ items = [] }) {
+  const labels = {
+    "appointment.created": "Cita creada",
+    "appointment.status_changed": "Estado actualizado",
+    "appointment.cancelled": "Cita cancelada",
+    "appointment.rescheduled": "Cita reprogramada",
+    "schedule.blocked": "Horario bloqueado",
+    "availability.created": "Ausencia programada",
+    "availability.deleted": "Ausencia eliminada",
+    "business_hours.updated": "Horario semanal actualizado",
+    "service.created": "Servicio creado",
+    "service.updated": "Servicio actualizado",
+    "security.password_reset": "Contraseña recuperada",
+    "security.password_changed": "Contraseña actualizada",
+  };
+
+  return (
+    <>
+      <PageHead
+        eyebrow="Bitácora"
+        title="Actividad de la cuenta"
+        text="Cada cambio importante de tu agenda queda registrado."
+      />
+      <section className="admin-panel audit-list">
+        {items.map((item) => (
+          <article key={item.id}>
+            <span className="history-icon"><History size={17} /></span>
+            <div>
+              <strong>{labels[item.action] || item.action}</strong>
+              <span>{item.entity_type}</span>
+            </div>
+            <time dateTime={item.created_at}>{fechaHumana(item.created_at)}</time>
+          </article>
+        ))}
+        {items.length === 0 && (
+          <EmptyState text="La actividad aparecerá aquí con los próximos cambios." />
+        )}
+      </section>
     </>
   );
 }

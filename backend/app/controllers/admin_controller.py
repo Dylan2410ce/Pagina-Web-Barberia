@@ -4,23 +4,35 @@ from datetime import date, datetime, timedelta
 from hmac import compare_digest
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import extract, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
 from app.database import get_db
-from app.models import Appointment, AppointmentStatus, Barber, BusinessHour, Service
+from app.models import (
+    Appointment,
+    AppointmentStatus,
+    AuditLog,
+    AvailabilityException,
+    Barber,
+    BusinessHour,
+    Service,
+)
 from app.repositories.appointment_repository import AppointmentRepository
 from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
 from app.schemas import (
     AdminAppointmentReschedule,
     AppointmentOut,
+    AuditLogOut,
+    AvailabilityExceptionCreate,
+    AvailabilityExceptionOut,
     BlockCreate,
     BusinessHourOut,
     BusinessHourUpdate,
+    ClientOut,
     LoginIn,
     PasswordChangeIn,
     PasswordResetIn,
@@ -31,9 +43,10 @@ from app.schemas import (
     TokenOut,
 )
 from app.services.appointment_service import AppointmentService
+from app.services.audit_service import AuditService
 from app.services.auth_service import current_barber, login
 from app.services.calendar_service import calendar_embed_url
-from app.services.date_service import TZ, day_range
+from app.services.date_service import TZ, day_range, range_from_minutes
 from app.services.password_service import hash_password, verify_password
 from app.services.service_cache import service_cache
 
@@ -56,6 +69,13 @@ async def reset_password(data: PasswordResetIn, db: AsyncSession = Depends(get_d
 
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     barber.credentials_initialized = True
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="security.password_reset",
+        entity_type="barber",
+        entity_id=barber.id,
+        details={"actor": "master_code"},
+    )
     await db.commit()
     return {"ok": True, "message": "Contraseña actualizada"}
 
@@ -76,6 +96,13 @@ async def change_password(
 
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     barber.credentials_initialized = True
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="security.password_changed",
+        entity_type="barber",
+        entity_id=barber.id,
+        details={"actor": "admin"},
+    )
     await db.commit()
     return {"ok": True, "message": "Contraseña actualizada"}
 
@@ -119,29 +146,43 @@ async def dashboard(
     active_today = [
         item
         for item in today_items
-        if item.status in [AppointmentStatus.booked, AppointmentStatus.present]
+        if item.status
+        in [
+            AppointmentStatus.pending,
+            AppointmentStatus.confirmed,
+            AppointmentStatus.completed,
+        ]
     ]
-    booked_today = [
-        item for item in today_items if item.status == AppointmentStatus.booked
+    pending_today = [
+        item
+        for item in today_items
+        if item.status
+        in [AppointmentStatus.pending, AppointmentStatus.confirmed]
     ]
     completed_today = [
-        item for item in today_items if item.status == AppointmentStatus.present
+        item for item in today_items
+        if item.status == AppointmentStatus.completed
     ]
     visible_week = [
         item
         for item in week_items
         if item.status
         in [
-            AppointmentStatus.booked,
-            AppointmentStatus.present,
-            AppointmentStatus.noshow,
+            AppointmentStatus.pending,
+            AppointmentStatus.confirmed,
+            AppointmentStatus.completed,
+            AppointmentStatus.no_show,
         ]
     ]
     completed_week = [
-        item for item in week_items if item.status == AppointmentStatus.present
+        item for item in week_items
+        if item.status == AppointmentStatus.completed
     ]
-    booked_week = [
-        item for item in week_items if item.status == AppointmentStatus.booked
+    pending_week = [
+        item
+        for item in week_items
+        if item.status
+        in [AppointmentStatus.pending, AppointmentStatus.confirmed]
     ]
     top_service_week = Counter(
         item.service_name for item in visible_week
@@ -151,7 +192,12 @@ async def dashboard(
         select(Appointment)
         .where(
             Appointment.barber_id == barber.id,
-            Appointment.status == AppointmentStatus.booked,
+            Appointment.status.in_(
+                [
+                    AppointmentStatus.pending,
+                    AppointmentStatus.confirmed,
+                ]
+            ),
             Appointment.starts_at >= now,
         )
         .order_by(Appointment.starts_at.asc())
@@ -163,16 +209,16 @@ async def dashboard(
         "today": today,
         "appointments_today": len(active_today),
         "completed_today": len(completed_today),
-        "pending_today": len(booked_today),
+        "pending_today": len(pending_today),
         "income_today": sum(item.total_price for item in completed_today),
         "projected_today": sum(
-            item.total_price for item in booked_today + completed_today
+            item.total_price for item in pending_today + completed_today
         ),
         "appointments_week": len(visible_week),
         "completed_week": len(completed_week),
         "income_week": sum(item.total_price for item in completed_week),
         "projected_week": sum(
-            item.total_price for item in booked_week + completed_week
+            item.total_price for item in pending_week + completed_week
         ),
         "top_service_week": top_service_week[0][0] if top_service_week else "",
         "upcoming": [AppointmentOut.model_validate(item) for item in upcoming],
@@ -190,19 +236,13 @@ async def appointments(
     start = end = None
     if day:
         start, end = day_range(day)
-    items = await AppointmentRepository(db).list_by_barber(barber.id, start, end)
-    if status:
-        items = [item for item in items if item.status == status]
-    if q:
-        term = q.lower().strip()
-        items = [
-            item
-            for item in items
-            if term in item.client_name.lower()
-            or term in item.client_phone
-            or term in item.service_name.lower()
-        ]
-    return items
+    return await AppointmentRepository(db).list_by_barber(
+        barber.id,
+        start,
+        end,
+        status=status,
+        query=q,
+    )
 
 
 @router.patch("/appointments/{appointment_id}/status", response_model=AppointmentOut)
@@ -301,6 +341,14 @@ async def create_service(
     )
     ServiceRepository(db).save(service)
     try:
+        await db.flush()
+        AuditService(db).record(
+            barber_id=barber.id,
+            action="service.created",
+            entity_type="service",
+            entity_id=service.id,
+            details={"name": service.name, "price": service.price},
+        )
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
@@ -338,6 +386,13 @@ async def update_service(
         setattr(service, field, value)
     if "price" in payload:
         service.base_price = max(service.price - 1000, 0)
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="service.updated",
+        entity_type="service",
+        entity_id=service.id,
+        details={"fields": sorted(payload)},
+    )
     try:
         await db.commit()
     except IntegrityError as exc:
@@ -392,12 +447,181 @@ async def update_business_hour(
     item.is_open = data.is_open
     item.open_min = data.open_min
     item.close_min = data.close_min
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="business_hours.updated",
+        entity_type="business_hour",
+        entity_id=item.id,
+        details={
+            "weekday": weekday,
+            "is_open": data.is_open,
+            "open_min": data.open_min,
+            "close_min": data.close_min,
+        },
+    )
     await db.commit()
     await db.refresh(item)
     return item
 
 
-@router.get("/clients")
+@router.get(
+    "/availability-exceptions",
+    response_model=list[AvailabilityExceptionOut],
+)
+async def availability_exceptions(
+    include_past: bool = Query(default=False),
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    statement = select(AvailabilityException).where(
+        AvailabilityException.barber_id == barber.id
+    )
+    if not include_past:
+        statement = statement.where(
+            AvailabilityException.end_date >= datetime.now(TZ).date()
+        )
+    result = await db.execute(
+        statement.order_by(
+            AvailabilityException.start_date.asc(),
+            AvailabilityException.start_min.asc().nullsfirst(),
+        ).limit(100)
+    )
+    return list(result.scalars().all())
+
+
+@router.post(
+    "/availability-exceptions",
+    response_model=AvailabilityExceptionOut,
+    status_code=201,
+)
+async def create_availability_exception(
+    data: AvailabilityExceptionCreate,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.end_date < datetime.now(TZ).date():
+        raise HTTPException(
+            status_code=400,
+            detail="No se pueden crear ausencias en fechas pasadas",
+        )
+    appointment_service = AppointmentService(db)
+    day = data.start_date
+    while day <= data.end_date:
+        await appointment_service.lock_schedule(barber.id, day)
+        day += timedelta(days=1)
+
+    if data.all_day:
+        period_start, _ = day_range(data.start_date)
+        _, period_end = day_range(data.end_date)
+    else:
+        period_start, period_end = range_from_minutes(
+            data.start_date,
+            data.start_min,
+            data.end_min - data.start_min,
+        )
+    conflicts_result = await db.execute(
+        select(func.count(Appointment.id)).where(
+            Appointment.barber_id == barber.id,
+            Appointment.status.in_(
+                [
+                    AppointmentStatus.pending,
+                    AppointmentStatus.confirmed,
+                ]
+            ),
+            Appointment.starts_at < period_end,
+            Appointment.ends_at > period_start,
+        )
+    )
+    conflicts = conflicts_result.scalar_one()
+    if conflicts:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Hay {conflicts} cita{'s' if conflicts != 1 else ''} activa"
+                f"{'s' if conflicts != 1 else ''} en ese periodo. "
+                "Reprograma o cancela esas citas antes de guardar la ausencia."
+            ),
+        )
+
+    item = AvailabilityException(
+        barber_id=barber.id,
+        start_date=data.start_date,
+        end_date=data.end_date,
+        start_min=None if data.all_day else data.start_min,
+        end_min=None if data.all_day else data.end_min,
+        kind=data.kind,
+        title=data.title,
+        notes=data.notes,
+    )
+    db.add(item)
+    await db.flush()
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="availability.created",
+        entity_type="availability_exception",
+        entity_id=item.id,
+        details={
+            "kind": item.kind.value,
+            "start_date": item.start_date.isoformat(),
+            "end_date": item.end_date.isoformat(),
+            "all_day": item.all_day,
+        },
+    )
+    await db.commit()
+    await db.refresh(item)
+    return item
+
+
+@router.delete(
+    "/availability-exceptions/{exception_id}",
+    status_code=204,
+)
+async def delete_availability_exception(
+    exception_id: UUID,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(AvailabilityException).where(
+            AvailabilityException.id == exception_id
+        )
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Ausencia no encontrada")
+    if item.barber_id != barber.id:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para modificar la agenda de otro barbero",
+        )
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="availability.deleted",
+        entity_type="availability_exception",
+        entity_id=item.id,
+        details={"title": item.title},
+    )
+    await db.delete(item)
+    await db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/audit-logs", response_model=list[AuditLogOut])
+async def audit_logs(
+    limit: int = Query(default=60, ge=1, le=200),
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(AuditLog)
+        .where(AuditLog.barber_id == barber.id)
+        .order_by(AuditLog.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+@router.get("/clients", response_model=list[ClientOut])
 async def clients(
     barber: Barber = Depends(current_barber),
     db: AsyncSession = Depends(get_db),
@@ -420,16 +644,26 @@ async def clients(
                 "phone": item.client_phone,
                 "email": item.client_email,
                 "appointments": 0,
+                "completed_appointments": 0,
                 "spent": 0,
                 "last_visit": None,
+                "last_service": None,
+                "favorite_service": None,
+                "frequency_days": None,
                 "history": [],
+                "_completed_dates": [],
+                "_services": Counter(),
             },
         )
         client["appointments"] += 1
-        if item.status == AppointmentStatus.present:
+        if item.status == AppointmentStatus.completed:
+            client["completed_appointments"] += 1
             client["spent"] += item.total_price
-        if not client["last_visit"]:
-            client["last_visit"] = item.starts_at
+            client["_completed_dates"].append(item.starts_at)
+            client["_services"][item.service_name] += 1
+            if not client["last_visit"]:
+                client["last_visit"] = item.starts_at
+                client["last_service"] = item.service_name
         client["history"].append(
             {
                 "id": item.id,
@@ -441,6 +675,23 @@ async def clients(
                 "notes": item.notes,
             }
         )
+    for client in grouped.values():
+        completed_dates = sorted(client.pop("_completed_dates"))
+        services = client.pop("_services")
+        if services:
+            client["favorite_service"] = services.most_common(1)[0][0]
+        if len(completed_dates) > 1:
+            differences = [
+                (current - previous).days
+                for previous, current in zip(
+                    completed_dates,
+                    completed_dates[1:],
+                )
+            ]
+            client["frequency_days"] = round(
+                sum(differences) / len(differences)
+            )
+
     return sorted(
         grouped.values(),
         key=lambda item: item["appointments"],
@@ -482,7 +733,11 @@ async def stats(
         .where(
             *date_filters,
             Appointment.status.in_(
-                [AppointmentStatus.booked, AppointmentStatus.present]
+                [
+                    AppointmentStatus.pending,
+                    AppointmentStatus.confirmed,
+                    AppointmentStatus.completed,
+                ]
             ),
         )
         .group_by(Appointment.service_name)
@@ -498,7 +753,7 @@ async def stats(
         )
         .where(
             *date_filters,
-            Appointment.status == AppointmentStatus.present,
+            Appointment.status == AppointmentStatus.completed,
         )
         .group_by("day")
         .order_by("day")
@@ -510,12 +765,18 @@ async def stats(
         for status, count, income in rows
     }
     appointments_total = sum(item["count"] for item in summary.values())
-    attended = summary.get("present", {}).get("count", 0)
-    booked = summary.get("booked", {}).get("count", 0)
-    noshow = summary.get("noshow", {}).get("count", 0)
+    attended = summary.get("completed", {}).get("count", 0)
+    pending = summary.get("pending", {}).get("count", 0)
+    confirmed = summary.get("confirmed", {}).get("count", 0)
+    booked = pending + confirmed
+    noshow = summary.get("no_show", {}).get("count", 0)
     cancelled = summary.get("cancelled", {}).get("count", 0)
-    income = summary.get("present", {}).get("income", 0)
-    projected = summary.get("booked", {}).get("income", 0) + income
+    income = summary.get("completed", {}).get("income", 0)
+    projected = (
+        summary.get("pending", {}).get("income", 0)
+        + summary.get("confirmed", {}).get("income", 0)
+        + income
+    )
 
     return {
         "appointments": appointments_total,

@@ -1,3 +1,16 @@
+const TIME_ZONE = "America/Costa_Rica";
+
+export function fechaISOCR(valor = new Date()) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: TIME_ZONE,
+  }).formatToParts(new Date(valor));
+  const leer = (tipo) => partes.find((item) => item.type === tipo)?.value || "";
+  return `${leer("year")}-${leer("month")}-${leer("day")}`;
+}
+
 export function dinero(valor) {
   return new Intl.NumberFormat("es-CR", {
     style: "currency",
@@ -7,14 +20,12 @@ export function dinero(valor) {
 }
 
 export function hoyISO() {
-  const ahora = new Date();
-  const local = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
+  return fechaISOCR();
 }
 
 export function mesActual() {
-  const ahora = new Date();
-  return { year: ahora.getFullYear(), month: ahora.getMonth() + 1 };
+  const [year, month] = fechaISOCR().split("-").map(Number);
+  return { year, month };
 }
 
 export function fechaHumana(valor) {
@@ -25,6 +36,7 @@ export function fechaHumana(valor) {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TIME_ZONE,
   }).format(new Date(valor));
 }
 
@@ -34,6 +46,7 @@ export function fechaCorta(valor) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: TIME_ZONE,
   }).format(new Date(valor));
 }
 
@@ -58,11 +71,15 @@ export function validarTelefono(valor) {
 
 export function textoEstado(estado) {
   const estados = {
-    booked: "Reservada",
+    pending: "Pendiente",
+    confirmed: "Confirmada",
+    completed: "Completada",
+    cancelled: "Cancelada",
+    no_show: "No asistió",
+    blocked: "Bloqueada",
+    booked: "Pendiente",
     present: "Completada",
     noshow: "No asistió",
-    cancelled: "Cancelada",
-    blocked: "Bloqueada",
   };
   return estados[estado] || estado || "Sin estado";
 }

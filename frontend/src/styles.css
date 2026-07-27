@@ -4056,3 +4056,284 @@ label {
     padding-top: 12px;
   }
 }
+
+/* CRM, disponibilidad y páginas legales */
+
+.estado-pending,
+.estado-booked {
+  color: #d6e9f7;
+  background: rgba(123, 155, 184, 0.18);
+}
+
+.estado-confirmed {
+  color: #f8e6b8;
+  background: rgba(201, 164, 90, 0.18);
+}
+
+.estado-completed,
+.estado-present {
+  color: #d9f6e7;
+  background: rgba(121, 182, 150, 0.18);
+}
+
+.estado-cancelled,
+.estado-no_show,
+.estado-noshow {
+  color: #f6d3d0;
+  background: rgba(215, 124, 120, 0.17);
+}
+
+.planned-availability {
+  margin-top: 16px;
+}
+
+.planned-availability-grid,
+.availability-form {
+  display: grid;
+  gap: 16px;
+}
+
+.planned-availability-grid {
+  margin-top: 18px;
+}
+
+.availability-list,
+.audit-list {
+  display: grid;
+  align-content: start;
+}
+
+.availability-list article,
+.audit-list article {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+}
+
+.availability-list article:first-child,
+.audit-list article:first-child {
+  border-top: 1px solid var(--line);
+}
+
+.availability-list article > div,
+.audit-list article > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.availability-list span,
+.availability-list small,
+.audit-list span,
+.audit-list time {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.audit-list {
+  padding-block: 6px;
+}
+
+.audit-list time {
+  text-align: right;
+}
+
+.pagination {
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 16px;
+}
+
+.pagination > span {
+  min-width: 112px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pagination .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.client-insights {
+  border-block: 1px solid var(--line);
+  display: grid;
+  gap: 0;
+  margin: 16px 0 4px;
+}
+
+.client-insights article {
+  display: grid;
+  gap: 4px;
+  padding: 13px 0;
+}
+
+.client-insights article + article {
+  border-top: 1px solid var(--line);
+}
+
+.client-insights span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.client-insights strong {
+  font-size: 0.88rem;
+}
+
+.clients-filters {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.clients-filters > * {
+  min-width: 0;
+}
+
+.legal-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(201, 164, 90, 0.04), transparent 340px),
+    var(--bg);
+}
+
+.legal-nav,
+.legal-hero,
+.legal-content,
+.legal-footer {
+  width: min(880px, calc(100% - 28px));
+  margin-inline: auto;
+}
+
+.legal-nav {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.legal-hero {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 16px;
+  padding: 72px 0 46px;
+}
+
+.legal-hero h1 {
+  max-width: 720px;
+  font-size: 2.45rem;
+  line-height: 1.08;
+}
+
+.legal-hero > p {
+  max-width: 680px;
+  font-size: 1.02rem;
+}
+
+.legal-hero small {
+  color: var(--muted);
+}
+
+.legal-content {
+  padding: 28px 0 72px;
+}
+
+.legal-content section {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  padding: 30px 0;
+}
+
+.legal-content h2 {
+  font-size: 1.28rem;
+}
+
+.legal-content p {
+  max-width: 760px;
+}
+
+.legal-source {
+  width: fit-content;
+  color: var(--gold-light);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.legal-footer {
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 24px 0 40px;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+@media (min-width: 700px) {
+  .planned-availability-grid {
+    grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
+    align-items: start;
+    gap: 28px;
+  }
+
+  .client-insights {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .client-insights article {
+    padding: 13px 16px;
+  }
+
+  .client-insights article + article {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .legal-nav,
+  .legal-hero,
+  .legal-content,
+  .legal-footer {
+    width: min(880px, calc(100% - 48px));
+  }
+
+  .legal-hero {
+    padding-top: 96px;
+  }
+
+  .legal-hero h1 {
+    font-size: 3.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .legal-nav .btn {
+    width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .availability-list article,
+  .audit-list article {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .availability-list .icon-btn,
+  .audit-list time {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

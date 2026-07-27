@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
+  ChevronLeft,
   ChevronRight,
+  Download,
   Mail,
   Phone,
   Search,
@@ -11,31 +13,79 @@ import {
 import {
   claseEstado,
   dinero,
+  fechaCorta,
   fechaHumana,
+  fechaISOCR,
   textoEstado,
 } from "../../utils/format";
+import { descargarCsv } from "../../utils/csv";
 import AdminPageHead from "./AdminPageHead";
 
-function coincide(cliente, query) {
+const PAGE_SIZE = 8;
+
+function coincide(cliente, query, status, desde) {
   const term = query.trim().toLocaleLowerCase("es-CR");
-  if (!term) return true;
   const content = [
     cliente.name,
     cliente.phone,
     cliente.email,
     ...(cliente.history || []).map((item) => item.service),
   ].join(" ").toLocaleLowerCase("es-CR");
-  return content.includes(term);
+  const history = cliente.history || [];
+  const statusMatch = !status || history.some((item) => item.status === status);
+  const dateMatch = !desde || history.some(
+    (item) => fechaISOCR(item.starts_at) >= desde,
+  );
+  return (!term || content.includes(term)) && statusMatch && dateMatch;
 }
 
 export default function AdminClients({ clientes = [] }) {
   const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("");
+  const [desde, setDesde] = useState("");
   const [seleccionado, setSeleccionado] = useState("");
+  const [pagina, setPagina] = useState(1);
   const visibles = useMemo(
-    () => clientes.filter((cliente) => coincide(cliente, query)),
-    [clientes, query],
+    () => clientes.filter((cliente) => coincide(
+      cliente,
+      query,
+      status,
+      desde,
+    )),
+    [clientes, desde, query, status],
   );
-  const clienteActivo = clientes.find((cliente) => cliente.phone === seleccionado) || visibles[0];
+  const totalPaginas = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
+  const paginaVisible = visibles.slice(
+    (pagina - 1) * PAGE_SIZE,
+    pagina * PAGE_SIZE,
+  );
+  const clienteActivo = visibles.find(
+    (cliente) => cliente.phone === seleccionado,
+  ) || paginaVisible[0];
+
+  useEffect(() => {
+    setPagina(1);
+    setSeleccionado("");
+  }, [desde, query, status]);
+
+  useEffect(() => {
+    if (pagina > totalPaginas) setPagina(totalPaginas);
+  }, [pagina, totalPaginas]);
+
+  const exportar = () => descargarCsv(
+    "clientes-sebas-barber.csv",
+    visibles,
+    [
+      { label: "Nombre", value: (item) => item.name },
+      { label: "Teléfono", value: (item) => item.phone },
+      { label: "Correo", value: (item) => item.email },
+      { label: "Citas", value: (item) => item.appointments },
+      { label: "Visitas completadas", value: (item) => item.completed_appointments },
+      { label: "Última visita", value: (item) => item.last_visit ? fechaHumana(item.last_visit) : "" },
+      { label: "Servicio favorito", value: (item) => item.favorite_service },
+      { label: "Total generado", value: (item) => item.spent },
+    ],
+  );
 
   return (
     <>
@@ -43,27 +93,60 @@ export default function AdminClients({ clientes = [] }) {
         eyebrow="Clientes"
         title="Historial de cortes"
         text="Encuentra a un cliente y revisa sus visitas, servicios y notas."
+        action={(
+          <button
+            className="btn btn-linea"
+            type="button"
+            onClick={exportar}
+            disabled={visibles.length === 0}
+          >
+            <Download size={17} />
+            Exportar CSV
+          </button>
+        )}
       />
 
       <div className="clients-workspace">
         <section className="admin-panel clients-directory">
-          <div className="filter-search">
-            <Search size={17} />
+          <div className="admin-filters clients-filters">
+            <div className="filter-search">
+              <Search size={17} />
+              <input
+                value={query}
+                placeholder="Nombre, teléfono o servicio"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+            <select
+              value={status}
+              aria-label="Filtrar clientes por estado"
+              onChange={(event) => setStatus(event.target.value)}
+            >
+              <option value="">Todos los estados</option>
+              {["pending", "confirmed", "completed", "no_show", "cancelled"].map((item) => (
+                <option value={item} key={item}>{textoEstado(item)}</option>
+              ))}
+            </select>
             <input
-              value={query}
-              placeholder="Buscar por nombre, teléfono o servicio"
-              onChange={(event) => setQuery(event.target.value)}
+              type="date"
+              value={desde}
+              aria-label="Filtrar clientes desde una fecha"
+              onChange={(event) => setDesde(event.target.value)}
             />
           </div>
           <div className="clients-directory-head">
             <span>{visibles.length} clientes</span>
-            <span>{clientes.reduce((total, item) => total + item.appointments, 0)} visitas registradas</span>
+            <span>
+              {visibles.reduce((total, item) => total + item.appointments, 0)}
+              {" "}
+              visitas registradas
+            </span>
           </div>
           <div className="clients-list">
             {visibles.length === 0 && (
               <div className="admin-empty"><UserRound size={24} /><span>No encontramos coincidencias.</span></div>
             )}
-            {visibles.map((cliente) => (
+            {paginaVisible.map((cliente) => (
               <button
                 className={`client-directory-row ${clienteActivo?.phone === cliente.phone ? "activo" : ""}`}
                 key={cliente.phone}
@@ -73,12 +156,41 @@ export default function AdminClients({ clientes = [] }) {
                 <span className="client-avatar">{cliente.name?.slice(0, 1).toUpperCase()}</span>
                 <span>
                   <strong>{cliente.name}</strong>
-                  <small>{cliente.phone} · {cliente.appointments} citas</small>
+                  <small>
+                    {cliente.phone}
+                    {" · "}
+                    {cliente.appointments}
+                    {" "}
+                    {cliente.appointments === 1 ? "cita" : "citas"}
+                  </small>
                 </span>
                 <ChevronRight size={17} />
               </button>
             ))}
           </div>
+          {visibles.length > PAGE_SIZE && (
+            <nav className="pagination" aria-label="Páginas de clientes">
+              <button
+                className="icon-btn"
+                type="button"
+                onClick={() => setPagina((actual) => Math.max(1, actual - 1))}
+                disabled={pagina === 1}
+                aria-label="Página anterior"
+              >
+                <ChevronLeft size={17} />
+              </button>
+              <span>Página {pagina} de {totalPaginas}</span>
+              <button
+                className="icon-btn"
+                type="button"
+                onClick={() => setPagina((actual) => Math.min(totalPaginas, actual + 1))}
+                disabled={pagina === totalPaginas}
+                aria-label="Página siguiente"
+              >
+                <ChevronRight size={17} />
+              </button>
+            </nav>
+          )}
         </section>
 
         <section className="admin-panel client-history-panel">
@@ -95,7 +207,7 @@ export default function AdminClients({ clientes = [] }) {
                 <div>
                   <span>Ficha del cliente</span>
                   <h2>{clienteActivo.name}</h2>
-                  <p>{clienteActivo.appointments} visitas · {dinero(clienteActivo.spent)} generado</p>
+                  <p>{clienteActivo.completed_appointments || 0} visitas · {dinero(clienteActivo.spent)} generado</p>
                 </div>
                 <div className="client-contact-actions">
                   <a className="icon-btn" href={`tel:+506${clienteActivo.phone}`} aria-label={`Llamar a ${clienteActivo.name}`} title="Llamar">
@@ -108,6 +220,20 @@ export default function AdminClients({ clientes = [] }) {
                   )}
                 </div>
               </header>
+              <div className="client-insights">
+                <article>
+                  <span>Última visita</span>
+                  <strong>{clienteActivo.last_visit ? fechaCorta(clienteActivo.last_visit) : "Sin completar"}</strong>
+                </article>
+                <article>
+                  <span>Servicio habitual</span>
+                  <strong>{clienteActivo.favorite_service || "Sin datos"}</strong>
+                </article>
+                <article>
+                  <span>Frecuencia</span>
+                  <strong>{clienteActivo.frequency_days ? `Cada ${clienteActivo.frequency_days} días` : "Por calcular"}</strong>
+                </article>
+              </div>
               <div className="client-history-list">
                 {(clienteActivo.history || []).map((visita) => (
                   <article key={visita.id}>

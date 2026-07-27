@@ -28,13 +28,17 @@ async def login(db: AsyncSession, username: str, password: str) -> str:
     if not await asyncio.to_thread(verify_password, password, barber.password_hash):
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": str(barber.id),
         "username": barber.username,
         "role": "sebastian" if barber.username == "sebas" else barber.username,
         "title": barber.role,
         "pwd": password_fingerprint(barber.password_hash),
-        "exp": datetime.now(timezone.utc) + timedelta(hours=12),
+        "iss": config.JWT_ISSUER,
+        "aud": config.JWT_AUDIENCE,
+        "iat": now,
+        "exp": now + timedelta(hours=12),
     }
     return jwt.encode(payload, config.SECRET_KEY, algorithm="HS256")
 
@@ -44,7 +48,13 @@ async def current_barber(
     db: AsyncSession = Depends(get_db),
 ) -> Barber:
     try:
-        payload = jwt.decode(credentials.credentials, config.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(
+            credentials.credentials,
+            config.SECRET_KEY,
+            algorithms=["HS256"],
+            audience=config.JWT_AUDIENCE,
+            issuer=config.JWT_ISSUER,
+        )
         barber_id = payload.get("sub")
     except JWTError as exc:
         raise HTTPException(status_code=401, detail="Token inválido") from exc
@@ -54,7 +64,10 @@ async def current_barber(
         raise HTTPException(status_code=401, detail="Token inválido")
     if not hmac.compare_digest(str(payload.get("username", "")), barber.username):
         raise HTTPException(status_code=401, detail="Token inválido")
+    expected_role = "sebastian" if barber.username == "sebas" else barber.username
+    if not hmac.compare_digest(str(payload.get("role", "")), expected_role):
+        raise HTTPException(status_code=401, detail="Token inválido")
     token_fingerprint = str(payload.get("pwd", ""))
     if not hmac.compare_digest(token_fingerprint, password_fingerprint(barber.password_hash)):
-        raise HTTPException(status_code=401, detail="La sesion ya no es valida")
+        raise HTTPException(status_code=401, detail="La sesión ya no es válida")
     return barber

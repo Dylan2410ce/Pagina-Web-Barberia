@@ -1,8 +1,11 @@
 import re
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.models import AppointmentStatus, AvailabilityKind
 
 
 class StrictInput(BaseModel):
@@ -102,7 +105,7 @@ class AppointmentOut(BaseModel):
     total_price: int
     starts_at: datetime
     ends_at: datetime
-    status: str
+    status: AppointmentStatus
     notes: str | None = None
     calendar_event_id: str | None = None
 
@@ -151,7 +154,7 @@ class QuickBlockCreate(StrictInput):
 
 
 class AppointmentUpdate(StrictInput):
-    status: str | None = None
+    status: AppointmentStatus | None = None
     notes: str | None = Field(default=None, max_length=240)
 
 
@@ -208,3 +211,90 @@ class BusinessHourUpdate(StrictInput):
     is_open: bool
     open_min: int = Field(ge=0, le=1439)
     close_min: int = Field(ge=1, le=1440)
+
+
+class AvailabilityExceptionCreate(StrictInput):
+    start_date: date
+    end_date: date
+    all_day: bool = True
+    start_min: int | None = Field(default=None, ge=0, le=1439)
+    end_min: int | None = Field(default=None, ge=1, le=1440)
+    kind: AvailabilityKind = AvailabilityKind.custom
+    title: str = Field(min_length=3, max_length=120)
+    notes: str | None = Field(default=None, max_length=240)
+
+    @model_validator(mode="after")
+    def validate_period(self):
+        if self.end_date < self.start_date:
+            raise ValueError("La fecha final debe ser igual o posterior a la inicial")
+        if (self.end_date - self.start_date).days > 366:
+            raise ValueError("La ausencia no puede superar un año")
+        if not self.all_day:
+            if self.start_date != self.end_date:
+                raise ValueError(
+                    "Los rangos por horas deben pertenecer a un solo día"
+                )
+            if self.start_min is None or self.end_min is None:
+                raise ValueError("Indica la hora inicial y final")
+            if self.end_min <= self.start_min:
+                raise ValueError("La hora final debe ser posterior a la inicial")
+        return self
+
+
+class AvailabilityExceptionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    barber_id: UUID
+    start_date: date
+    end_date: date
+    all_day: bool
+    start_min: int | None
+    end_min: int | None
+    kind: AvailabilityKind
+    title: str
+    notes: str | None = None
+    created_at: datetime
+
+
+class AuditLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    barber_id: UUID
+    action: str
+    entity_type: str
+    entity_id: UUID | None = None
+    details: dict
+    created_at: datetime
+
+
+class ClientHistoryItem(BaseModel):
+    id: UUID
+    service: str
+    addons: list[str]
+    status: AppointmentStatus
+    starts_at: datetime
+    total_price: int
+    notes: str | None = None
+
+
+class ClientOut(BaseModel):
+    name: str
+    phone: str
+    email: str | None = None
+    appointments: int
+    completed_appointments: int
+    spent: int
+    last_visit: datetime | None = None
+    last_service: str | None = None
+    favorite_service: str | None = None
+    frequency_days: int | None = None
+    history: list[ClientHistoryItem]
+
+
+class ReminderRunOut(BaseModel):
+    enabled: bool
+    processed: int
+    skipped: int
+    status: Literal["ok", "disabled"]

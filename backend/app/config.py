@@ -62,6 +62,8 @@ class Config:
     DATABASE_SSL = os.getenv("DATABASE_SSL", "require")
 
     SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
+    JWT_ISSUER = "sebas-barber-api"
+    JWT_AUDIENCE = "sebas-barber-admin"
     FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sebasbarber.vercel.app")
     MASTER_RESET_CODE = os.getenv("MASTER_RESET_CODE") or secrets.token_hex(32)
 
@@ -92,6 +94,10 @@ class Config:
 
     APPOINTMENT_BUFFER_MIN = int(os.getenv("APPOINTMENT_BUFFER_MIN", "0"))
     SERVICE_CACHE_TTL_SECONDS = int(os.getenv("SERVICE_CACHE_TTL_SECONDS", "300"))
+    REMINDERS_ENABLED = os.getenv("REMINDERS_ENABLED", "false").lower() == "true"
+    REMINDER_LEAD_HOURS = int(os.getenv("REMINDER_LEAD_HOURS", "24"))
+    REMINDER_BATCH_SIZE = int(os.getenv("REMINDER_BATCH_SIZE", "50"))
+    REMINDER_TASK_TOKEN = os.getenv("REMINDER_TASK_TOKEN", "")
 
     EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "emailjs").lower()
     NOTIFY_EMAILS_ENABLED = os.getenv("NOTIFY_EMAILS_ENABLED", "false").lower() == "true"

@@ -10,19 +10,29 @@ logger = logging.getLogger("sebas_barber.email")
 
 
 class EmailService:
-    def enabled(self) -> bool:
+    def smtp_available(self) -> bool:
         return (
             config.EMAIL_PROVIDER == "smtp"
-            and config.NOTIFY_EMAILS_ENABLED
             and bool(config.SMTP_HOST)
             and bool(config.SMTP_FROM)
             and bool(config.SMTP_USER)
             and bool(config.SMTP_PASSWORD)
         )
 
-    def send(self, to_email: str | None, subject: str, body: str) -> None:
-        if not to_email or not self.enabled():
-            return
+    def enabled(self) -> bool:
+        return config.NOTIFY_EMAILS_ENABLED and self.smtp_available()
+
+    def send(
+        self,
+        to_email: str | None,
+        subject: str,
+        body: str,
+        *,
+        reminder: bool = False,
+    ) -> bool:
+        provider_ready = self.smtp_available() if reminder else self.enabled()
+        if not to_email or not provider_ready:
+            return False
 
         message = EmailMessage()
         message["From"] = config.SMTP_FROM
@@ -35,8 +45,10 @@ class EmailService:
                 smtp.starttls()
                 smtp.login(config.SMTP_USER, config.SMTP_PASSWORD)
                 smtp.send_message(message)
+            return True
         except Exception as exc:
             logger.exception("No se pudo enviar correo a %s: %s", to_email, exc)
+            return False
 
     def owner_email(self) -> str:
         return config.OWNER_EMAIL
@@ -59,9 +71,9 @@ class EmailService:
         fecha = self.fecha_legible(appointment)
         self.send(
             appointment.client_email,
-            "Tu cita en Sebas Barber está confirmada",
+            "Recibimos tu reserva en Sebas Barber",
             (
-                f"Hola {appointment.client_name}, tu cita quedó confirmada.\n\n"
+                f"Hola {appointment.client_name}, tu horario quedó apartado.\n\n"
                 f"Servicio: {appointment.service_name}\n"
                 f"Extras: {self.extras_legibles(appointment)}\n"
                 f"Fecha y hora: {fecha}\n"
@@ -110,4 +122,21 @@ class EmailService:
             self.owner_email(),
             "Cita reprogramada - Sebas Barber",
             f"{appointment.client_name} movió su cita. Nueva hora: {fecha}.",
+        )
+
+    def appointment_reminder(self, appointment) -> bool:
+        fecha = self.fecha_legible(appointment)
+        return self.send(
+            appointment.client_email,
+            "Recordatorio de tu cita - Sebas Barber",
+            (
+                f"Hola {appointment.client_name}, te recordamos tu cita.\n\n"
+                f"Servicio: {appointment.service_name}\n"
+                f"Fecha y hora: {fecha}\n"
+                f"Total: CRC {appointment.total_price:,}\n\n"
+                f"{self.ubicacion()}\n\n"
+                "Si necesitas moverla o cancelarla, hazlo desde la sección "
+                "Mis citas de la web."
+            ),
+            reminder=True,
         )
