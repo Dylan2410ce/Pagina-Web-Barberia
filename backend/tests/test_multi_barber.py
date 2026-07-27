@@ -15,7 +15,7 @@ from app.services.calendar_service import (
     rfc3339_costa_rica,
 )
 from app.services.password_service import verify_password
-from app.services.seed_service import normalized_service_name
+from app.services.seed_service import BARBERS, normalized_service_name
 
 
 class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
@@ -110,6 +110,16 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             normalized_service_name("Corte de Cabello", 5000),
             "Corte de Cabello",
+        )
+
+    def test_sebastian_instagram_username_is_exact(self):
+        sebastian = next(
+            barber for barber in BARBERS if barber["username"] == "sebas"
+        )
+
+        self.assertEqual(
+            sebastian["instagram_url"],
+            "https://www.instagram.com/__andres29__/",
         )
 
     def test_booking_schema_rejects_html_input(self):

@@ -26,7 +26,7 @@ BARBERS = [
         "username": "sebas",
         "calendar_sync": True,
         "calendar_id": lambda: config.GOOGLE_CALENDAR_SEBASTIAN_ID,
-        "instagram_url": "https://www.instagram.com/andres29?igsh=dnVxdnNkYm16OXU1",
+        "instagram_url": "https://www.instagram.com/__andres29__/",
         "password": lambda: config.ADMIN_DEFAULT_PASSWORD,
         "password_hash": lambda: config.ADMIN_PASSWORD_HASH,
         "password_configured": lambda: config.ADMIN_PASSWORD_CONFIGURED,

@@ -26,6 +26,7 @@ import {
   mesActual,
   validarTelefono,
 } from "./utils/format";
+import { normalizarBarberos } from "./utils/barbers";
 import { normalizarServicios } from "./utils/services";
 
 const reservaInicial = {
@@ -191,7 +192,7 @@ export default function App() {
     async function iniciar() {
       try {
         const bootstrap = await publicoApi.iniciar();
-        const barbers = bootstrap.barbers || [];
+        const barbers = normalizarBarberos(bootstrap.barbers || []);
         const normalizados = {
           ...bootstrap,
           barbers,

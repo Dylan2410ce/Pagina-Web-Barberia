@@ -1,32 +1,33 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
-  --bg: #131615;
-  --bg-soft: #181c1a;
-  --surface: #1d2220;
-  --surface-raised: #252b28;
-  --surface-warm: #29261f;
-  --line: rgba(249, 244, 233, 0.12);
-  --line-strong: rgba(249, 244, 233, 0.23);
-  --text: #f8f4eb;
-  --text-soft: #dcd7cd;
-  --muted: #aaa49a;
-  --gold: #e1a72f;
-  --gold-light: #f7d778;
-  --amber: #f59e0b;
-  --copper: #c97962;
-  --green: #78c39d;
-  --blue: #6599ed;
-  --red: #e47c76;
-  --gold-glow: rgba(245, 158, 11, 0.22);
-  --blue-glow: rgba(59, 130, 246, 0.16);
-  --primary-gradient: linear-gradient(135deg, #f9dc83 0%, #f2b53c 58%, #dc8743 100%);
-  --shadow: 0 20px 52px rgba(0, 0, 0, 0.28);
+  color-scheme: dark;
+  --bg: #141715;
+  --bg-soft: #191d1b;
+  --surface: #1e2320;
+  --surface-raised: #272d29;
+  --surface-warm: #2a2822;
+  --line: rgba(245, 240, 229, 0.1);
+  --line-strong: rgba(245, 240, 229, 0.2);
+  --text: #f3efe7;
+  --text-soft: #d4d0c7;
+  --muted: #aaa79f;
+  --gold: #c9a45a;
+  --gold-light: #e5ce91;
+  --amber: #d7984d;
+  --copper: #bc7f68;
+  --green: #79b696;
+  --blue: #7b9bb8;
+  --red: #d77c78;
+  --gold-glow: rgba(201, 164, 90, 0.14);
+  --blue-glow: rgba(123, 155, 184, 0.12);
+  --primary-gradient: linear-gradient(135deg, #ead8a5 0%, #d7ad60 62%, #c88a5b 100%);
+  --shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
   --motion: 280ms cubic-bezier(0.22, 1, 0.36, 1);
   color: var(--text);
   background: var(--bg);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
 }
 
 * {
@@ -89,7 +90,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Montserrat", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -108,14 +109,14 @@ select {
   padding: 12px 14px;
   outline: none;
   color: var(--text);
-  background: #202427;
+  background: #222725;
   transition: border-color var(--motion), box-shadow var(--motion), background var(--motion);
 }
 
 input:focus,
 select:focus {
   border-color: var(--gold);
-  background: #262b2e;
+  background: #292f2b;
   box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
 }
 
@@ -144,12 +145,12 @@ label {
 .seccion {
   width: min(1160px, calc(100% - 28px));
   margin: 0 auto;
-  padding: 84px 0;
+  padding: 70px 0;
   scroll-margin-top: 82px;
 }
 
 .bloque {
-  padding-top: 102px;
+  padding-top: 84px;
 }
 
 .eyebrow,
@@ -179,7 +180,7 @@ label {
   padding: 11px 16px;
   color: var(--text);
   background: #252a2d;
-  font-weight: 800;
+  font-weight: 700;
   transition: transform var(--motion), border-color var(--motion), background var(--motion), box-shadow var(--motion);
 }
 
@@ -208,16 +209,16 @@ label {
 }
 
 .btn-principal {
-  border-color: rgba(249, 220, 131, 0.8);
+  border-color: rgba(234, 216, 165, 0.7);
   color: #17130a;
   background: var(--primary-gradient);
-  box-shadow: 0 12px 30px var(--gold-glow);
+  box-shadow: 0 10px 24px var(--gold-glow);
 }
 
 .btn-principal:hover {
   color: #17130a;
-  background: linear-gradient(135deg, #ffe699 0%, #f8c04c 58%, #e4934d 100%);
-  box-shadow: 0 16px 36px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #f0dfae 0%, #dfb86b 62%, #ce9364 100%);
+  box-shadow: 0 14px 30px rgba(201, 164, 90, 0.2);
 }
 
 .btn-secundario {
@@ -336,6 +337,7 @@ label {
 
 .marca strong {
   white-space: nowrap;
+  font-family: "Manrope", sans-serif;
 }
 
 .hamburguesa {
@@ -401,7 +403,7 @@ label {
 
 .hero {
   position: relative;
-  min-height: 78svh;
+  min-height: 72svh;
   display: grid;
   align-items: end;
   overflow: hidden;
@@ -429,7 +431,7 @@ label {
 .hero-copy {
   max-width: 660px;
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .hero-status {
@@ -460,9 +462,8 @@ label {
 .hero h1 {
   max-width: 100%;
   color: #fffaf2;
-  font-size: 3.6rem;
-  line-height: 0.92;
-  text-transform: uppercase;
+  font-size: 3.15rem;
+  line-height: 0.98;
 }
 
 .hero-lead {
@@ -510,7 +511,7 @@ label {
   flex-direction: column;
   align-items: flex-start;
   gap: 18px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .cabecera-seccion > div {
@@ -522,8 +523,8 @@ label {
 .location-copy h2,
 .admin-page-head h1 {
   max-width: 760px;
-  font-size: 2.35rem;
-  line-height: 1.04;
+  font-size: 2.05rem;
+  line-height: 1.1;
 }
 
 .cabecera-seccion p {
@@ -552,20 +553,20 @@ label {
 }
 
 .team-card:hover {
-  transform: translateY(-5px) scale(1.012);
-  border-color: rgba(249, 215, 120, 0.52);
-  background: #202426;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34), 0 0 28px rgba(59, 130, 246, 0.08);
+  transform: translateY(-3px) scale(1.006);
+  border-color: rgba(229, 206, 145, 0.42);
+  background: #222724;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.26);
 }
 
 .team-card.activo {
   border-color: var(--gold);
   background:
-    linear-gradient(145deg, rgba(245, 158, 11, 0.09), transparent 45%),
+    linear-gradient(145deg, rgba(201, 164, 90, 0.07), transparent 45%),
     var(--surface);
   box-shadow:
     inset 0 0 0 1px rgba(249, 215, 120, 0.22),
-    0 0 28px var(--gold-glow),
+    0 0 20px var(--gold-glow),
     var(--shadow);
 }
 
@@ -606,7 +607,7 @@ label {
 
 .barber-photo-fallback {
   color: rgba(255, 250, 242, 0.92);
-  font-family: "Montserrat", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 6rem;
   font-weight: 700;
   line-height: 1;
@@ -623,7 +624,7 @@ label {
 }
 
 .team-card:hover .barber-photo img {
-  transform: scale(1.035);
+  transform: scale(1.02);
   filter: contrast(1.03);
 }
 
@@ -646,7 +647,7 @@ label {
 
 .team-card-body {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   padding: 18px;
 }
 
@@ -671,7 +672,7 @@ label {
 
 .team-card-head h3 {
   margin-top: 2px;
-  font-size: 1.8rem;
+  font-size: 1.55rem;
 }
 
 .team-card-body > p {
@@ -782,32 +783,32 @@ label {
 
 .servicio-card {
   min-width: 0;
-  min-height: 270px;
+  min-height: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
   grid-template-rows: auto 1fr auto auto;
-  gap: 18px;
-  padding: 20px;
+  gap: 13px;
+  padding: 17px;
   background: var(--surface);
   transition: transform var(--motion), border-color var(--motion), background var(--motion), box-shadow var(--motion);
 }
 
 .servicio-card:hover {
-  transform: translateY(-4px) scale(1.015);
-  border-color: rgba(249, 215, 120, 0.5);
-  background: #202426;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.32), 0 0 24px rgba(59, 130, 246, 0.07);
+  transform: translateY(-3px) scale(1.006);
+  border-color: rgba(229, 206, 145, 0.42);
+  background: #222724;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.24);
 }
 
 .servicio-card.activo {
   border-color: var(--gold);
   background:
-    linear-gradient(150deg, rgba(245, 158, 11, 0.1), transparent 44%),
+    linear-gradient(150deg, rgba(201, 164, 90, 0.08), transparent 44%),
     var(--surface);
   box-shadow:
     inset 0 0 0 1px rgba(249, 215, 120, 0.26),
-    0 0 26px var(--gold-glow);
+    0 0 18px var(--gold-glow);
 }
 
 .servicio-top {
@@ -842,7 +843,7 @@ label {
 
 .servicio-card h3 {
   margin-bottom: 7px;
-  font-size: 1.35rem;
+  font-size: 1.2rem;
 }
 
 .servicio-card p {
@@ -952,7 +953,7 @@ label {
 }
 
 .galeria-item {
-  min-height: 300px;
+  min-height: 260px;
   margin: 0;
   position: relative;
   overflow: hidden;
@@ -1472,7 +1473,7 @@ label {
 
 .resumen-total strong {
   color: var(--gold-light);
-  font-family: "Montserrat", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1.8rem;
 }
 
@@ -1700,7 +1701,7 @@ label {
 
 .footer-brand strong {
   color: var(--text);
-  font-family: "Montserrat", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1.45rem;
   text-transform: uppercase;
 }
@@ -2198,7 +2199,7 @@ label {
 
 .admin-metrics strong {
   color: var(--text);
-  font-family: "Montserrat", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-size: 1.55rem;
 }
 
@@ -2801,11 +2802,11 @@ label {
 @media (min-width: 760px) {
   .seccion {
     width: min(1160px, calc(100% - 48px));
-    padding-block: 96px;
+    padding-block: 88px;
   }
 
   .bloque {
-    padding-top: 112px;
+    padding-top: 98px;
   }
 
   .hero {
@@ -2821,7 +2822,7 @@ label {
   }
 
   .hero h1 {
-    font-size: 5.4rem;
+    font-size: 4.7rem;
   }
 
   .hero-lead {
@@ -2841,7 +2842,7 @@ label {
   .cabecera-seccion h2,
   .location-copy h2,
   .admin-page-head h1 {
-    font-size: 3rem;
+    font-size: 2.65rem;
   }
 
   .menu-grid {
@@ -3111,7 +3112,7 @@ label {
   }
 
   .hero h1 {
-    font-size: 3.2rem;
+    font-size: 2.85rem;
   }
 
   .hero-acciones .btn {
@@ -3146,8 +3147,8 @@ label {
 /* Experiencia 2026 */
 
 .team-visual {
-  min-height: 330px;
-  aspect-ratio: 4 / 5;
+  min-height: 245px;
+  aspect-ratio: 16 / 11;
 }
 
 .team-visual-1 .barber-photo img {
@@ -3428,19 +3429,19 @@ label {
   border: 1px solid rgba(120, 195, 157, 0.5);
   border-radius: 8px;
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto;
   align-items: center;
-  gap: 9px;
-  padding: 7px 12px 7px 7px;
+  gap: 0;
+  padding: 7px;
   color: #102018;
-  background: #8ad6ad;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
+  background: #84c9a5;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
   transition: transform var(--motion), background var(--motion), opacity var(--motion);
 }
 
 .floating-contact:hover {
-  transform: translateY(-3px);
-  background: #9ce3bb;
+  transform: translateY(-2px);
+  background: #96d5b3;
 }
 
 .floating-contact.context-hidden {
@@ -3460,8 +3461,7 @@ label {
 }
 
 .floating-contact > span:last-child {
-  display: grid;
-  gap: 1px;
+  display: none;
 }
 
 .floating-contact small {
@@ -3571,7 +3571,7 @@ label {
   min-height: 48px;
   display: flex;
   align-items: center;
-  font-family: "Inter", sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 1rem;
   line-height: 1.35;
 }
@@ -3991,11 +3991,11 @@ label {
 
 @media (min-width: 760px) {
   .seccion {
-    padding-block: 112px;
+    padding-block: 88px;
   }
 
   .bloque {
-    padding-top: 126px;
+    padding-top: 98px;
   }
 
   .team-visual {

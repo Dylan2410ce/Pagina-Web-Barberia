@@ -25,6 +25,7 @@ export default function FloatingContact({ barberos = [], seleccionado }) {
       target="_blank"
       rel="noreferrer"
       aria-label={`Escribir a ${contacto?.name || "Sebas Barber"} por WhatsApp`}
+      title="WhatsApp"
     >
       <span><MessageCircle size={20} /></span>
       <span>
