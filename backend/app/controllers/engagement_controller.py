@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas import (
+    FeedbackCreate,
+    FeedbackOut,
     LoyaltyOut,
     ReviewCreate,
     ReviewOut,
@@ -45,3 +47,11 @@ async def loyalty(
     db: AsyncSession = Depends(get_db),
 ):
     return await EngagementService(db).loyalty(access_code)
+
+
+@router.post("/feedback", response_model=FeedbackOut, status_code=201)
+async def create_feedback(
+    data: FeedbackCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    return await EngagementService(db).create_feedback(data)

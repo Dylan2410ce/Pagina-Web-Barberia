@@ -5,8 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import config
-from app.models import AvailabilityException, BusinessHour
+from app.models import AvailabilityException, BusinessBreak, BusinessHour
 from app.repositories.barber_repository import BarberRepository
 from app.services.date_service import TZ, label_from_minutes, range_from_minutes
 
@@ -30,6 +29,13 @@ class ShopStatusService:
             item.weekday: item
             for item in hours_result.scalars().all()
         }
+        breaks_result = await self.db.execute(
+            select(BusinessBreak).where(
+                BusinessBreak.barber_id == barber.id,
+                BusinessBreak.is_active.is_(True),
+            )
+        )
+        breaks = list(breaks_result.scalars().all())
         exceptions_result = await self.db.execute(
             select(AvailabilityException).where(
                 AvailabilityException.barber_id == barber.id,
@@ -53,6 +59,7 @@ class ShopStatusService:
                     now,
                     hours,
                     exceptions,
+                    breaks,
                     start_offset=1,
                 )
                 return self._payload(
@@ -89,10 +96,18 @@ class ShopStatusService:
                     change_at,
                 )
 
-            if config.LUNCH_START <= minute < config.LUNCH_END:
+            current_break = next(
+                (
+                    item
+                    for item in self._breaks_for(breaks, now.weekday())
+                    if item.start_min <= minute < item.end_min
+                ),
+                None,
+            )
+            if current_break:
                 change_at, _ = range_from_minutes(
                     now.date(),
-                    config.LUNCH_END,
+                    current_break.end_min,
                     1,
                 )
                 return self._payload(
@@ -100,14 +115,17 @@ class ShopStatusService:
                     now,
                     False,
                     "break",
-                    f"En pausa hasta {label_from_minutes(config.LUNCH_END)}",
+                    f"{current_break.label} hasta {label_from_minutes(current_break.end_min)}",
                     change_at,
                 )
 
             if today_hours.open_min <= minute < today_hours.close_min:
                 changes = [today_hours.close_min]
-                if minute < config.LUNCH_START < today_hours.close_min:
-                    changes.append(config.LUNCH_START)
+                changes.extend(
+                    item.start_min
+                    for item in self._breaks_for(breaks, now.weekday())
+                    if minute < item.start_min < today_hours.close_min
+                )
                 changes.extend(
                     item.start_min
                     for item in today_exceptions
@@ -128,7 +146,7 @@ class ShopStatusService:
                     change_at,
                 )
 
-        next_open = self._next_open(now, hours, exceptions)
+        next_open = self._next_open(now, hours, exceptions, breaks)
         message = (
             f"Abre {self._next_open_label(next_open, now.date())}"
             if next_open
@@ -148,6 +166,7 @@ class ShopStatusService:
         now: datetime,
         hours: dict[int, BusinessHour],
         exceptions: list[AvailabilityException],
+        breaks: list[BusinessBreak],
         start_offset: int = 0,
     ) -> datetime | None:
         current_minute = now.hour * 60 + now.minute
@@ -172,12 +191,23 @@ class ShopStatusService:
                     and item.start_min <= candidate < item.end_min
                 ):
                     candidate = item.end_min
-            if config.LUNCH_START <= candidate < config.LUNCH_END:
-                candidate = config.LUNCH_END
+            for item in self._breaks_for(breaks, day.weekday()):
+                if item.start_min <= candidate < item.end_min:
+                    candidate = item.end_min
             if candidate < business.close_min:
                 starts_at, _ = range_from_minutes(day, candidate, 1)
                 return starts_at
         return None
+
+    @staticmethod
+    def _breaks_for(
+        breaks: list[BusinessBreak],
+        weekday: int,
+    ) -> list[BusinessBreak]:
+        return sorted(
+            [item for item in breaks if item.weekday == weekday],
+            key=lambda item: item.start_min,
+        )
 
     @staticmethod
     def _exceptions_for(

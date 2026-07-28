@@ -62,6 +62,7 @@ class Config:
     DATABASE_SSL = os.getenv("DATABASE_SSL", "require")
 
     SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
+    SECRET_KEY_PREVIOUS = os.getenv("SECRET_KEY_PREVIOUS", "")
     JWT_ISSUER = "sebas-barber-api"
     JWT_AUDIENCE = "sebas-barber-admin"
     FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sebasbarber.vercel.app")
@@ -98,6 +99,25 @@ class Config:
     REMINDER_LEAD_HOURS = int(os.getenv("REMINDER_LEAD_HOURS", "24"))
     REMINDER_BATCH_SIZE = int(os.getenv("REMINDER_BATCH_SIZE", "50"))
     REMINDER_TASK_TOKEN = os.getenv("REMINDER_TASK_TOKEN", "")
+    DAILY_SUMMARY_HOUR = max(
+        0,
+        min(int(os.getenv("DAILY_SUMMARY_HOUR", "6")), 23),
+    )
+    NOTIFICATION_MAX_ATTEMPTS = max(
+        int(os.getenv("NOTIFICATION_MAX_ATTEMPTS", "4")),
+        1,
+    )
+    RETENTION_DAYS = max(int(os.getenv("RETENTION_DAYS", "730")), 90)
+    CANCELLATION_NOTICE_HOURS = max(
+        int(os.getenv("CANCELLATION_NOTICE_HOURS", "2")),
+        0,
+    )
+    RESCHEDULE_NOTICE_HOURS = max(
+        int(os.getenv("RESCHEDULE_NOTICE_HOURS", "2")),
+        0,
+    )
+    RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "")
     LOYALTY_VISITS_TARGET = max(
         int(os.getenv("LOYALTY_VISITS_TARGET", "6")),
         2,
@@ -123,6 +143,12 @@ class Config:
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
     OWNER_EMAIL = os.getenv("OWNER_EMAIL", "sebasbarberg2021@gmail.com")
+    GABRIEL_EMAIL = os.getenv("GABRIEL_EMAIL", "")
+    EMAILJS_SERVICE_ID = os.getenv("EMAILJS_SERVICE_ID", "")
+    EMAILJS_TEMPLATE_CLIENTE = os.getenv("EMAILJS_TEMPLATE_CLIENTE", "")
+    EMAILJS_TEMPLATE_BARBERO = os.getenv("EMAILJS_TEMPLATE_BARBERO", "")
+    EMAILJS_PUBLIC_KEY = os.getenv("EMAILJS_PUBLIC_KEY", "")
+    EMAILJS_PRIVATE_KEY = os.getenv("EMAILJS_PRIVATE_KEY", "")
 
     SHOP_NAME = "Sebas Barber"
     ADDRESS = "C. 19, Provincia de Puntarenas, Espíritu Santo, Barrio Marañonal"
@@ -130,6 +156,14 @@ class Config:
     LNG = -84.657672
     GOOGLE_MAPS_URL = f"https://www.google.com/maps?q={LAT},{LNG}"
     WAZE_URL = f"https://waze.com/ul?ll={LAT},{LNG}&navigate=yes"
+    PARKING_INFO = os.getenv(
+        "PARKING_INFO",
+        "Hay espacio para estacionar cerca del local.",
+    )
+    DIRECTIONS_HINT = os.getenv(
+        "DIRECTIONS_HINT",
+        "Barrio Marañonal, Espíritu Santo de Esparza.",
+    )
 
     OPEN_MIN = 8 * 60
     CLOSE_MIN = 19 * 60

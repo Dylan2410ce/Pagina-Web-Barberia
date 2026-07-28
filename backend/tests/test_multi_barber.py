@@ -1,14 +1,17 @@
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from fastapi import HTTPException
 from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import config, normalize_database_url
-from app.models import AppointmentStatus
+from app.controllers.admin_controller import stats
+from app.database import Base
+from app.models import AppointmentStatus, PromotionType
 from app.schemas import (
     AppointmentCancel,
     AppointmentCreate,
@@ -17,6 +20,7 @@ from app.schemas import (
     QuickBlockCreate,
     ReviewCreate,
     WaitlistCreate,
+    PasswordChangeIn,
 )
 from app.services.access_code_service import (
     access_code_hash,
@@ -31,6 +35,12 @@ from app.services.calendar_service import (
 )
 from app.services.password_service import verify_password
 from app.services.reminder_service import ReminderService
+from app.services.notification_service import NotificationService
+from app.services.idempotency_service import (
+    decrypt_access_code,
+    encrypt_access_code,
+    request_fingerprint,
+)
 from app.services.seed_service import BARBERS, normalized_service_name
 
 
@@ -46,6 +56,9 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
             name="Gabriel",
             calendar_sync=True,
             calendar_id="gabriel@group.calendar.google.com",
+            appointment_buffer_min=0,
+            cancellation_notice_hours=2,
+            reschedule_notice_hours=2,
         )
         self.start = datetime(2026, 7, 27, 8, 0, tzinfo=CR_TZ)
         self.end = datetime(2026, 7, 27, 8, 45, tzinfo=CR_TZ)
@@ -76,6 +89,25 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
             self.gabriel.calendar_id,
             appointment,
         )
+
+    async def test_monthly_stats_are_portable_to_sqlite(self):
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            async with engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+            async with sessions() as session:
+                result = await stats(
+                    year=2026,
+                    month=7,
+                    barber=SimpleNamespace(id=uuid4()),
+                    db=session,
+                )
+        finally:
+            await engine.dispose()
+
+        self.assertEqual(result["appointments"], 0)
+        self.assertEqual(result["daily_income"], [])
 
     def test_neon_url_uses_asyncpg_without_libpq_parameters(self):
         value = (
@@ -320,26 +352,24 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(block.notes, "Descanso")
 
     async def test_failed_reminder_is_not_marked_as_sent(self):
-        appointment = SimpleNamespace(
-            client_email="cliente@example.com",
-            reminder_sent_at=None,
+        service = ReminderService(MagicMock())
+        service.notifications.process_due = AsyncMock(
+            return_value={
+                "enabled": True,
+                "processed": 0,
+                "skipped": 0,
+                "failed": 1,
+                "status": "ok",
+                "daily_summaries": 0,
+                "waitlist_notices": 0,
+            }
         )
-        result = MagicMock()
-        result.scalars.return_value.all.return_value = [appointment]
-        db = MagicMock()
-        db.execute = AsyncMock(return_value=result)
-        db.commit = AsyncMock()
-        service = ReminderService(db)
-        service.email = MagicMock()
-        service.email.smtp_available.return_value = True
-        service.email.appointment_reminder.return_value = False
 
-        with patch.object(config, "REMINDERS_ENABLED", True):
-            summary = await service.process_due()
+        summary = await service.process_due()
 
         self.assertEqual(summary["processed"], 0)
-        self.assertEqual(summary["skipped"], 1)
-        self.assertIsNone(appointment.reminder_sent_at)
+        self.assertEqual(summary["failed"], 1)
+        service.notifications.process_due.assert_awaited_once()
 
     async def test_slot_is_locked_and_rechecked_before_insert(self):
         data = AppointmentCreate(
@@ -351,8 +381,12 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
             client_phone="88887777",
         )
         self.service.barbers.by_id = AsyncMock(return_value=self.gabriel)
+        self.service.appointments.by_request_id = AsyncMock(return_value=None)
         self.service.get_duration_and_price = AsyncMock(
             return_value=("Corte Premium", [], 45, 6000)
+        )
+        self.service.promotions.apply = AsyncMock(
+            return_value=(6000, 0, None)
         )
         self.service.validate_booking_window = AsyncMock()
         self.service.lock_schedule = AsyncMock()
@@ -372,6 +406,84 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
             2,
         )
         self.service.db.rollback.assert_awaited_once()
+
+    def test_idempotency_fingerprint_ignores_request_identifier(self):
+        base = {
+            "request_id": uuid4(),
+            "barber_id": uuid4(),
+            "date": date(2026, 8, 1),
+            "start_min": 480,
+            "website": "",
+        }
+        repeated = {**base, "request_id": uuid4()}
+
+        self.assertEqual(
+            request_fingerprint(base),
+            request_fingerprint(repeated),
+        )
+
+    def test_access_code_encryption_round_trip(self):
+        code = generate_access_code()
+
+        encrypted = encrypt_access_code(code)
+
+        self.assertNotIn(code, encrypted)
+        self.assertEqual(decrypt_access_code(encrypted), code)
+
+    def test_password_policy_requires_all_character_groups(self):
+        with self.assertRaises(ValidationError):
+            PasswordChangeIn(
+                current_password="ClaveActual1!",
+                new_password="solo-minusculas",
+            )
+
+        valid = PasswordChangeIn(
+            current_password="ClaveActual1!",
+            new_password="NuevaClave2$",
+        )
+        self.assertEqual(valid.new_password, "NuevaClave2$")
+
+    def test_promotion_type_values_are_stable(self):
+        self.assertEqual(PromotionType.percentage.value, "percentage")
+        self.assertEqual(PromotionType.fixed.value, "fixed")
+
+    async def test_reminder_uses_client_template_24_hours_before(self):
+        code = generate_access_code()
+        appointment = SimpleNamespace(
+            id=uuid4(),
+            client_email="cliente@example.com",
+            client_name="Cliente prueba",
+            client_phone="88887777",
+            service_name="Corte Premium",
+            addons=[],
+            total_price=6000,
+            starts_at=datetime.now(CR_TZ) + timedelta(hours=30),
+            ends_at=datetime.now(CR_TZ) + timedelta(hours=30, minutes=45),
+            status=AppointmentStatus.pending,
+            access_code_encrypted=encrypt_access_code(code),
+            notes=None,
+        )
+        barber = SimpleNamespace(
+            id=uuid4(),
+            name="Gabriel",
+            email="gabriel@example.com",
+        )
+        result = MagicMock()
+        result.scalar_one_or_none.return_value = None
+        db = MagicMock()
+        db.execute = AsyncMock(return_value=result)
+        db.add = MagicMock()
+        service = NotificationService(db)
+
+        with patch.object(config, "EMAILJS_TEMPLATE_CLIENTE", "template_cliente"):
+            created = await service.enqueue_reminder(appointment, barber)
+
+        self.assertTrue(created)
+        job = db.add.call_args.args[0]
+        self.assertEqual(job.template_id, "template_cliente")
+        self.assertEqual(job.payload["access_code"], code)
+        expected = appointment.starts_at - timedelta(hours=24)
+        self.assertLess(abs((job.scheduled_for - expected).total_seconds()), 1)
 
 
 if __name__ == "__main__":

@@ -61,13 +61,31 @@ async def init_db():
         "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS calendar_sync BOOLEAN NOT NULL DEFAULT FALSE",
         "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS calendar_id VARCHAR(255)",
         "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(255)",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS email VARCHAR(160)",
         "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS credentials_initialized BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS cancellation_notice_hours INTEGER NOT NULL DEFAULT 2",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS reschedule_notice_hours INTEGER NOT NULL DEFAULT 2",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS appointment_buffer_min INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS daily_summary_enabled BOOLEAN NOT NULL DEFAULT TRUE",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS parking_info VARCHAR(240)",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS directions_hint VARCHAR(240)",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS public_message VARCHAR(240)",
+        "ALTER TABLE barbers ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 1",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS client_email VARCHAR(160)",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS calendar_event_id VARCHAR(255)",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_id UUID REFERENCES services(id)",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS access_code_hash VARCHAR(64)",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS access_code_hint VARCHAR(8)",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS access_code_encrypted TEXT",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS request_id UUID",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS request_fingerprint VARCHAR(64)",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_attempts INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS discount_amount INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS promotion_name VARCHAR(120)",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS last_notification_error TEXT",
+        "ALTER TABLE waitlist_entries ADD COLUMN IF NOT EXISTS notified_at TIMESTAMPTZ",
+        "ALTER TABLE waitlist_entries ADD COLUMN IF NOT EXISTS notification_attempts INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE business_hours ADD COLUMN IF NOT EXISTS barber_id UUID REFERENCES barbers(id)",
         """
         UPDATE appointments
@@ -134,6 +152,11 @@ async def init_db():
         CREATE UNIQUE INDEX IF NOT EXISTS ix_appointments_access_code_hash
         ON appointments (access_code_hash)
         WHERE access_code_hash IS NOT NULL
+        """,
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_appointments_request_id
+        ON appointments (request_id)
+        WHERE request_id IS NOT NULL
         """,
         "CREATE EXTENSION IF NOT EXISTS btree_gist",
         "ALTER TABLE appointments DROP CONSTRAINT IF EXISTS no_double_booking",

@@ -1,8 +1,9 @@
 import asyncio
 from collections import Counter
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from hmac import compare_digest
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import (
     APIRouter,
@@ -14,7 +15,7 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from sqlalchemy import extract, func, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +28,7 @@ from app.models import (
     AvailabilityException,
     Barber,
     BusinessHour,
+    ClientProfile,
     GalleryItem,
     Review,
     ReviewStatus,
@@ -116,6 +118,7 @@ async def reset_password(data: PasswordResetIn, db: AsyncSession = Depends(get_d
 
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     barber.credentials_initialized = True
+    barber.session_version += 1
     AuditService(db).record(
         barber_id=barber.id,
         action="security.password_reset",
@@ -143,6 +146,7 @@ async def change_password(
 
     barber.password_hash = await asyncio.to_thread(hash_password, data.new_password)
     barber.credentials_initialized = True
+    barber.session_version += 1
     AuditService(db).record(
         barber_id=barber.id,
         action="security.password_changed",
@@ -682,6 +686,13 @@ async def clients(
         .order_by(Appointment.starts_at.desc())
     )
     rows = list(result.scalars().all())
+    profiles_result = await db.execute(
+        select(ClientProfile).where(ClientProfile.barber_id == barber.id)
+    )
+    profiles = {
+        item.phone: item
+        for item in profiles_result.scalars().all()
+    }
     grouped = {}
     for item in rows:
         client = grouped.setdefault(
@@ -697,6 +708,13 @@ async def clients(
                 "last_service": None,
                 "favorite_service": None,
                 "frequency_days": None,
+                "no_show_count": 0,
+                "profile_id": None,
+                "tags": [],
+                "preferences": None,
+                "internal_notes": None,
+                "loyalty_redeemed": 0,
+                "loyalty_available": 0,
                 "history": [],
                 "_completed_dates": [],
                 "_services": Counter(),
@@ -711,6 +729,8 @@ async def clients(
             if not client["last_visit"]:
                 client["last_visit"] = item.starts_at
                 client["last_service"] = item.service_name
+        elif item.status == AppointmentStatus.no_show:
+            client["no_show_count"] += 1
         client["history"].append(
             {
                 "id": item.id,
@@ -738,6 +758,22 @@ async def clients(
             client["frequency_days"] = round(
                 sum(differences) / len(differences)
             )
+        profile = profiles.get(client["phone"])
+        if profile:
+            client["profile_id"] = profile.id
+            client["name"] = profile.name
+            client["email"] = profile.email or client["email"]
+            client["tags"] = profile.tags
+            client["preferences"] = profile.preferences
+            client["internal_notes"] = profile.internal_notes
+            client["loyalty_redeemed"] = profile.loyalty_redeemed
+        unlocked = (
+            client["completed_appointments"] // config.LOYALTY_VISITS_TARGET
+        )
+        client["loyalty_available"] = max(
+            unlocked - client["loyalty_redeemed"],
+            0,
+        )
 
     return sorted(
         grouped.values(),
@@ -748,16 +784,23 @@ async def clients(
 
 @router.get("/stats")
 async def stats(
-    year: int,
-    month: int,
+    year: int = Query(ge=2020, le=2100),
+    month: int = Query(ge=1, le=12),
     barber: Barber = Depends(current_barber),
     db: AsyncSession = Depends(get_db),
 ):
-    local_start = func.timezone("America/Costa_Rica", Appointment.starts_at)
+    costa_rica = ZoneInfo("America/Costa_Rica")
+    month_start_local = datetime(year, month, 1, tzinfo=costa_rica)
+    if month == 12:
+        month_end_local = datetime(year + 1, 1, 1, tzinfo=costa_rica)
+    else:
+        month_end_local = datetime(year, month + 1, 1, tzinfo=costa_rica)
+    month_start = month_start_local.astimezone(timezone.utc)
+    month_end = month_end_local.astimezone(timezone.utc)
     date_filters = (
         Appointment.barber_id == barber.id,
-        extract("year", local_start) == year,
-        extract("month", local_start) == month,
+        Appointment.starts_at >= month_start,
+        Appointment.starts_at < month_end,
     )
 
     rows_result = await db.execute(
@@ -794,18 +837,23 @@ async def stats(
 
     daily_result = await db.execute(
         select(
-            extract("day", local_start).label("day"),
-            func.count(Appointment.id),
-            func.coalesce(func.sum(Appointment.total_price), 0),
+            Appointment.starts_at,
+            Appointment.total_price,
         )
         .where(
             *date_filters,
             Appointment.status == AppointmentStatus.completed,
         )
-        .group_by("day")
-        .order_by("day")
+        .order_by(Appointment.starts_at.asc())
     )
-    daily = daily_result.all()
+    daily_totals: dict[int, dict[str, int]] = {}
+    for starts_at, total_price in daily_result.all():
+        if starts_at.tzinfo is None:
+            starts_at = starts_at.replace(tzinfo=timezone.utc)
+        day = starts_at.astimezone(costa_rica).day
+        item = daily_totals.setdefault(day, {"count": 0, "income": 0})
+        item["count"] += 1
+        item["income"] += int(total_price)
 
     summary = {
         status.value: {"count": count, "income": int(income)}
@@ -849,8 +897,8 @@ async def stats(
             for name, count, total in services_rows
         ],
         "daily_income": [
-            {"day": int(day), "count": count, "income": int(total)}
-            for day, count, total in daily
+            {"day": day, **values}
+            for day, values in sorted(daily_totals.items())
         ],
         "summary": summary,
     }

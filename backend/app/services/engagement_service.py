@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import config
 from app.models import (
     Appointment,
+    AppointmentFeedback,
     AppointmentStatus,
     Barber,
+    ClientProfile,
     Review,
     ReviewStatus,
     WaitlistEntry,
@@ -16,7 +18,7 @@ from app.models import (
 )
 from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
-from app.schemas import ReviewCreate, WaitlistCreate
+from app.schemas import FeedbackCreate, ReviewCreate, WaitlistCreate
 from app.services.appointment_service import AppointmentService
 from app.services.date_service import TZ
 
@@ -161,13 +163,54 @@ class EngagementService:
             )
         )
         completed = int(result.scalar_one())
+        profile_result = await self.db.execute(
+            select(ClientProfile).where(
+                ClientProfile.barber_id == appointment.barber_id,
+                ClientProfile.phone == appointment.client_phone,
+            )
+        )
+        profile = profile_result.scalar_one_or_none()
+        redeemed = profile.loyalty_redeemed if profile else 0
         target = config.LOYALTY_VISITS_TARGET
         progress = completed % target
+        unlocked = completed // target
         return {
             "completed_visits": completed,
             "target_visits": target,
             "current_progress": progress,
             "visits_remaining": target - progress,
-            "rewards_unlocked": completed // target,
+            "rewards_unlocked": unlocked,
+            "rewards_redeemed": redeemed,
+            "rewards_available": max(unlocked - redeemed, 0),
             "reward_label": config.LOYALTY_REWARD_LABEL,
         }
+
+    async def create_feedback(self, data: FeedbackCreate) -> AppointmentFeedback:
+        appointment = await self.appointments.get_by_access_code(data.access_code)
+        if appointment.status != AppointmentStatus.completed:
+            raise HTTPException(
+                status_code=409,
+                detail="La encuesta estará disponible cuando termine la cita",
+            )
+        existing_result = await self.db.execute(
+            select(AppointmentFeedback.id).where(
+                AppointmentFeedback.appointment_id == appointment.id
+            )
+        )
+        if existing_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=409,
+                detail="Esta cita ya tiene una encuesta registrada",
+            )
+        feedback = AppointmentFeedback(
+            appointment_id=appointment.id,
+            barber_id=appointment.barber_id,
+            satisfaction=data.satisfaction,
+            booking_ease=data.booking_ease,
+            would_return=data.would_return,
+            private_comment=data.private_comment,
+        )
+        self.db.add(feedback)
+        await self.db.commit()
+        await self.db.refresh(feedback)
+        return feedback

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from uuid import uuid4
 from datetime import datetime, timezone
 from time import perf_counter
 from contextlib import asynccontextmanager
@@ -16,6 +17,7 @@ from app.config import config
 from app.controllers import (
     admin_controller,
     engagement_controller,
+    operations_controller,
     public_controller,
     tasks_controller,
 )
@@ -23,9 +25,23 @@ from app.database import AsyncSessionLocal, engine, init_db
 from app.routers import bookings
 from app.services.calendar_service import CalendarService
 from app.services.seed_service import seed_data
+from app.services.rate_limit_service import rate_limit_middleware
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("sebas_barber.api")
+
+if config.SENTRY_DSN:
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=config.SENTRY_DSN,
+            send_default_pii=False,
+            traces_sample_rate=0.1,
+            environment="production",
+        )
+    except ImportError:
+        logger.warning("SENTRY_DSN está configurado, pero sentry-sdk no está instalado")
 
 
 @asynccontextmanager
@@ -42,7 +58,7 @@ async def lifespan(_: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="Sebas Barber API", version="4.0.0", lifespan=lifespan)
+app = FastAPI(title="Sebas Barber API", version="5.0.0", lifespan=lifespan)
 
 allowed_origins = {
     config.FRONTEND_URL.rstrip("/"),
@@ -50,24 +66,60 @@ allowed_origins = {
     "http://127.0.0.1:5173",
 }
 
+app.middleware("http")(rate_limit_middleware)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid4())
+    content_length = request.headers.get("content-length")
+    try:
+        payload_too_large = (
+            bool(content_length)
+            and int(content_length)
+            > max(config.GALLERY_UPLOAD_MAX_MB + 1, 6) * 1024 * 1024
+        )
+    except ValueError:
+        payload_too_large = True
+    if payload_too_large:
+        return JSONResponse(
+            status_code=413,
+            content={
+                "error": {
+                    "code": "payload_too_large",
+                    "message": "El archivo o solicitud supera el tamaño permitido.",
+                    "details": None,
+                }
+            },
+            headers={"X-Request-ID": request_id},
+        )
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+    if request.url.path.startswith("/api/admin"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=sorted(allowed_origins),
     allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
 )
-
-
-@app.middleware("http")
-async def security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-    return response
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -146,6 +198,7 @@ app.include_router(public_controller.router)
 app.include_router(bookings.router)
 app.include_router(engagement_controller.router)
 app.include_router(admin_controller.router)
+app.include_router(operations_controller.router)
 app.include_router(tasks_controller.router)
 
 

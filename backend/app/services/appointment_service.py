@@ -13,7 +13,9 @@ from app.models import (
     AppointmentStatus,
     AvailabilityException,
     Barber,
+    BusinessBreak,
     BusinessHour,
+    ClientProfile,
 )
 from app.repositories.appointment_repository import ACTIVE, AppointmentRepository
 from app.repositories.barber_repository import BarberRepository
@@ -29,6 +31,13 @@ from app.services.calendar_service import CalendarError, CalendarService, parse_
 from app.services.audit_service import AuditService
 from app.services.date_service import TZ, day_range, label_from_minutes, range_from_minutes
 from app.services.email_service import EmailService
+from app.services.idempotency_service import (
+    decrypt_access_code,
+    encrypt_access_code,
+    request_fingerprint,
+)
+from app.services.notification_service import NotificationService
+from app.services.promotion_service import PromotionService
 
 
 class AppointmentService:
@@ -40,6 +49,8 @@ class AppointmentService:
         self.calendar = CalendarService()
         self.email = EmailService()
         self.audit = AuditService(db)
+        self.notifications = NotificationService(db)
+        self.promotions = PromotionService(db)
 
     async def business_hours_for(self, barber_id: UUID, day: date) -> BusinessHour | None:
         result = await self.db.execute(
@@ -49,6 +60,41 @@ class AppointmentService:
             )
         )
         return result.scalar_one_or_none()
+
+    async def business_breaks_for(
+        self,
+        barber_id: UUID,
+        day: date,
+    ) -> list[BusinessBreak]:
+        result = await self.db.execute(
+            select(BusinessBreak).where(
+                BusinessBreak.barber_id == barber_id,
+                BusinessBreak.weekday == day.weekday(),
+                BusinessBreak.is_active.is_(True),
+            )
+        )
+        return list(result.scalars().all())
+
+    async def upsert_client_profile(self, appointment: Appointment) -> None:
+        result = await self.db.execute(
+            select(ClientProfile).where(
+                ClientProfile.barber_id == appointment.barber_id,
+                ClientProfile.phone == appointment.client_phone,
+            )
+        )
+        profile = result.scalar_one_or_none()
+        if not profile:
+            profile = ClientProfile(
+                barber_id=appointment.barber_id,
+                phone=appointment.client_phone,
+                name=appointment.client_name,
+                email=appointment.client_email,
+            )
+            self.db.add(profile)
+            return
+        profile.name = appointment.client_name
+        if appointment.client_email:
+            profile.email = appointment.client_email
 
     async def lock_schedule(self, barber_id: UUID, day: date) -> None:
         if self.db.bind and self.db.bind.dialect.name != "postgresql":
@@ -212,7 +258,8 @@ class AppointmentService:
         )
         calendar_busy = await self._calendar_busy(barber, day_start, day_end)
         slots = []
-        blocked_duration = duration + config.APPOINTMENT_BUFFER_MIN
+        blocked_duration = duration + barber.appointment_buffer_min
+        breaks = await self.business_breaks_for(barber.id, day)
 
         for start_min in range(business_hours.open_min, business_hours.close_min, config.SLOT_STEP):
             end_min = start_min + blocked_duration
@@ -220,7 +267,10 @@ class AppointmentService:
                 continue
             if end_min > business_hours.close_min:
                 continue
-            if start_min < config.LUNCH_START < end_min or config.LUNCH_START <= start_min < config.LUNCH_END:
+            if any(
+                start_min < item.end_min and end_min > item.start_min
+                for item in breaks
+            ):
                 continue
 
             starts_at, ends_at = range_from_minutes(day, start_min, blocked_duration)
@@ -253,8 +303,11 @@ class AppointmentService:
         duration: int,
     ) -> None:
         now = datetime.now(TZ)
+        barber = await self.barbers.by_id(barber_id)
+        if not barber:
+            raise HTTPException(status_code=404, detail="Barbero no encontrado")
         business_hours = await self.business_hours_for(barber_id, day)
-        blocked_duration = duration + config.APPOINTMENT_BUFFER_MIN
+        blocked_duration = duration + barber.appointment_buffer_min
         end_min = start_min + blocked_duration
 
         if duration <= 0:
@@ -264,6 +317,7 @@ class AppointmentService:
         if not business_hours or not business_hours.is_open:
             raise HTTPException(status_code=400, detail="Ese día está cerrado")
         exceptions = await self.availability_exceptions_for(barber_id, day)
+        breaks = await self.business_breaks_for(barber_id, day)
         if any(item.all_day for item in exceptions):
             raise HTTPException(
                 status_code=409,
@@ -273,8 +327,11 @@ class AppointmentService:
             raise HTTPException(status_code=400, detail="La hora no pertenece a un bloque disponible")
         if start_min < business_hours.open_min or end_min > business_hours.close_min:
             raise HTTPException(status_code=400, detail="La hora está fuera del horario de atención")
-        if start_min < config.LUNCH_START < end_min or config.LUNCH_START <= start_min < config.LUNCH_END:
-            raise HTTPException(status_code=400, detail="Ese espacio cruza la hora de almuerzo")
+        if any(
+            start_min < item.end_min and end_min > item.start_min
+            for item in breaks
+        ):
+            raise HTTPException(status_code=400, detail="Ese espacio cruza una pausa de la agenda")
         if day == now.date() and start_min < (now.hour * 60 + now.minute + 30):
             raise HTTPException(
                 status_code=400,
@@ -293,6 +350,23 @@ class AppointmentService:
             )
 
     async def create(self, data: AppointmentCreate) -> Appointment:
+        fingerprint = request_fingerprint(data.model_dump())
+        existing = await self.appointments.by_request_id(data.request_id)
+        if existing:
+            if existing.request_fingerprint != fingerprint:
+                raise HTTPException(
+                    status_code=409,
+                    detail="El identificador de la solicitud ya fue utilizado",
+                )
+            access_code = decrypt_access_code(existing.access_code_encrypted)
+            if not access_code:
+                raise HTTPException(
+                    status_code=409,
+                    detail="La cita ya existe. Consúltala desde Mis citas.",
+                )
+            existing.access_code = access_code
+            return existing
+
         barber = await self.barbers.by_id(data.barber_id)
         if not barber:
             raise HTTPException(status_code=404, detail="Barbero no encontrado")
@@ -301,8 +375,14 @@ class AppointmentService:
             data.service_id,
             data.addon_ids,
         )
+        total, discount_amount, promotion_name = await self.promotions.apply(
+            barber.id,
+            data.service_id,
+            data.date,
+            total,
+        )
         await self.validate_booking_window(barber.id, data.date, data.start_min, duration)
-        blocked_duration = duration + config.APPOINTMENT_BUFFER_MIN
+        blocked_duration = duration + barber.appointment_buffer_min
         starts_at, ends_at = range_from_minutes(data.date, data.start_min, blocked_duration)
         created_event_id = None
         access_code = generate_access_code()
@@ -338,13 +418,21 @@ class AppointmentService:
                 ends_at=ends_at,
                 status=AppointmentStatus.pending,
                 notes=data.notes,
+                request_id=data.request_id,
+                request_fingerprint=fingerprint,
+                access_code_encrypted=encrypt_access_code(access_code),
                 access_code_hash=access_code_hash(access_code),
                 access_code_hint=access_code_hint(access_code),
+                discount_amount=discount_amount,
+                promotion_name=promotion_name,
             )
             self.appointments.save(appointment)
             await self.db.flush()
+            appointment.access_code = access_code
             created_event_id = await self._create_calendar_event(barber, appointment)
             appointment.calendar_event_id = created_event_id
+            await self.upsert_client_profile(appointment)
+            await self.notifications.enqueue_reminder(appointment, barber)
             self.audit.record(
                 barber_id=barber.id,
                 action="appointment.created",
@@ -354,7 +442,6 @@ class AppointmentService:
             )
             await self.db.commit()
             await self.db.refresh(appointment)
-            appointment.access_code = access_code
             await self._notify("appointment_created", appointment)
             return appointment
         except CalendarError as exc:
@@ -374,6 +461,14 @@ class AppointmentService:
                     created_event_id,
                     suppress_errors=True,
                 )
+            existing = await self.appointments.by_request_id(data.request_id)
+            if existing and existing.request_fingerprint == fingerprint:
+                existing_access_code = decrypt_access_code(
+                    existing.access_code_encrypted
+                )
+                if existing_access_code:
+                    existing.access_code = existing_access_code
+                    return existing
             raise HTTPException(status_code=409, detail="Ese horario ya fue tomado") from exc
 
     async def create_block(self, barber_id: UUID, data: BlockCreate) -> Appointment:
@@ -554,6 +649,7 @@ class AppointmentService:
 
         event_id = appointment.calendar_event_id
         if next_status == AppointmentStatus.cancelled:
+            released_date = appointment.starts_at.astimezone(TZ).date()
             try:
                 await self._delete_calendar_event(barber, event_id)
             except CalendarError as exc:
@@ -562,6 +658,11 @@ class AppointmentService:
                     detail="No pudimos liberar el espacio en Google Calendar. Intenta de nuevo.",
                 ) from exc
             appointment.calendar_event_id = None
+            await self.notifications.cancel_reminders(appointment)
+            await self.notifications.enqueue_waitlist_release(
+                barber,
+                released_date,
+            )
         appointment.status = next_status
         self.audit.record(
             barber_id=barber.id,
@@ -597,6 +698,33 @@ class AppointmentService:
                 detail="Código de reserva inválido o vencido",
             )
         return appointment
+
+    async def history_by_access_code(self, code: str) -> list[Appointment]:
+        appointment = await self.get_by_access_code(code)
+        return await self.appointments.history_for_client(
+            appointment.barber_id,
+            appointment.client_phone,
+        )
+
+    def enforce_client_notice(
+        self,
+        appointment: Appointment,
+        notice_hours: int,
+        action: str,
+    ) -> None:
+        if notice_hours <= 0:
+            return
+        deadline = appointment.starts_at.astimezone(TZ) - timedelta(
+            hours=notice_hours
+        )
+        if datetime.now(TZ) >= deadline:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Para {action} con menos de {notice_hours} horas de "
+                    "anticipación, contacta directamente a tu barbero."
+                ),
+            )
 
     def authorize_client(
         self,
@@ -639,8 +767,14 @@ class AppointmentService:
         barber = await self.barbers.by_id(appointment.barber_id)
         if not barber:
             raise HTTPException(status_code=404, detail="Barbero no encontrado")
+        self.enforce_client_notice(
+            appointment,
+            barber.cancellation_notice_hours,
+            "cancelar",
+        )
 
         event_id = appointment.calendar_event_id
+        released_date = appointment.starts_at.astimezone(TZ).date()
         try:
             await self._delete_calendar_event(barber, event_id)
         except CalendarError as exc:
@@ -653,6 +787,11 @@ class AppointmentService:
             f"{appointment.notes or ''}\nCancelada por cliente: {reason or ''}".strip()
         )
         appointment.calendar_event_id = None
+        await self.notifications.cancel_reminders(appointment)
+        await self.notifications.enqueue_waitlist_release(
+            barber,
+            released_date,
+        )
         self.audit.record(
             barber_id=barber.id,
             action="appointment.cancelled",
@@ -674,14 +813,16 @@ class AppointmentService:
         actor: str,
     ) -> Appointment:
         duration = int((appointment.ends_at - appointment.starts_at).total_seconds() // 60)
+        service_duration = max(duration - barber.appointment_buffer_min, 1)
         await self.validate_booking_window(
             barber.id,
             day,
             start_min,
-            max(duration - config.APPOINTMENT_BUFFER_MIN, 0),
+            service_duration,
         )
         starts_at, ends_at = range_from_minutes(day, start_min, duration)
         old_start = appointment.starts_at.isoformat()
+        old_date = appointment.starts_at.astimezone(TZ).date()
         old_event_id = appointment.calendar_event_id
         new_event_id = None
 
@@ -691,7 +832,7 @@ class AppointmentService:
                 barber.id,
                 day,
                 start_min,
-                max(duration - config.APPOINTMENT_BUFFER_MIN, 0),
+                service_duration,
             )
             if await self.appointments.has_overlap(
                 barber.id,
@@ -723,6 +864,12 @@ class AppointmentService:
             new_event_id = await self._create_calendar_event(barber, appointment)
             appointment.calendar_event_id = new_event_id
             await self._delete_calendar_event(barber, old_event_id)
+            await self.notifications.refresh_reminder(appointment, barber)
+            if old_date != day:
+                await self.notifications.enqueue_waitlist_release(
+                    barber,
+                    old_date,
+                )
             self.audit.record(
                 barber_id=barber.id,
                 action="appointment.rescheduled",
@@ -780,6 +927,11 @@ class AppointmentService:
         barber = await self.barbers.by_id(appointment.barber_id)
         if not barber:
             raise HTTPException(status_code=404, detail="Barbero no encontrado")
+        self.enforce_client_notice(
+            appointment,
+            barber.reschedule_notice_hours,
+            "reprogramar",
+        )
         return await self._reschedule(
             appointment,
             barber,

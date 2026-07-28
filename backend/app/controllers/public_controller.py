@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.config import config
 from app.database import get_db
-from app.models import Barber, BusinessHour, GalleryItem
+from app.models import Barber, BusinessBreak, BusinessHour, GalleryItem, Promotion
 from app.repositories.barber_repository import BarberRepository
 from app.schemas import BootstrapOut, ServiceOut, ShopStatusOut
 from app.services.engagement_service import EngagementService
@@ -31,6 +31,25 @@ async def init(db: AsyncSession = Depends(get_db)):
         .order_by(BusinessHour.barber_id, BusinessHour.weekday)
     )
     business_hours = list(hours_result.scalars().all())
+    breaks_result = await db.execute(
+        select(BusinessBreak)
+        .join(Barber, Barber.id == BusinessBreak.barber_id)
+        .where(
+            Barber.is_active.is_(True),
+            BusinessBreak.is_active.is_(True),
+        )
+        .order_by(BusinessBreak.barber_id, BusinessBreak.weekday)
+    )
+    promotions_result = await db.execute(
+        select(Promotion)
+        .join(Barber, Barber.id == Promotion.barber_id)
+        .where(
+            Barber.is_active.is_(True),
+            Promotion.is_active.is_(True),
+        )
+        .order_by(Promotion.start_date.asc())
+        .limit(50)
+    )
     gallery_result = await db.execute(
         select(GalleryItem, Barber.name)
         .join(Barber, Barber.id == GalleryItem.barber_id)
@@ -64,6 +83,8 @@ async def init(db: AsyncSession = Depends(get_db)):
         "services": [item for item in items if not item.is_addon],
         "addons": [item for item in items if item.is_addon],
         "business_hours": business_hours,
+        "business_breaks": list(breaks_result.scalars().all()),
+        "promotions": list(promotions_result.scalars().all()),
         "reviews": reviews["items"],
         "gallery": gallery,
         "location": {
@@ -73,6 +94,8 @@ async def init(db: AsyncSession = Depends(get_db)):
             "lng": config.LNG,
             "googleMapsUrl": config.GOOGLE_MAPS_URL,
             "wazeUrl": config.WAZE_URL,
+            "parkingInfo": config.PARKING_INFO,
+            "directionsHint": config.DIRECTIONS_HINT,
         },
     }
 

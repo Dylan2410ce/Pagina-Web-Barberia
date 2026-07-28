@@ -49,6 +49,17 @@ async def appointment_by_access_code(
     return await AppointmentService(db).get_by_access_code(access_code)
 
 
+@router.get(
+    "/appointments/history/{access_code}",
+    response_model=list[AppointmentOut],
+)
+async def appointment_history(
+    access_code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    return await AppointmentService(db).history_by_access_code(access_code)
+
+
 @router.get("/appointments/by-phone", response_model=list[AppointmentOut])
 async def appointments_by_phone(
     phone: str = Query(pattern=r"^[24678][0-9]{7}$"),

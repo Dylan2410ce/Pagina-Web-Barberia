@@ -1,11 +1,14 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 sqlalchemy==2.0.36
+alembic==1.14.1
 asyncpg==0.30.0
 pydantic==2.10.4
-python-jose[cryptography]==3.3.0
+PyJWT[crypto]==2.13.0
+cryptography==49.0.0
 google-api-python-client==2.137.0
 google-auth==2.33.0
 bcrypt==4.2.0
-tzdata>=2024.1
-python-multipart==0.0.20
+tzdata==2026.3
+python-multipart==0.0.32
+sentry-sdk[fastapi]==2.66.0

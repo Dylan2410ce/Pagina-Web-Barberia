@@ -31,6 +31,12 @@ class AppointmentRepository:
         )
         return result.scalar_one_or_none()
 
+    async def by_request_id(self, request_id) -> Appointment | None:
+        result = await self.db.execute(
+            select(Appointment).where(Appointment.request_id == request_id)
+        )
+        return result.scalar_one_or_none()
+
     async def list_by_barber(
         self,
         barber_id,
@@ -62,6 +68,24 @@ class AppointmentRepository:
             )
         result = await self.db.execute(
             statement.order_by(Appointment.starts_at.asc()).limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def history_for_client(
+        self,
+        barber_id,
+        phone: str,
+        limit: int = 100,
+    ) -> list[Appointment]:
+        result = await self.db.execute(
+            select(Appointment)
+            .where(
+                Appointment.barber_id == barber_id,
+                Appointment.client_phone == phone,
+                Appointment.status != AppointmentStatus.blocked,
+            )
+            .order_by(Appointment.starts_at.desc())
+            .limit(limit)
         )
         return list(result.scalars().all())
 

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
-from app.models import Barber, BusinessHour, GalleryItem, Service
+from app.models import Barber, BusinessBreak, BusinessHour, GalleryItem, Service
 from app.services.password_service import hash_password
 
 SERVICES = [
@@ -23,6 +23,7 @@ BARBERS = [
         "name": "Sebastián",
         "role": "Barbero principal",
         "phone": "83778700",
+        "email": lambda: config.OWNER_EMAIL,
         "username": "sebas",
         "calendar_sync": True,
         "calendar_id": lambda: config.GOOGLE_CALENDAR_SEBASTIAN_ID,
@@ -35,6 +36,7 @@ BARBERS = [
         "name": "Gabriel",
         "role": "Barbero",
         "phone": "00000000",
+        "email": lambda: config.GABRIEL_EMAIL,
         "username": "gabriel",
         "calendar_sync": True,
         "calendar_id": lambda: config.GOOGLE_CALENDAR_GABRIEL_ID,
@@ -143,6 +145,12 @@ async def seed_data(db: AsyncSession):
         barber.calendar_id = profile["calendar_id"]() or None
         barber.instagram_url = profile["instagram_url"]
         barber.is_active = True
+        if not barber.email:
+            barber.email = profile["email"]() or None
+        if not barber.parking_info:
+            barber.parking_info = config.PARKING_INFO
+        if not barber.directions_hint:
+            barber.directions_hint = config.DIRECTIONS_HINT
         active_barbers.append(barber)
 
     for username, barber in existing_barbers.items():
@@ -220,6 +228,25 @@ async def seed_data(db: AsyncSession):
                         is_open=weekday not in (0, 6),
                         open_min=config.OPEN_MIN,
                         close_min=config.CLOSE_MIN,
+                    )
+                )
+
+    breaks_result = await db.execute(select(BusinessBreak))
+    existing_breaks = {
+        (item.barber_id, item.weekday)
+        for item in breaks_result.scalars().all()
+    }
+    for barber in active_barbers:
+        for weekday in range(1, 6):
+            if (barber.id, weekday) not in existing_breaks:
+                db.add(
+                    BusinessBreak(
+                        barber_id=barber.id,
+                        weekday=weekday,
+                        start_min=config.LUNCH_START,
+                        end_min=config.LUNCH_END,
+                        label="Almuerzo",
+                        is_active=True,
                     )
                 )
 
