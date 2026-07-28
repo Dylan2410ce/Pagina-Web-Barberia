@@ -8,6 +8,7 @@ from app.database import get_db
 from app.schemas import (
     AppointmentCancel,
     AppointmentCreate,
+    AppointmentCreatedOut,
     AppointmentOut,
     AppointmentReschedule,
     SlotOut,
@@ -32,12 +33,20 @@ async def availability(
     return await service.availability(barber_id, day, duration)
 
 
-@router.post("/appointments", response_model=AppointmentOut, status_code=201)
+@router.post("/appointments", response_model=AppointmentCreatedOut, status_code=201)
 async def create_appointment(
     data: AppointmentCreate,
     db: AsyncSession = Depends(get_db),
 ):
     return await AppointmentService(db).create(data)
+
+
+@router.get("/appointments/manage/{access_code}", response_model=AppointmentOut)
+async def appointment_by_access_code(
+    access_code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    return await AppointmentService(db).get_by_access_code(access_code)
 
 
 @router.get("/appointments/by-phone", response_model=list[AppointmentOut])
@@ -55,9 +64,10 @@ async def cancel_appointment(
     db: AsyncSession = Depends(get_db),
 ):
     return await AppointmentService(db).cancel_by_client(
-        appointment_id,
-        data.phone,
-        data.reason,
+        appointment_id=appointment_id,
+        phone=data.phone,
+        access_code=data.access_code,
+        reason=data.reason,
     )
 
 
@@ -68,8 +78,9 @@ async def reschedule_appointment(
     db: AsyncSession = Depends(get_db),
 ):
     return await AppointmentService(db).reschedule_by_client(
-        appointment_id,
-        data.phone,
-        data.date,
-        data.start_min,
+        appointment_id=appointment_id,
+        phone=data.phone,
+        access_code=data.access_code,
+        day=data.date,
+        start_min=data.start_min,
     )

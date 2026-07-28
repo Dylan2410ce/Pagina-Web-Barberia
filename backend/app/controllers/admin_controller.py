@@ -4,7 +4,16 @@ from datetime import date, datetime, timedelta
 from hmac import compare_digest
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+)
 from sqlalchemy import extract, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +27,12 @@ from app.models import (
     AvailabilityException,
     Barber,
     BusinessHour,
+    GalleryItem,
+    Review,
+    ReviewStatus,
     Service,
+    WaitlistEntry,
+    WaitlistStatus,
 )
 from app.repositories.appointment_repository import AppointmentRepository
 from app.repositories.barber_repository import BarberRepository
@@ -33,6 +47,9 @@ from app.schemas import (
     BusinessHourOut,
     BusinessHourUpdate,
     ClientOut,
+    GalleryItemCreate,
+    GalleryItemOut,
+    GalleryItemUpdate,
     LoginIn,
     PasswordChangeIn,
     PasswordResetIn,
@@ -41,16 +58,46 @@ from app.schemas import (
     ServiceOut,
     ServiceUpdate,
     TokenOut,
+    ReviewOut,
+    WaitlistOut,
 )
 from app.services.appointment_service import AppointmentService
 from app.services.audit_service import AuditService
 from app.services.auth_service import current_barber, login
 from app.services.calendar_service import calendar_embed_url
+from app.services.cloudinary_service import CloudinaryError, CloudinaryService
 from app.services.date_service import TZ, day_range, range_from_minutes
 from app.services.password_service import hash_password, verify_password
 from app.services.service_cache import service_cache
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
+
+
+def _valid_image_signature(content: bytes, content_type: str) -> bool:
+    signatures = {
+        "image/jpeg": content.startswith(b"\xff\xd8\xff"),
+        "image/png": content.startswith(b"\x89PNG\r\n\x1a\n"),
+        "image/webp": (
+            len(content) >= 12
+            and content.startswith(b"RIFF")
+            and content[8:12] == b"WEBP"
+        ),
+    }
+    return signatures.get(content_type, False)
+
+
+def _clean_gallery_text(value: str, field: str) -> str:
+    cleaned = "".join(
+        character
+        for character in value
+        if character in {"\n", "\t"} or ord(character) >= 32
+    ).strip()
+    if "<" in cleaned or ">" in cleaned:
+        raise HTTPException(
+            status_code=422,
+            detail=f"El campo {field} contiene caracteres no permitidos",
+        )
+    return cleaned
 
 
 @router.post("/login", response_model=TokenOut)
@@ -807,3 +854,316 @@ async def stats(
         ],
         "summary": summary,
     }
+
+
+@router.get("/waitlist", response_model=list[WaitlistOut])
+async def waitlist(
+    status: WaitlistStatus | None = Query(default=None),
+    day: date | None = Query(default=None, alias="date"),
+    q: str | None = Query(default=None, max_length=80),
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    statement = select(WaitlistEntry).where(
+        WaitlistEntry.barber_id == barber.id
+    )
+    if status:
+        statement = statement.where(WaitlistEntry.status == status)
+    if day:
+        statement = statement.where(WaitlistEntry.desired_date == day)
+    if q:
+        term = f"%{q.strip().lower()}%"
+        statement = statement.where(
+            func.lower(WaitlistEntry.client_name).like(term)
+            | WaitlistEntry.client_phone.like(term)
+            | func.lower(WaitlistEntry.service_name).like(term)
+        )
+    result = await db.execute(
+        statement.order_by(
+            WaitlistEntry.desired_date.asc(),
+            WaitlistEntry.created_at.asc(),
+        ).limit(300)
+    )
+    return list(result.scalars().all())
+
+
+@router.patch("/waitlist/{entry_id}/status", response_model=WaitlistOut)
+async def update_waitlist_status(
+    entry_id: UUID,
+    status: WaitlistStatus,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(WaitlistEntry).where(WaitlistEntry.id == entry_id)
+    )
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    if entry.barber_id != barber.id:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para modificar la lista de otro barbero",
+        )
+    previous = entry.status.value
+    entry.status = status
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="waitlist.status_changed",
+        entity_type="waitlist",
+        entity_id=entry.id,
+        details={"from": previous, "to": status.value},
+    )
+    await db.commit()
+    await db.refresh(entry)
+    return entry
+
+
+@router.get("/reviews", response_model=list[ReviewOut])
+async def reviews(
+    status: ReviewStatus | None = Query(default=None),
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    statement = select(Review).where(Review.barber_id == barber.id)
+    if status:
+        statement = statement.where(Review.status == status)
+    result = await db.execute(
+        statement.order_by(Review.created_at.desc()).limit(200)
+    )
+    return list(result.scalars().all())
+
+
+@router.patch("/reviews/{review_id}/status", response_model=ReviewOut)
+async def update_review_status(
+    review_id: UUID,
+    status: ReviewStatus,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Review).where(Review.id == review_id))
+    review = result.scalar_one_or_none()
+    if not review:
+        raise HTTPException(status_code=404, detail="Reseña no encontrada")
+    if review.barber_id != barber.id:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para moderar reseñas de otro barbero",
+        )
+    previous = review.status.value
+    review.status = status
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="review.status_changed",
+        entity_type="review",
+        entity_id=review.id,
+        details={"from": previous, "to": status.value},
+    )
+    await db.commit()
+    await db.refresh(review)
+    return review
+
+
+@router.get("/gallery", response_model=list[GalleryItemOut])
+async def gallery(
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(GalleryItem)
+        .where(GalleryItem.barber_id == barber.id)
+        .order_by(GalleryItem.display_order.asc(), GalleryItem.created_at.asc())
+    )
+    return list(result.scalars().all())
+
+
+@router.post("/gallery", response_model=GalleryItemOut, status_code=201)
+async def create_gallery_item(
+    data: GalleryItemCreate,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    payload = data.model_dump()
+    for field, label in (
+        ("title", "nombre"),
+        ("alt_text", "descripción accesible"),
+        ("category", "categoría"),
+        ("description", "texto visible"),
+    ):
+        payload[field] = _clean_gallery_text(payload[field], label)
+    item = GalleryItem(
+        barber_id=barber.id,
+        **payload,
+    )
+    db.add(item)
+    await db.flush()
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="gallery.created",
+        entity_type="gallery_item",
+        entity_id=item.id,
+        details={"title": item.title, "source": "url"},
+    )
+    await db.commit()
+    await db.refresh(item)
+    return item
+
+
+@router.post("/gallery/upload", response_model=GalleryItemOut, status_code=201)
+async def upload_gallery_item(
+    image: UploadFile = File(...),
+    title: str = Form(..., min_length=2, max_length=100),
+    alt_text: str = Form(..., min_length=5, max_length=180),
+    category: str = Form(..., min_length=2, max_length=60),
+    description: str = Form(..., min_length=8, max_length=300),
+    display_order: int = Form(default=0, ge=0, le=999),
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    allowed_types = {"image/jpeg", "image/png", "image/webp"}
+    if image.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=415,
+            detail="Usa una imagen JPG, PNG o WebP",
+        )
+    limit = config.GALLERY_UPLOAD_MAX_MB * 1024 * 1024
+    content = await image.read(limit + 1)
+    if not content:
+        raise HTTPException(status_code=422, detail="La imagen está vacía")
+    if len(content) > limit:
+        raise HTTPException(
+            status_code=413,
+            detail=f"La imagen no puede superar {config.GALLERY_UPLOAD_MAX_MB} MB",
+        )
+    if not _valid_image_signature(content, image.content_type):
+        raise HTTPException(
+            status_code=415,
+            detail="El contenido del archivo no coincide con una imagen válida",
+        )
+    clean_title = _clean_gallery_text(title, "nombre")
+    clean_alt = _clean_gallery_text(alt_text, "descripción accesible")
+    clean_category = _clean_gallery_text(category, "categoría")
+    clean_description = _clean_gallery_text(description, "texto visible")
+    cloudinary = CloudinaryService()
+    try:
+        uploaded = await asyncio.to_thread(
+            cloudinary.upload,
+            content,
+            image.filename or "corte.jpg",
+            image.content_type,
+        )
+    except CloudinaryError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    item = GalleryItem(
+        barber_id=barber.id,
+        image_url=uploaded["image_url"],
+        cloudinary_public_id=uploaded["public_id"],
+        title=clean_title,
+        alt_text=clean_alt,
+        category=clean_category,
+        description=clean_description,
+        display_order=display_order,
+        is_active=True,
+    )
+    try:
+        db.add(item)
+        await db.flush()
+        AuditService(db).record(
+            barber_id=barber.id,
+            action="gallery.created",
+            entity_type="gallery_item",
+            entity_id=item.id,
+            details={"title": item.title, "source": "upload"},
+        )
+        await db.commit()
+        await db.refresh(item)
+    except Exception:
+        await db.rollback()
+        try:
+            await asyncio.to_thread(
+                cloudinary.delete,
+                uploaded["public_id"],
+            )
+        except CloudinaryError:
+            pass
+        raise
+    return item
+
+
+@router.patch("/gallery/{item_id}", response_model=GalleryItemOut)
+async def update_gallery_item(
+    item_id: UUID,
+    data: GalleryItemUpdate,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(GalleryItem).where(GalleryItem.id == item_id)
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+    if item.barber_id != barber.id:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para editar la galería de otro barbero",
+        )
+    payload = data.model_dump(exclude_unset=True)
+    for field, label in (
+        ("title", "nombre"),
+        ("alt_text", "descripción accesible"),
+        ("category", "categoría"),
+        ("description", "texto visible"),
+    ):
+        if field in payload:
+            payload[field] = _clean_gallery_text(payload[field], label)
+    for field, value in payload.items():
+        setattr(item, field, value)
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="gallery.updated",
+        entity_type="gallery_item",
+        entity_id=item.id,
+        details={"fields": sorted(payload)},
+    )
+    await db.commit()
+    await db.refresh(item)
+    return item
+
+
+@router.delete("/gallery/{item_id}", status_code=204)
+async def delete_gallery_item(
+    item_id: UUID,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(GalleryItem).where(GalleryItem.id == item_id)
+    )
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+    if item.barber_id != barber.id:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para borrar la galería de otro barbero",
+        )
+    if item.cloudinary_public_id:
+        try:
+            await asyncio.to_thread(
+                CloudinaryService().delete,
+                item.cloudinary_public_id,
+            )
+        except CloudinaryError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+    AuditService(db).record(
+        barber_id=barber.id,
+        action="gallery.deleted",
+        entity_type="gallery_item",
+        entity_id=item.id,
+        details={"title": item.title},
+    )
+    await db.delete(item)
+    await db.commit()
+    return Response(status_code=204)

@@ -4,6 +4,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Appointment, AppointmentStatus
+from app.services.access_code_service import access_code_hash
 
 ACTIVE = [
     AppointmentStatus.pending,
@@ -19,6 +20,14 @@ class AppointmentRepository:
     async def by_id(self, appointment_id) -> Appointment | None:
         result = await self.db.execute(
             select(Appointment).where(Appointment.id == appointment_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def by_access_code(self, code: str) -> Appointment | None:
+        result = await self.db.execute(
+            select(Appointment).where(
+                Appointment.access_code_hash == access_code_hash(code)
+            )
         )
         return result.scalar_one_or_none()
 
@@ -61,10 +70,13 @@ class AppointmentRepository:
         phone: str,
         statuses: list[AppointmentStatus] | None = None,
         limit: int = 100,
+        legacy_only: bool = False,
     ) -> list[Appointment]:
         statement = select(Appointment).where(Appointment.client_phone == phone)
         if statuses:
             statement = statement.where(Appointment.status.in_(statuses))
+        if legacy_only:
+            statement = statement.where(Appointment.access_code_hash.is_(None))
         result = await self.db.execute(
             statement
             .order_by(Appointment.starts_at.desc())

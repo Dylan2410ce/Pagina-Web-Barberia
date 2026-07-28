@@ -10,9 +10,18 @@ from pydantic import ValidationError
 from app.config import config, normalize_database_url
 from app.models import AppointmentStatus
 from app.schemas import (
+    AppointmentCancel,
     AppointmentCreate,
     AvailabilityExceptionCreate,
+    GalleryItemCreate,
     QuickBlockCreate,
+    ReviewCreate,
+    WaitlistCreate,
+)
+from app.services.access_code_service import (
+    access_code_hash,
+    generate_access_code,
+    verify_access_code,
 )
 from app.services.appointment_service import AppointmentService
 from app.services.calendar_service import (
@@ -140,6 +149,75 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
                 client_phone="88887777",
             )
 
+    def test_access_code_is_long_random_and_verifiable(self):
+        first = generate_access_code()
+        second = generate_access_code()
+
+        self.assertRegex(
+            first,
+            r"^SB-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$",
+        )
+        self.assertNotEqual(first, second)
+        self.assertTrue(verify_access_code(first.lower(), access_code_hash(first)))
+        self.assertFalse(verify_access_code(second, access_code_hash(first)))
+
+    def test_secure_booking_requires_code_instead_of_phone(self):
+        code = generate_access_code()
+        appointment = SimpleNamespace(
+            access_code_hash=access_code_hash(code),
+            client_phone="88887777",
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            self.service.authorize_client(
+                appointment,
+                phone="88887777",
+                access_code=None,
+            )
+
+        self.assertEqual(context.exception.status_code, 403)
+        self.service.authorize_client(
+            appointment,
+            phone=None,
+            access_code=code,
+        )
+
+    def test_cancel_schema_requires_an_access_method(self):
+        with self.assertRaises(ValidationError):
+            AppointmentCancel(reason="Sin motivo")
+
+        value = AppointmentCancel(
+            access_code="SB-ABCD-EFGH-JKLM-NPQR",
+            reason="Cambio de planes",
+        )
+        self.assertIsNone(value.phone)
+
+    def test_engagement_schemas_reject_invalid_content(self):
+        with self.assertRaises(ValidationError):
+            ReviewCreate(
+                access_code="SB-ABCD-EFGH-JKLM-NPQR",
+                rating=6,
+                comment="Servicio excelente",
+            )
+
+        with self.assertRaises(ValidationError):
+            WaitlistCreate(
+                barber_id=uuid4(),
+                service_id=uuid4(),
+                desired_date=date(2026, 8, 10),
+                client_name="<script>alert(1)</script>",
+                client_phone="88887777",
+            )
+
+        with self.assertRaises(ValidationError):
+            GalleryItemCreate(
+                image_url="http://example.com/corte.jpg",
+                title="Corte",
+                alt_text="Corte con degradado",
+                category="Fade",
+                description="Corte limpio y definido",
+            )
+
     def test_legacy_statuses_map_to_new_business_states(self):
         self.assertEqual(
             AppointmentStatus("booked"),
@@ -217,7 +295,7 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_quick_block_uses_first_available_slot(self):
         self.service.availability = AsyncMock(
-            return_value=[{"start_min": 570, "label": "9:30 AM"}]
+            return_value=[{"start_min": 570, "label": "9:30 a. m."}]
         )
         self.service.create_block = AsyncMock(return_value="bloqueo-creado")
 

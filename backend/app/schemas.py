@@ -5,7 +5,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models import AppointmentStatus, AvailabilityKind
+from app.models import (
+    AppointmentStatus,
+    AvailabilityKind,
+    ReviewStatus,
+    WaitlistStatus,
+)
 
 
 class StrictInput(BaseModel):
@@ -63,6 +68,8 @@ class BootstrapOut(BaseModel):
     services: list[ServiceOut]
     addons: list[ServiceOut]
     business_hours: list[BusinessHourOut]
+    reviews: list["ReviewOut"] = Field(default_factory=list)
+    gallery: list["GalleryItemOut"] = Field(default_factory=list)
     location: dict
 
 
@@ -97,6 +104,7 @@ class AppointmentOut(BaseModel):
 
     id: UUID
     barber_id: UUID
+    service_id: UUID | None = None
     client_name: str
     client_phone: str
     client_email: str | None = None
@@ -110,19 +118,37 @@ class AppointmentOut(BaseModel):
     calendar_event_id: str | None = None
 
 
+class AppointmentCreatedOut(AppointmentOut):
+    access_code: str
+
+
 class AppointmentLookup(StrictInput):
     phone: str = Field(pattern=r"^[24678][0-9]{7}$")
 
 
 class AppointmentCancel(StrictInput):
-    phone: str = Field(pattern=r"^[24678][0-9]{7}$")
+    phone: str | None = Field(default=None, pattern=r"^[24678][0-9]{7}$")
+    access_code: str | None = Field(default=None, min_length=16, max_length=40)
     reason: str | None = Field(default=None, max_length=240)
+
+    @model_validator(mode="after")
+    def validate_access(self):
+        if not self.phone and not self.access_code:
+            raise ValueError("Indica el código de reserva")
+        return self
 
 
 class AppointmentReschedule(StrictInput):
-    phone: str = Field(pattern=r"^[24678][0-9]{7}$")
+    phone: str | None = Field(default=None, pattern=r"^[24678][0-9]{7}$")
+    access_code: str | None = Field(default=None, min_length=16, max_length=40)
     date: date
     start_min: int = Field(ge=0, le=1439)
+
+    @model_validator(mode="after")
+    def validate_access(self):
+        if not self.phone and not self.access_code:
+            raise ValueError("Indica el código de reserva")
+        return self
 
 
 class AdminAppointmentReschedule(StrictInput):
@@ -298,3 +324,131 @@ class ReminderRunOut(BaseModel):
     processed: int
     skipped: int
     status: Literal["ok", "disabled"]
+
+
+class ShopStatusOut(BaseModel):
+    barber_id: UUID
+    is_open: bool
+    state: Literal["open", "closed", "break", "unavailable"]
+    message: str
+    next_change_at: datetime | None = None
+    checked_at: datetime
+
+
+class LoyaltyOut(BaseModel):
+    completed_visits: int
+    target_visits: int
+    current_progress: int
+    visits_remaining: int
+    rewards_unlocked: int
+    reward_label: str
+
+
+class WaitlistCreate(StrictInput):
+    barber_id: UUID
+    service_id: UUID
+    desired_date: date
+    preferred_period: Literal["any", "morning", "afternoon"] = "any"
+    client_name: str = Field(min_length=3, max_length=80)
+    client_phone: str = Field(pattern=r"^[24678][0-9]{7}$")
+    client_email: str | None = Field(default=None, max_length=160)
+    notes: str | None = Field(default=None, max_length=240)
+
+    @field_validator("client_email")
+    @classmethod
+    def validate_waitlist_email(cls, value: str | None):
+        if value is None or value == "":
+            return None
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
+            raise ValueError("El correo no tiene un formato válido")
+        return value.lower()
+
+
+class WaitlistOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    barber_id: UUID
+    service_id: UUID
+    service_name: str
+    desired_date: date
+    preferred_period: str
+    client_name: str
+    client_phone: str
+    client_email: str | None = None
+    notes: str | None = None
+    status: WaitlistStatus
+    created_at: datetime
+
+
+class ReviewCreate(StrictInput):
+    access_code: str = Field(min_length=16, max_length=40)
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(min_length=8, max_length=400)
+
+
+class ReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    appointment_id: UUID
+    barber_id: UUID
+    barber_name: str | None = None
+    client_name: str
+    rating: int
+    comment: str
+    status: ReviewStatus
+    created_at: datetime
+
+
+class ReviewSummaryOut(BaseModel):
+    average: float
+    total: int
+    items: list[ReviewOut]
+
+
+class GalleryItemCreate(StrictInput):
+    image_url: str = Field(min_length=2, max_length=600)
+    title: str = Field(min_length=2, max_length=100)
+    alt_text: str = Field(min_length=5, max_length=180)
+    category: str = Field(min_length=2, max_length=60)
+    description: str = Field(min_length=8, max_length=300)
+    display_order: int = Field(default=0, ge=0, le=999)
+    is_active: bool = True
+
+    @field_validator("image_url")
+    @classmethod
+    def validate_gallery_url(cls, value: str):
+        if value.startswith("/"):
+            return value
+        if not re.fullmatch(r"https://[^\s]+", value):
+            raise ValueError("La imagen debe usar una URL HTTPS")
+        return value
+
+
+class GalleryItemUpdate(StrictInput):
+    title: str | None = Field(default=None, min_length=2, max_length=100)
+    alt_text: str | None = Field(default=None, min_length=5, max_length=180)
+    category: str | None = Field(default=None, min_length=2, max_length=60)
+    description: str | None = Field(default=None, min_length=8, max_length=300)
+    display_order: int | None = Field(default=None, ge=0, le=999)
+    is_active: bool | None = None
+
+
+class GalleryItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    barber_id: UUID
+    barber_name: str | None = None
+    image_url: str
+    title: str
+    alt_text: str
+    category: str
+    description: str
+    display_order: int
+    is_active: bool
+    created_at: datetime
+
+
+BootstrapOut.model_rebuild()

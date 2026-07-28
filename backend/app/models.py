@@ -54,6 +54,19 @@ class AvailabilityKind(str, enum.Enum):
     custom = "custom"
 
 
+class WaitlistStatus(str, enum.Enum):
+    waiting = "waiting"
+    contacted = "contacted"
+    booked = "booked"
+    cancelled = "cancelled"
+
+
+class ReviewStatus(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+
 class Barber(Base):
     __tablename__ = "barbers"
 
@@ -86,6 +99,18 @@ class Barber(Base):
         back_populates="barber",
         cascade="all, delete-orphan",
     )
+    waitlist_entries: Mapped[list["WaitlistEntry"]] = relationship(
+        back_populates="barber",
+        cascade="all, delete-orphan",
+    )
+    reviews: Mapped[list["Review"]] = relationship(
+        back_populates="barber",
+        cascade="all, delete-orphan",
+    )
+    gallery_items: Mapped[list["GalleryItem"]] = relationship(
+        back_populates="barber",
+        cascade="all, delete-orphan",
+    )
 
 
 class Service(Base):
@@ -109,6 +134,12 @@ class Appointment(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     barber_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("barbers.id"), index=True)
+    service_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("services.id"),
+        nullable=True,
+        index=True,
+    )
     client_name: Mapped[str] = mapped_column(String(100), nullable=False)
     client_phone: Mapped[str] = mapped_column(String(20), nullable=False)
     client_email: Mapped[str | None] = mapped_column(String(160), nullable=True)
@@ -118,6 +149,16 @@ class Appointment(Base):
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     calendar_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    access_code_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+    access_code_hint: Mapped[str | None] = mapped_column(
+        String(8),
+        nullable=True,
+    )
     status: Mapped[AppointmentStatus] = mapped_column(
         Enum(
             AppointmentStatus,
@@ -241,3 +282,146 @@ class AuditLog(Base):
     )
 
     barber: Mapped[Barber] = relationship(back_populates="audit_logs")
+
+
+class WaitlistEntry(Base):
+    __tablename__ = "waitlist_entries"
+    __table_args__ = (
+        Index(
+            "ix_waitlist_barber_date_status",
+            "barber_id",
+            "desired_date",
+            "status",
+        ),
+        Index("ix_waitlist_phone_created", "client_phone", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    barber_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("barbers.id"),
+        nullable=False,
+        index=True,
+    )
+    service_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("services.id"),
+        nullable=False,
+    )
+    service_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    desired_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    preferred_period: Mapped[str] = mapped_column(
+        String(20),
+        default="any",
+        nullable=False,
+    )
+    client_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    client_phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    client_email: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[WaitlistStatus] = mapped_column(
+        Enum(
+            WaitlistStatus,
+            name="waitliststatus",
+            values_callable=lambda enum_class: [item.value for item in enum_class],
+        ),
+        default=WaitlistStatus.waiting,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    barber: Mapped[Barber] = relationship(back_populates="waitlist_entries")
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+    __table_args__ = (
+        Index("ix_reviews_barber_status_created", "barber_id", "status", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    appointment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("appointments.id"),
+        nullable=False,
+        unique=True,
+    )
+    barber_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("barbers.id"),
+        nullable=False,
+        index=True,
+    )
+    client_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    comment: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[ReviewStatus] = mapped_column(
+        Enum(
+            ReviewStatus,
+            name="reviewstatus",
+            values_callable=lambda enum_class: [item.value for item in enum_class],
+        ),
+        default=ReviewStatus.pending,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    barber: Mapped[Barber] = relationship(back_populates="reviews")
+
+
+class GalleryItem(Base):
+    __tablename__ = "gallery_items"
+    __table_args__ = (
+        Index(
+            "ix_gallery_barber_active_order",
+            "barber_id",
+            "is_active",
+            "display_order",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    barber_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("barbers.id"),
+        nullable=False,
+        index=True,
+    )
+    image_url: Mapped[str] = mapped_column(String(600), nullable=False)
+    cloudinary_public_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    title: Mapped[str] = mapped_column(String(100), nullable=False)
+    alt_text: Mapped[str] = mapped_column(String(180), nullable=False)
+    category: Mapped[str] = mapped_column(String(60), nullable=False)
+    description: Mapped[str] = mapped_column(String(300), nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    barber: Mapped[Barber] = relationship(back_populates="gallery_items")

@@ -98,6 +98,22 @@ class Config:
     REMINDER_LEAD_HOURS = int(os.getenv("REMINDER_LEAD_HOURS", "24"))
     REMINDER_BATCH_SIZE = int(os.getenv("REMINDER_BATCH_SIZE", "50"))
     REMINDER_TASK_TOKEN = os.getenv("REMINDER_TASK_TOKEN", "")
+    LOYALTY_VISITS_TARGET = max(
+        int(os.getenv("LOYALTY_VISITS_TARGET", "6")),
+        2,
+    )
+    LOYALTY_REWARD_LABEL = os.getenv(
+        "LOYALTY_REWARD_LABEL",
+        "Beneficio especial en tu próxima visita",
+    )
+
+    CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "")
+    CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")
+    GALLERY_UPLOAD_MAX_MB = max(
+        int(os.getenv("GALLERY_UPLOAD_MAX_MB", "5")),
+        1,
+    )
 
     EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "emailjs").lower()
     NOTIFY_EMAILS_ENABLED = os.getenv("NOTIFY_EMAILS_ENABLED", "false").lower() == "true"

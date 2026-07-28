@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
-from app.models import Barber, BusinessHour, Service
+from app.models import Barber, BusinessHour, GalleryItem, Service
 from app.services.password_service import hash_password
 
 SERVICES = [
@@ -150,6 +150,60 @@ async def seed_data(db: AsyncSession):
             barber.is_active = False
 
     await db.flush()
+
+    gallery_result = await db.execute(select(GalleryItem.id).limit(1))
+    if gallery_result.scalar_one_or_none() is None:
+        sebastian = next(
+            (
+                item
+                for item in active_barbers
+                if item.username == "sebas"
+            ),
+            None,
+        )
+        if sebastian:
+            gallery_seed = [
+                (
+                    "/corte-fade.jpg",
+                    "Textura y fade",
+                    "Corte texturizado con degradado limpio",
+                    "Degradado",
+                    "Transición suave, laterales limpios y movimiento arriba.",
+                ),
+                (
+                    "/barba-perfilada.jpg",
+                    "Barba definida",
+                    "Barba perfilada con contornos definidos",
+                    "Barba",
+                    "Contorno preciso y volumen equilibrado para marcar el rostro.",
+                ),
+                (
+                    "/barberia-hero.jpg",
+                    "Clásico limpio",
+                    "Corte clásico trabajado en Sebas Barber",
+                    "Clásico",
+                    "Forma natural, acabado pulido y fácil de mantener en casa.",
+                ),
+            ]
+            for order, (
+                image_url,
+                title,
+                alt_text,
+                category,
+                description,
+            ) in enumerate(gallery_seed):
+                db.add(
+                    GalleryItem(
+                        barber_id=sebastian.id,
+                        image_url=image_url,
+                        title=title,
+                        alt_text=alt_text,
+                        category=category,
+                        description=description,
+                        display_order=order,
+                        is_active=True,
+                    )
+                )
 
     hours_result = await db.execute(select(BusinessHour))
     existing_hours = {

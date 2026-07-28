@@ -20,6 +20,6 @@ def day_range(day: date) -> tuple[datetime, datetime]:
 
 def label_from_minutes(minutes: int) -> str:
     hour, minute = divmod(minutes, 60)
-    suffix = "PM" if hour >= 12 else "AM"
-    display_hour = hour - 12 if hour > 12 else hour
+    suffix = "p. m." if hour >= 12 else "a. m."
+    display_hour = hour % 12 or 12
     return f"{display_hour}:{minute:02d} {suffix}"

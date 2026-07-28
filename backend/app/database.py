@@ -65,6 +65,9 @@ async def init_db():
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS client_email VARCHAR(160)",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS calendar_event_id VARCHAR(255)",
         "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMPTZ",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_id UUID REFERENCES services(id)",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS access_code_hash VARCHAR(64)",
+        "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS access_code_hint VARCHAR(8)",
         "ALTER TABLE business_hours ADD COLUMN IF NOT EXISTS barber_id UUID REFERENCES barbers(id)",
         """
         UPDATE appointments
@@ -115,6 +118,22 @@ async def init_db():
         """
         CREATE INDEX IF NOT EXISTS ix_appointments_phone_start
         ON appointments (client_phone, starts_at DESC)
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS ix_appointments_service_id
+        ON appointments (service_id)
+        """,
+        """
+        UPDATE appointments AS appointment
+        SET service_id = service.id
+        FROM services AS service
+        WHERE appointment.service_id IS NULL
+          AND LOWER(appointment.service_name) = LOWER(service.name)
+        """,
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_appointments_access_code_hash
+        ON appointments (access_code_hash)
+        WHERE access_code_hash IS NOT NULL
         """,
         "CREATE EXTENSION IF NOT EXISTS btree_gist",
         "ALTER TABLE appointments DROP CONSTRAINT IF EXISTS no_double_booking",

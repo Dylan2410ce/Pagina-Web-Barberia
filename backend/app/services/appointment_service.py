@@ -19,6 +19,12 @@ from app.repositories.appointment_repository import ACTIVE, AppointmentRepositor
 from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
 from app.schemas import AppointmentCreate, BlockCreate, QuickBlockCreate
+from app.services.access_code_service import (
+    access_code_hash,
+    access_code_hint,
+    generate_access_code,
+    verify_access_code,
+)
 from app.services.calendar_service import CalendarError, CalendarService, parse_calendar_datetime
 from app.services.audit_service import AuditService
 from app.services.date_service import TZ, day_range, label_from_minutes, range_from_minutes
@@ -299,6 +305,7 @@ class AppointmentService:
         blocked_duration = duration + config.APPOINTMENT_BUFFER_MIN
         starts_at, ends_at = range_from_minutes(data.date, data.start_min, blocked_duration)
         created_event_id = None
+        access_code = generate_access_code()
 
         try:
             await self.lock_schedule(barber.id, data.date)
@@ -320,6 +327,7 @@ class AppointmentService:
 
             appointment = Appointment(
                 barber_id=barber.id,
+                service_id=data.service_id,
                 client_name=data.client_name,
                 client_phone=data.client_phone,
                 client_email=data.client_email,
@@ -330,6 +338,8 @@ class AppointmentService:
                 ends_at=ends_at,
                 status=AppointmentStatus.pending,
                 notes=data.notes,
+                access_code_hash=access_code_hash(access_code),
+                access_code_hint=access_code_hint(access_code),
             )
             self.appointments.save(appointment)
             await self.db.flush()
@@ -344,6 +354,7 @@ class AppointmentService:
             )
             await self.db.commit()
             await self.db.refresh(appointment)
+            appointment.access_code = access_code
             await self._notify("appointment_created", appointment)
             return appointment
         except CalendarError as exc:
@@ -575,17 +586,48 @@ class AppointmentService:
                 AppointmentStatus.pending,
                 AppointmentStatus.confirmed,
             ],
+            legacy_only=True,
         )
+
+    async def get_by_access_code(self, code: str) -> Appointment:
+        appointment = await self.appointments.by_access_code(code)
+        if not appointment:
+            raise HTTPException(
+                status_code=404,
+                detail="Código de reserva inválido o vencido",
+            )
+        return appointment
+
+    def authorize_client(
+        self,
+        appointment: Appointment,
+        phone: str | None,
+        access_code: str | None,
+    ) -> None:
+        if appointment.access_code_hash:
+            if not verify_access_code(access_code or "", appointment.access_code_hash):
+                raise HTTPException(
+                    status_code=403,
+                    detail="El código de reserva no coincide",
+                )
+            return
+        if not phone or appointment.client_phone != phone:
+            raise HTTPException(
+                status_code=404,
+                detail="Cita no encontrada para ese teléfono",
+            )
 
     async def cancel_by_client(
         self,
         appointment_id: UUID,
-        phone: str,
+        phone: str | None,
+        access_code: str | None = None,
         reason: str | None = None,
     ) -> Appointment:
         appointment = await self.appointments.by_id(appointment_id)
-        if not appointment or appointment.client_phone != phone:
-            raise HTTPException(status_code=404, detail="Cita no encontrada para ese teléfono")
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Cita no encontrada")
+        self.authorize_client(appointment, phone, access_code)
         if appointment.status not in {
             AppointmentStatus.pending,
             AppointmentStatus.confirmed,
@@ -718,13 +760,15 @@ class AppointmentService:
     async def reschedule_by_client(
         self,
         appointment_id: UUID,
-        phone: str,
+        phone: str | None,
+        access_code: str | None,
         day: date,
         start_min: int,
     ) -> Appointment:
         appointment = await self.appointments.by_id(appointment_id)
-        if not appointment or appointment.client_phone != phone:
-            raise HTTPException(status_code=404, detail="Cita no encontrada para ese teléfono")
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Cita no encontrada")
+        self.authorize_client(appointment, phone, access_code)
         if appointment.status not in {
             AppointmentStatus.pending,
             AppointmentStatus.confirmed,

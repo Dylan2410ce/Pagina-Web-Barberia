@@ -13,7 +13,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import config
-from app.controllers import admin_controller, public_controller, tasks_controller
+from app.controllers import (
+    admin_controller,
+    engagement_controller,
+    public_controller,
+    tasks_controller,
+)
 from app.database import AsyncSessionLocal, engine, init_db
 from app.routers import bookings
 from app.services.calendar_service import CalendarService
@@ -37,7 +42,7 @@ async def lifespan(_: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="Sebas Barber API", version="3.0.0", lifespan=lifespan)
+app = FastAPI(title="Sebas Barber API", version="4.0.0", lifespan=lifespan)
 
 allowed_origins = {
     config.FRONTEND_URL.rstrip("/"),
@@ -139,6 +144,7 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
 
 app.include_router(public_controller.router)
 app.include_router(bookings.router)
+app.include_router(engagement_controller.router)
 app.include_router(admin_controller.router)
 app.include_router(tasks_controller.router)
 

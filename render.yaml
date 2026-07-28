@@ -37,6 +37,18 @@ services:
         value: "0"
       - key: SERVICE_CACHE_TTL_SECONDS
         value: "300"
+      - key: LOYALTY_VISITS_TARGET
+        value: "6"
+      - key: LOYALTY_REWARD_LABEL
+        value: "Beneficio especial en tu próxima visita"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GALLERY_UPLOAD_MAX_MB
+        value: "5"
       - key: REMINDERS_ENABLED
         value: "false"
       - key: REMINDER_LEAD_HOURS
