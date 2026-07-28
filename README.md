@@ -6,7 +6,7 @@ Sistema de reservas, agenda y CRM para Sebastián y Gabriel.
 - Backend: FastAPI, Pydantic v2 y SQLAlchemy Async.
 - Base de datos: PostgreSQL en Neon.
 - Calendarios: Google Calendar independiente para cada barbero.
-- Operación: PWA, auditoría, CRM, lista de espera, fidelidad, promociones,
+- Operación: PWA, auditoría, CRM, lista de espera, promociones,
   gastos, cierres de caja, encuestas privadas y recordatorios automáticos.
 
 ## Estructura
@@ -69,8 +69,6 @@ CALENDAR_ENABLED=true
 CALENDAR_REQUIRED=true
 APPOINTMENT_BUFFER_MIN=0
 SERVICE_CACHE_TTL_SECONDS=300
-LOYALTY_VISITS_TARGET=6
-LOYALTY_REWARD_LABEL=Beneficio especial en tu próxima visita
 REMINDERS_ENABLED=true
 REMINDER_LEAD_HOURS=24
 REMINDER_BATCH_SIZE=50
@@ -173,6 +171,34 @@ VITE_EMAILJS_TEMPLATE_CLIENTE=TEMPLATE_ID_DEL_CLIENTE
 VITE_EMAILJS_TEMPLATE_BARBERO=TEMPLATE_ID_DEL_BARBERO
 VITE_BARBERO_EMAIL=CORREO_QUE_RECIBE_LAS_RESERVAS
 ```
+
+### Modo mantenimiento sin deploy
+
+El frontend consulta una Vercel Function conectada a Edge Config. Crea un
+store llamado `sebas-barber-control`, conéctalo al proyecto y guarda estos
+items:
+
+```json
+{
+  "maintenance_enabled": false,
+  "maintenance_title": "Estamos poniendo todo a punto.",
+  "maintenance_message": "La agenda hizo una pausa breve. Volvé en unos minutos y reservá tu espacio con normalidad.",
+  "maintenance_note": "Pronto estaremos de vuelta."
+}
+```
+
+Vercel crea automáticamente la variable privada `EDGE_CONFIG` al conectar el
+store. Realiza un único redeploy después de conectarlo. A partir de ahí, cambia
+solo `maintenance_enabled` desde **Storage > Edge Config > Items**:
+
+```txt
+true  = muestra la página de mantenimiento
+false = muestra la web normal
+```
+
+No agregues `VITE_` al nombre ni expongas el valor de `EDGE_CONFIG`. La ruta
+`/admin` permanece disponible durante la pausa y ningún cliente o barbero puede
+modificar los items del store.
 
 ## EmailJS
 

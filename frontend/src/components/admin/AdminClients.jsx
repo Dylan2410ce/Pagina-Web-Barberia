@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Gift,
   Mail,
   Phone,
   Search,
@@ -46,7 +45,6 @@ function coincide(cliente, query, status, desde) {
 export default function AdminClients({
   clientes = [],
   onUpdate,
-  onRedeem,
   onAnonymize,
 }) {
   const [query, setQuery] = useState("");
@@ -324,16 +322,6 @@ export default function AdminClients({
                       <Save size={16} />
                       Guardar ficha
                     </button>
-                    {clienteActivo.loyalty_available > 0 && (
-                      <button
-                        className="btn btn-linea"
-                        type="button"
-                        onClick={() => onRedeem(clienteActivo)}
-                      >
-                        <Gift size={16} />
-                        Canjear beneficio ({clienteActivo.loyalty_available})
-                      </button>
-                    )}
                     <button
                       className="btn btn-peligro"
                       type="button"

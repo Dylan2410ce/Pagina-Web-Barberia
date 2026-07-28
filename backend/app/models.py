@@ -575,7 +575,6 @@ class ClientProfile(Base):
     tags: Mapped[list[str]] = mapped_column(JSON_TYPE, default=list, nullable=False)
     preferences: Mapped[str | None] = mapped_column(Text, nullable=True)
     internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    loyalty_redeemed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     anonymized_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -739,38 +738,6 @@ class CashClose(Base):
     )
 
     barber: Mapped[Barber] = relationship(back_populates="cash_closes")
-
-
-class LoyaltyRedemption(Base):
-    __tablename__ = "loyalty_redemptions"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
-    client_profile_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("client_profiles.id"),
-        nullable=False,
-    )
-    barber_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("barbers.id"),
-        nullable=False,
-        index=True,
-    )
-    appointment_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("appointments.id"),
-        nullable=True,
-    )
-    reward_label: Mapped[str] = mapped_column(String(160), nullable=False)
-    redeemed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-    )
 
 
 class NotificationDelivery(Base):

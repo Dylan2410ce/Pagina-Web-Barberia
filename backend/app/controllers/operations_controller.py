@@ -7,7 +7,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import config
 from app.database import get_db
 from app.models import (
     Appointment,
@@ -20,7 +19,6 @@ from app.models import (
     CashClose,
     ClientProfile,
     Expense,
-    LoyaltyRedemption,
     NotificationDelivery,
     Promotion,
     Review,
@@ -38,7 +36,6 @@ from app.schemas import (
     ExpenseCreate,
     ExpenseOut,
     FeedbackOut,
-    LoyaltyRedeemIn,
     NotificationOut,
     PromotionCreate,
     PromotionOut,
@@ -203,64 +200,6 @@ async def update_client_profile(
     )
     await db.commit()
     return {"ok": True}
-
-
-@router.post("/client-profiles/{profile_id}/redeem-loyalty")
-async def redeem_loyalty(
-    profile_id: UUID,
-    data: LoyaltyRedeemIn,
-    barber: Barber = Depends(current_barber),
-    db: AsyncSession = Depends(get_db),
-):
-    profile = _owned(
-        await db.get(ClientProfile, profile_id),
-        barber,
-        "Cliente",
-    )
-    completed_result = await db.execute(
-        select(func.count(Appointment.id)).where(
-            Appointment.barber_id == barber.id,
-            Appointment.client_phone == profile.phone,
-            Appointment.status == AppointmentStatus.completed,
-        )
-    )
-    unlocked = int(completed_result.scalar_one()) // config.LOYALTY_VISITS_TARGET
-    if profile.loyalty_redeemed >= unlocked:
-        raise HTTPException(
-            status_code=409,
-            detail="El cliente no tiene beneficios disponibles",
-        )
-    if data.appointment_id:
-        appointment = _owned(
-            await db.get(Appointment, data.appointment_id),
-            barber,
-            "Cita",
-        )
-        if appointment.client_phone != profile.phone:
-            raise HTTPException(
-                status_code=409,
-                detail="La cita no pertenece a este cliente",
-            )
-    redemption = LoyaltyRedemption(
-        client_profile_id=profile.id,
-        barber_id=barber.id,
-        appointment_id=data.appointment_id,
-        reward_label=data.reward_label or config.LOYALTY_REWARD_LABEL,
-    )
-    db.add(redemption)
-    profile.loyalty_redeemed += 1
-    AuditService(db).record(
-        barber_id=barber.id,
-        action="loyalty.redeemed",
-        entity_type="client_profile",
-        entity_id=profile.id,
-        details={"reward": redemption.reward_label},
-    )
-    await db.commit()
-    return {
-        "ok": True,
-        "rewards_available": max(unlocked - profile.loyalty_redeemed, 0),
-    }
 
 
 @router.post("/client-profiles/{profile_id}/anonymize")

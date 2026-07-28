@@ -17,6 +17,7 @@ import FloatingContact from "./components/FloatingContact";
 import Gallery from "./components/Gallery";
 import Hero from "./components/Hero";
 import LocationSection from "./components/LocationSection";
+import MaintenancePage from "./components/MaintenancePage";
 import MapModal from "./components/MapModal";
 import Navbar from "./components/Navbar";
 import RescheduleModal from "./components/RescheduleModal";
@@ -25,6 +26,7 @@ import ServiceMenu from "./components/ServiceMenu";
 import ScrollToTop from "./components/ScrollToTop";
 import TeamSection from "./components/TeamSection";
 import Toasts from "./components/Toasts";
+import useMaintenanceStatus from "./hooks/useMaintenanceStatus";
 import {
   enviarCorreosActualizacion,
   enviarCorreosCita,
@@ -130,6 +132,8 @@ const adminBase = {
 export default function App() {
   const [ruta, setRuta] = useState(() => window.location.pathname);
   const esRutaLegal = LEGAL_ROUTES.has(ruta);
+  const esRutaAdmin = ruta.startsWith("/admin");
+  const mantenimiento = useMaintenanceStatus(!esRutaAdmin);
   const [datos, setDatos] = useState({
     barbers: [],
     services: [],
@@ -161,7 +165,6 @@ export default function App() {
     || ""
   ));
   const [citasCliente, setCitasCliente] = useState([]);
-  const [fidelidad, setFidelidad] = useState(null);
   const [reservasGuardadas, setReservasGuardadas] = useState(
     leerReservasGuardadas,
   );
@@ -333,7 +336,22 @@ export default function App() {
   }, [admin.filtros, admin.token, avisar]);
 
   useEffect(() => {
-    if (esRutaLegal) return undefined;
+    if (esRutaAdmin) {
+      setCargando(false);
+      const tokenGuardado = obtenerToken();
+      if (tokenGuardado) {
+        cargarAdmin(tokenGuardado, adminBase.filtros);
+      }
+      return undefined;
+    }
+
+    if (
+      esRutaLegal
+      || mantenimiento.loading
+      || mantenimiento.maintenance_enabled
+    ) {
+      return undefined;
+    }
 
     async function iniciar() {
       try {
@@ -363,10 +381,9 @@ export default function App() {
             );
           }
           try {
-            const [cita, historial, progreso] = await Promise.all([
+            const [cita, historial] = await Promise.all([
               publicoApi.buscarPorCodigo(codigoUrl),
               publicoApi.historialPorCodigo(codigoUrl),
-              publicoApi.fidelidad(codigoUrl),
             ]);
             setCodigoBusqueda(codigoUrl);
             setCitasCliente(historial.map((item) => (
@@ -374,7 +391,6 @@ export default function App() {
                 ? { ...item, _access_code: codigoUrl }
                 : item
             )));
-            setFidelidad(progreso);
             requestAnimationFrame(() => {
               document.getElementById("mis-citas")?.scrollIntoView({ block: "start" });
             });
@@ -382,8 +398,6 @@ export default function App() {
             avisar("warning", "Código no encontrado", "Revisa el comprobante de tu reserva.");
           }
         }
-        const tokenGuardado = obtenerToken();
-        if (tokenGuardado) await cargarAdmin(tokenGuardado, adminBase.filtros);
       } catch (error) {
         setCargando(false);
         avisar("error", "La agenda no cargó", error.message);
@@ -391,7 +405,12 @@ export default function App() {
     }
     iniciar();
     return undefined;
-  }, [esRutaLegal]);
+  }, [
+    esRutaAdmin,
+    esRutaLegal,
+    mantenimiento.loading,
+    mantenimiento.maintenance_enabled,
+  ]);
 
   useEffect(() => {
     if (!datos.barbers.length || esRutaLegal) return undefined;
@@ -520,9 +539,6 @@ export default function App() {
       setReservasGuardadas(leerReservasGuardadas());
       setCodigoBusqueda(citaCreada.access_code);
       setCitasCliente([{ ...citaCreada, _access_code: citaCreada.access_code }]);
-      publicoApi.fidelidad(citaCreada.access_code)
-        .then(setFidelidad)
-        .catch(() => setFidelidad(null));
       setCitaConfirmada({
         cita: citaCreada,
         aviso: {
@@ -558,10 +574,9 @@ export default function App() {
     }
     setProcesando("Abriendo tu reserva...");
     try {
-      const [cita, historial, progreso] = await Promise.all([
+      const [cita, historial] = await Promise.all([
         publicoApi.buscarPorCodigo(limpio),
         publicoApi.historialPorCodigo(limpio),
-        publicoApi.fidelidad(limpio),
       ]);
       setCodigoBusqueda(limpio);
       setCitasCliente(historial.map((item) => (
@@ -569,12 +584,10 @@ export default function App() {
           ? { ...item, _access_code: limpio }
           : item
       )));
-      setFidelidad(progreso);
       if (notificar) avisar("ok", "Reserva encontrada");
       return true;
     } catch (error) {
       setCitasCliente([]);
-      setFidelidad(null);
       avisar("error", "No encontramos la reserva", error.message);
       return false;
     } finally {
@@ -596,7 +609,6 @@ export default function App() {
       const citas = await publicoApi.buscarPorTelefono(telefono);
       setTelefonoBusqueda(telefono);
       setCitasCliente(citas);
-      setFidelidad(null);
       avisar("ok", citas.length ? "Encontramos tus citas" : "No hay citas activas");
     } catch (error) {
       avisar("error", "No se pudo buscar", error.message);
@@ -664,19 +676,27 @@ export default function App() {
       avisar("error", "No identificamos la agenda de esta cita");
       return;
     }
+    const serviciosModal = modo === "admin"
+      ? admin.servicios.filter((item) => !item.is_addon && item.is_active)
+      : datos.services;
+    const servicio = serviciosModal.find((item) => item.id === cita.service_id)
+      || serviciosModal.find((item) => item.name === cita.service_name)
+      || serviciosModal[0];
+    if (!servicio) {
+      avisar("error", "No encontramos el servicio de esta cita");
+      return;
+    }
     setModalReprogramar({
       cita,
       modo,
       barber_id: barberId,
+      service_id: servicio.id,
       date: hoyISO(),
       start_min: null,
       slots: [],
       cargando: true,
     });
     try {
-      const servicio = datos.services.find((item) => item.id === cita.service_id)
-        || datos.services.find((item) => item.name === cita.service_name)
-        || datos.services[0];
       const disponibles = await publicoApi.disponibilidad({
         barberId,
         fecha: hoyISO(),
@@ -694,15 +714,10 @@ export default function App() {
     if (!modalReprogramar) return;
     setModalReprogramar((actual) => ({ ...actual, date, start_min: null, cargando: true }));
     try {
-      const servicio = datos.services.find(
-        (item) => item.id === modalReprogramar.cita.service_id,
-      ) || datos.services.find(
-        (item) => item.name === modalReprogramar.cita.service_name,
-      ) || datos.services[0];
       const disponibles = await publicoApi.disponibilidad({
         barberId: modalReprogramar.barber_id,
         fecha: date,
-        serviceId: servicio?.id,
+        serviceId: modalReprogramar.service_id,
         addonIds: [],
       });
       setModalReprogramar((actual) => actual ? { ...actual, slots: disponibles, cargando: false } : actual);
@@ -1210,12 +1225,6 @@ export default function App() {
     success: "Ficha actualizada",
   });
 
-  const canjearFidelidad = (cliente) => ejecutarOperacion({
-    loading: "Registrando beneficio...",
-    action: () => adminApi.canjearFidelidad(admin.token, cliente.profile_id),
-    success: "Beneficio canjeado",
-  });
-
   const anonimizarCliente = (cliente) => setConfirmacion({
     title: "¿Eliminar los datos personales?",
     message: (
@@ -1357,6 +1366,24 @@ export default function App() {
     });
   };
 
+  if (!esRutaAdmin && mantenimiento.loading) {
+    return (
+      <main className="pantalla-carga">
+        <span className="spinner grande" />
+        <p>Preparando Sebas Barber...</p>
+      </main>
+    );
+  }
+
+  if (!esRutaAdmin && mantenimiento.maintenance_enabled) {
+    return (
+      <MaintenancePage
+        status={mantenimiento}
+        onRefresh={mantenimiento.refresh}
+      />
+    );
+  }
+
   if (esRutaLegal) {
     return (
       <Suspense fallback={<main className="pantalla-carga"><span className="spinner grande" /></main>}>
@@ -1407,11 +1434,10 @@ export default function App() {
     onCrearCierre: crearCierre,
     onDescargarRespaldo: descargarRespaldo,
     onActualizarCliente: actualizarCliente,
-    onCanjearFidelidad: canjearFidelidad,
     onAnonimizarCliente: anonimizarCliente,
   };
 
-  if (ruta.startsWith("/admin")) {
+  if (esRutaAdmin) {
     return (
       <>
         <main className="admin-route">
@@ -1502,7 +1528,6 @@ export default function App() {
           citas={citasCliente}
           barberos={datos.barbers}
           reservasGuardadas={reservasGuardadas}
-          fidelidad={fidelidad}
           onBuscarCodigo={buscarCitaCodigo}
           onBuscarTelefono={buscarCitas}
           onSeleccionarGuardada={(codigo) => cargarCitaPorCodigo(codigo)}

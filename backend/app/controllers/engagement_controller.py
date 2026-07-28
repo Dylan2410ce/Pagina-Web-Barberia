@@ -5,7 +5,6 @@ from app.database import get_db
 from app.schemas import (
     FeedbackCreate,
     FeedbackOut,
-    LoyaltyOut,
     ReviewCreate,
     ReviewOut,
     ReviewSummaryOut,
@@ -39,14 +38,6 @@ async def create_review(
     db: AsyncSession = Depends(get_db),
 ):
     return await EngagementService(db).create_review(data)
-
-
-@router.get("/loyalty/{access_code}", response_model=LoyaltyOut)
-async def loyalty(
-    access_code: str,
-    db: AsyncSession = Depends(get_db),
-):
-    return await EngagementService(db).loyalty(access_code)
 
 
 @router.post("/feedback", response_model=FeedbackOut, status_code=201)

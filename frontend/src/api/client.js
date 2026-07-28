@@ -157,8 +157,6 @@ export const publicoApi = {
   listaEspera: (datos) => api("/api/public/waitlist", { method: "POST", body: datos }),
   reseñas: (limit = 12) => api(`/api/public/reviews${query({ limit })}`),
   crearReseña: (datos) => api("/api/public/reviews", { method: "POST", body: datos }),
-  fidelidad: (codigo) =>
-    api(`/api/public/loyalty/${encodeURIComponent(codigo.trim())}`),
   crearEncuesta: (datos) => api("/api/public/feedback", { method: "POST", body: datos }),
 };
 
@@ -233,12 +231,6 @@ export const adminApi = {
     api(`/api/admin/business-breaks/${id}`, { method: "DELETE", token }),
   actualizarCliente: (token, id, datos) =>
     api(`/api/admin/client-profiles/${id}`, { method: "PATCH", token, body: datos }),
-  canjearFidelidad: (token, id, datos = {}) =>
-    api(`/api/admin/client-profiles/${id}/redeem-loyalty`, {
-      method: "POST",
-      token,
-      body: datos,
-    }),
   anonimizarCliente: (token, id) =>
     api(`/api/admin/client-profiles/${id}/anonymize`, { method: "POST", token }),
   encuestas: (token) => api("/api/admin/feedback", { token }),

@@ -713,8 +713,6 @@ async def clients(
                 "tags": [],
                 "preferences": None,
                 "internal_notes": None,
-                "loyalty_redeemed": 0,
-                "loyalty_available": 0,
                 "history": [],
                 "_completed_dates": [],
                 "_services": Counter(),
@@ -766,14 +764,6 @@ async def clients(
             client["tags"] = profile.tags
             client["preferences"] = profile.preferences
             client["internal_notes"] = profile.internal_notes
-            client["loyalty_redeemed"] = profile.loyalty_redeemed
-        unlocked = (
-            client["completed_appointments"] // config.LOYALTY_VISITS_TARGET
-        )
-        client["loyalty_available"] = max(
-            unlocked - client["loyalty_redeemed"],
-            0,
-        )
 
     return sorted(
         grouped.values(),

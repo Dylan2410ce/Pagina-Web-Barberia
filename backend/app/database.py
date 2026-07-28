@@ -158,6 +158,8 @@ async def init_db():
         ON appointments (request_id)
         WHERE request_id IS NOT NULL
         """,
+        "DROP TABLE IF EXISTS loyalty_redemptions",
+        "ALTER TABLE client_profiles DROP COLUMN IF EXISTS loyalty_redeemed",
         "CREATE EXTENSION IF NOT EXISTS btree_gist",
         "ALTER TABLE appointments DROP CONSTRAINT IF EXISTS no_double_booking",
         "ALTER TABLE appointments DROP CONSTRAINT IF EXISTS no_double_booking_per_barber",

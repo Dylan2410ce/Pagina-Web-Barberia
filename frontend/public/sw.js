@@ -1,4 +1,4 @@
-const CACHE_NAME = "sebas-barber-v5";
+const CACHE_NAME = "sebas-barber-v6";
 const APP_SHELL = [
   "/",
   "/manifest.json",
@@ -29,6 +29,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
 
   if (request.method !== "GET" || url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(request));
     return;
   }
 

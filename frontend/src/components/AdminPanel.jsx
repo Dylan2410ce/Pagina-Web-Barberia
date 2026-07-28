@@ -89,7 +89,6 @@ export default function AdminPanel({
   onCrearCierre,
   onDescargarRespaldo,
   onActualizarCliente,
-  onCanjearFidelidad,
   onAnonimizarCliente,
 }) {
   if (!admin.token) {
@@ -176,7 +175,6 @@ export default function AdminPanel({
             <AdminClients
               clientes={admin.clientes}
               onUpdate={onActualizarCliente}
-              onRedeem={onCanjearFidelidad}
               onAnonymize={onAnonimizarCliente}
             />
           )}

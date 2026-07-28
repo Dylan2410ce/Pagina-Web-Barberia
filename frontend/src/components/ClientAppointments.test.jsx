@@ -10,7 +10,6 @@ const baseProps = {
   citas: [],
   barberos: [],
   reservasGuardadas: [],
-  fidelidad: null,
   onBuscarCodigo: vi.fn((event) => event.preventDefault()),
   onBuscarTelefono: vi.fn((event) => event.preventDefault()),
   onSeleccionarGuardada: vi.fn(),

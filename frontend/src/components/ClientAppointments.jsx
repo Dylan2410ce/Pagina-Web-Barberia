@@ -9,7 +9,6 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  Sparkles,
   Star,
   Trash2,
 } from "lucide-react";
@@ -53,7 +52,6 @@ export default function ClientAppointments({
   citas,
   barberos = [],
   reservasGuardadas = [],
-  fidelidad,
   onBuscarCodigo,
   onBuscarTelefono,
   onSeleccionarGuardada,
@@ -218,41 +216,6 @@ export default function ClientAppointments({
                     Outlook
                   </a>
                 </div>
-
-                {fidelidad && cita._access_code && (
-                  <div className="loyalty-mini">
-                    <div>
-                      <span><Sparkles size={15} />Club Sebas</span>
-                      <strong>
-                        {fidelidad.rewards_available > 0
-                          && fidelidad.current_progress === 0
-                          ? "Beneficio listo"
-                          : fidelidad.completed_visits === 0
-                            ? "Empieza con tu primera visita"
-                            : `${fidelidad.current_progress} de ${fidelidad.target_visits} visitas`}
-                      </strong>
-                    </div>
-                    <div
-                      className="loyalty-track"
-                      role="progressbar"
-                      aria-label="Progreso de fidelidad"
-                      aria-valuemin="0"
-                      aria-valuemax={fidelidad.target_visits}
-                      aria-valuenow={fidelidad.current_progress}
-                    >
-                      <span
-                        style={{
-                          width: `${(fidelidad.current_progress / fidelidad.target_visits) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <small>
-                      {fidelidad.rewards_available > 0
-                        ? fidelidad.reward_label
-                        : `Faltan ${fidelidad.visits_remaining} visitas`}
-                    </small>
-                  </div>
-                )}
 
                 <div className="acciones-card">
                   <button className="btn btn-linea" type="button" onClick={() => onRepetir(cita)}>

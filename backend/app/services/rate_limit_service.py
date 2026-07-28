@@ -62,8 +62,6 @@ class RateLimiter:
             and request.url.path.startswith("/api/public/appointments/")
         ):
             return CLIENT_MUTATION_RULE
-        if request.url.path.startswith("/api/public/loyalty/"):
-            return LOOKUP_RULE
         return GLOBAL_RULE
 
     def check(self, request: Request) -> tuple[bool, int, RateRule]:

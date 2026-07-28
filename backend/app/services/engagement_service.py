@@ -4,13 +4,11 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import config
 from app.models import (
     Appointment,
     AppointmentFeedback,
     AppointmentStatus,
     Barber,
-    ClientProfile,
     Review,
     ReviewStatus,
     WaitlistEntry,
@@ -152,38 +150,6 @@ class EngagementService:
         await self.db.commit()
         await self.db.refresh(review)
         return review
-
-    async def loyalty(self, access_code: str) -> dict:
-        appointment = await self.appointments.get_by_access_code(access_code)
-        result = await self.db.execute(
-            select(func.count(Appointment.id)).where(
-                Appointment.barber_id == appointment.barber_id,
-                Appointment.client_phone == appointment.client_phone,
-                Appointment.status == AppointmentStatus.completed,
-            )
-        )
-        completed = int(result.scalar_one())
-        profile_result = await self.db.execute(
-            select(ClientProfile).where(
-                ClientProfile.barber_id == appointment.barber_id,
-                ClientProfile.phone == appointment.client_phone,
-            )
-        )
-        profile = profile_result.scalar_one_or_none()
-        redeemed = profile.loyalty_redeemed if profile else 0
-        target = config.LOYALTY_VISITS_TARGET
-        progress = completed % target
-        unlocked = completed // target
-        return {
-            "completed_visits": completed,
-            "target_visits": target,
-            "current_progress": progress,
-            "visits_remaining": target - progress,
-            "rewards_unlocked": unlocked,
-            "rewards_redeemed": redeemed,
-            "rewards_available": max(unlocked - redeemed, 0),
-            "reward_label": config.LOYALTY_REWARD_LABEL,
-        }
 
     async def create_feedback(self, data: FeedbackCreate) -> AppointmentFeedback:
         appointment = await self.appointments.get_by_access_code(data.access_code)

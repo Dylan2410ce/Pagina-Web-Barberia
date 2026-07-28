@@ -394,8 +394,6 @@ class ClientOut(BaseModel):
     tags: list[str] = Field(default_factory=list)
     preferences: str | None = None
     internal_notes: str | None = None
-    loyalty_redeemed: int = 0
-    loyalty_available: int = 0
     history: list[ClientHistoryItem]
 
 
@@ -416,17 +414,6 @@ class ShopStatusOut(BaseModel):
     message: str
     next_change_at: datetime | None = None
     checked_at: datetime
-
-
-class LoyaltyOut(BaseModel):
-    completed_visits: int
-    target_visits: int
-    current_progress: int
-    visits_remaining: int
-    rewards_unlocked: int
-    rewards_redeemed: int = 0
-    rewards_available: int = 0
-    reward_label: str
 
 
 class WaitlistCreate(StrictInput):
@@ -554,11 +541,6 @@ class ClientProfileUpdate(StrictInput):
             if tag not in cleaned:
                 cleaned.append(tag)
         return cleaned
-
-
-class LoyaltyRedeemIn(StrictInput):
-    appointment_id: UUID | None = None
-    reward_label: str | None = Field(default=None, max_length=160)
 
 
 class FeedbackCreate(StrictInput):

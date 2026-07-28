@@ -118,15 +118,6 @@ class Config:
     )
     RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
     SENTRY_DSN = os.getenv("SENTRY_DSN", "")
-    LOYALTY_VISITS_TARGET = max(
-        int(os.getenv("LOYALTY_VISITS_TARGET", "6")),
-        2,
-    )
-    LOYALTY_REWARD_LABEL = os.getenv(
-        "LOYALTY_REWARD_LABEL",
-        "Beneficio especial en tu próxima visita",
-    )
-
     CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "")
     CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "")
     CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")
