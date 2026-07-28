@@ -482,6 +482,14 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
         job = db.add.call_args.args[0]
         self.assertEqual(job.template_id, "template_cliente")
         self.assertEqual(job.payload["access_code"], code)
+        self.assertTrue(job.payload["has_qr"])
+        self.assertTrue(
+            job.payload["qr_code"].startswith("data:image/png;base64,")
+        )
+        self.assertIn(
+            f"?reserva={code}#mis-citas",
+            job.payload["manage_url"],
+        )
         expected = appointment.starts_at - timedelta(hours=24)
         self.assertLess(abs((job.scheduled_for - expected).total_seconds()), 1)
 

@@ -651,6 +651,37 @@ label {
   padding: 18px;
 }
 
+.team-section-cta {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 18px;
+  background:
+    linear-gradient(110deg, rgba(215, 174, 85, 0.08), transparent 54%),
+    var(--surface);
+}
+
+.team-section-cta > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-soft);
+  font-weight: 650;
+}
+
+.team-section-cta svg {
+  flex: 0 0 auto;
+  color: var(--gold-light);
+}
+
+.team-section-cta .btn {
+  width: 100%;
+}
+
 .team-card-head {
   min-width: 0;
   display: flex;
@@ -787,7 +818,7 @@ label {
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto;
   gap: 13px;
   padding: 17px;
   background: var(--surface);
@@ -931,6 +962,16 @@ label {
   background: rgba(114, 198, 155, 0.1);
 }
 
+.extra-option-static {
+  cursor: default;
+}
+
+.extra-option-static > span {
+  border-color: rgba(215, 174, 85, 0.34);
+  color: var(--gold-light);
+  background: rgba(215, 174, 85, 0.08);
+}
+
 .extra-option.activo > span {
   border-color: var(--green);
   color: #122018;
@@ -1047,7 +1088,7 @@ label {
 
 .wizard-steps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 16px;
@@ -1125,6 +1166,36 @@ label {
   animation: stage-in var(--motion);
 }
 
+.booking-config-block {
+  display: grid;
+  gap: 11px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.stage-heading + .booking-config-block {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.booking-config-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.booking-config-heading > span {
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.booking-config-heading > small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .stage-heading {
   display: grid;
   gap: 6px;
@@ -1147,6 +1218,14 @@ label {
 
 .campo {
   min-width: 0;
+}
+
+.campo-ayuda {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
 }
 
 .formulario,
@@ -1309,7 +1388,7 @@ label {
   gap: 8px;
 }
 
-.booking-extras > div {
+.booking-extras > div:last-child {
   display: grid;
   gap: 8px;
 }
@@ -1400,6 +1479,14 @@ label {
 
 .wizard-actions .btn {
   flex: 1 1 130px;
+}
+
+.wizard-actions-end {
+  justify-content: flex-end;
+}
+
+.wizard-actions-end .btn {
+  flex: 0 1 260px;
 }
 
 .privacy-note {
@@ -2783,7 +2870,7 @@ label {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .booking-extras > div,
+  .booking-extras > div:last-child,
   .booking-barber-grid,
   .block-times {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2855,6 +2942,17 @@ label {
 
   .team-card {
     grid-template-columns: minmax(210px, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .team-section-cta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 22px;
+  }
+
+  .team-section-cta .btn {
+    width: auto;
   }
 
   .team-visual {

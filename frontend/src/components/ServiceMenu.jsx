@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import {
-  ArrowRight,
-  Check,
   Clock3,
   Image,
-  Plus,
   Sparkles,
   X,
 } from "lucide-react";
@@ -47,10 +44,6 @@ function descripcionServicio(servicio) {
 export default function ServiceMenu({
   servicios,
   extras,
-  reserva,
-  onServicio,
-  onExtra,
-  onContinuar,
 }) {
   const [categoria, setCategoria] = useState("todos");
   const [mostrarPoster, setMostrarPoster] = useState(false);
@@ -65,7 +58,7 @@ export default function ServiceMenu({
         <div>
           <span className="eyebrow">Servicios y precios</span>
           <h2>El menú, claro desde el inicio.</h2>
-          <p>Escoge el servicio principal y suma solo los extras que quieras.</p>
+          <p>Precios claros, tiempos definidos y extras que no alargan la cita.</p>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>
           <Image size={18} />
@@ -97,40 +90,24 @@ export default function ServiceMenu({
             </button>
           </div>
         )}
-        {visibles.map((servicio) => {
-          const activo = reserva.service_id === servicio.id;
-          return (
-            <article
-              className={`servicio-card ${activo ? "activo" : ""}`}
-              key={servicio.id}
-              data-selected={activo || undefined}
-            >
-              <div className="servicio-top">
-                <span className="servicio-icono">
-                  {activo ? <Check size={18} /> : <Sparkles size={18} />}
-                </span>
-                <span className="servicio-precio">{dinero(servicio.price)}</span>
-              </div>
-              <div>
-                <h3>{servicio.name}</h3>
-                <p>{descripcionServicio(servicio)}</p>
-              </div>
-              <span className="servicio-tiempo">
-                <Clock3 size={15} />
-                {servicio.duration_min} min aprox.
+        {visibles.map((servicio) => (
+          <article className="servicio-card" key={servicio.id}>
+            <div className="servicio-top">
+              <span className="servicio-icono">
+                <Sparkles size={18} />
               </span>
-              <button
-                className={`btn ${activo ? "btn-principal" : "btn-linea"}`}
-                type="button"
-                aria-pressed={activo}
-                onClick={() => (activo ? onContinuar?.() : onServicio(servicio.id))}
-              >
-                {activo ? <ArrowRight size={17} /> : <Plus size={17} />}
-                {activo ? "Continuar reserva" : "Elegir servicio"}
-              </button>
-            </article>
-          );
-        })}
+              <span className="servicio-precio">{dinero(servicio.price)}</span>
+            </div>
+            <div>
+              <h3>{servicio.name}</h3>
+              <p>{descripcionServicio(servicio)}</p>
+            </div>
+            <span className="servicio-tiempo">
+              <Clock3 size={15} />
+              {servicio.duration_min} min aprox.
+            </span>
+          </article>
+        ))}
       </div>
 
       {extras.length > 0 && (
@@ -141,24 +118,15 @@ export default function ServiceMenu({
             <p>Se suman al precio, no al tiempo reservado.</p>
           </div>
           <div className="extras-grid">
-            {extras.map((extra) => {
-              const activo = reserva.addon_ids.includes(extra.id);
-              return (
-                <button
-                  className={`extra-option ${activo ? "activo" : ""}`}
-                  key={extra.id}
-                  type="button"
-                  aria-pressed={activo}
-                  onClick={() => onExtra(extra.id)}
-                >
-                  <span>{activo ? <Check size={17} /> : <Plus size={17} />}</span>
-                  <div>
-                    <strong>{extra.name}</strong>
-                    <small>{dinero(extra.price)}</small>
-                  </div>
-                </button>
-              );
-            })}
+            {extras.map((extra) => (
+              <article className="extra-option extra-option-static" key={extra.id}>
+                <span><Sparkles size={16} /></span>
+                <div>
+                  <strong>{extra.name}</strong>
+                  <small>{dinero(extra.price)}</small>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       )}

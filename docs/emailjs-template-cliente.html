@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>{{email_subject}}</title>
+    <style>
+      @media only screen and (max-width: 620px) {
+        .email-shell {
+          width: 100% !important;
+        }
+
+        .email-pad {
+          padding-left: 22px !important;
+          padding-right: 22px !important;
+        }
+
+        .email-title {
+          font-size: 30px !important;
+        }
+
+        .email-column {
+          width: 100% !important;
+          display: block !important;
+        }
+
+        .email-column + .email-column {
+          padding-top: 18px !important;
+        }
+
+        .email-button {
+          width: 100% !important;
+          display: block !important;
+          box-sizing: border-box !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#ece9e1;color:#20231f;font-family:Arial,Helvetica,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      {{email_title}} · {{appointment_date}} · {{appointment_time}}
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#ece9e1;">
+      <tr>
+        <td align="center" style="padding:28px 12px;">
+          <table class="email-shell" role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:620px;max-width:620px;background:#fffdf8;border:1px solid #d9d4c8;border-radius:18px;overflow:hidden;box-shadow:0 14px 34px rgba(28,31,27,.10);">
+            <tr>
+              <td class="email-pad" style="padding:30px 38px;background:#171a17;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="vertical-align:middle;">
+                      <div style="font-size:22px;line-height:1;font-weight:800;letter-spacing:.2px;color:#fffaf0;">
+                        Sebas Barber
+                      </div>
+                      <div style="padding-top:7px;font-size:12px;line-height:1.4;color:#b8bdb5;">
+                        Barrio Marañonal · Esparza
+                      </div>
+                    </td>
+                    <td align="right" style="vertical-align:middle;">
+                      <span style="display:inline-block;padding:8px 11px;border:1px solid #6e6040;border-radius:999px;background:#292a23;color:#f1d48a;font-size:11px;line-height:1;font-weight:700;text-transform:uppercase;">
+                        {{notification_badge}}
+                      </span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="email-pad" style="padding:38px 38px 20px;">
+                <div style="font-size:14px;line-height:1.6;color:#696d66;">Hola, {{client_name}}.</div>
+                <h1 class="email-title" style="margin:9px 0 14px;font-size:38px;line-height:1.08;letter-spacing:-.4px;color:#20231f;">
+                  {{email_title}}
+                </h1>
+
+                {{#is_confirmation}}
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
+                  Tu espacio quedó reservado. Aquí tienes todo lo necesario para llegar y administrar la cita.
+                </p>
+                {{/is_confirmation}}
+
+                {{#is_reminder}}
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
+                  Mañana te esperamos en Sebas Barber. Revisa la hora y guarda tu código privado a mano.
+                </p>
+                {{/is_reminder}}
+
+                {{#is_reschedule}}
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
+                  El cambio quedó listo. Estos son los datos actualizados de tu cita.
+                </p>
+                {{/is_reschedule}}
+
+                {{#is_cancellation}}
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
+                  La cita fue cancelada y el horario quedó disponible nuevamente.
+                </p>
+                {{/is_cancellation}}
+
+                {{#is_waitlist}}
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
+                  Se liberó un espacio en la fecha que buscabas. La hora seguirá abierta hasta que alguien termine la reserva.
+                </p>
+                {{/is_waitlist}}
+              </td>
+            </tr>
+
+            {{#has_booking_details}}
+            <tr>
+              <td class="email-pad" style="padding:12px 38px 22px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #ded9cd;border-radius:14px;background:#f6f3eb;">
+                  <tr>
+                    <td style="padding:20px 20px 10px;font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">
+                      Resumen de la cita
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 20px 20px;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Servicio</td>
+                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{service_name}}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Barbero</td>
+                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{barber_name}}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Fecha</td>
+                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{appointment_date}}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Hora</td>
+                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{appointment_time}}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Duración</td>
+                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{duration}}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Extras</td>
+                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{addons}}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding:12px 0 0;font-size:15px;font-weight:700;color:#20231f;">Total</td>
+                          <td align="right" style="padding:12px 0 0;font-size:20px;font-weight:800;color:#9c7125;">{{total_price}}</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            {{/has_booking_details}}
+
+            {{#is_waitlist}}
+            <tr>
+              <td class="email-pad" style="padding:12px 38px 22px;">
+                <div style="padding:20px;border:1px solid #ded9cd;border-radius:14px;background:#f6f3eb;">
+                  <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">Espacio solicitado</div>
+                  <div style="padding-top:10px;font-size:17px;font-weight:700;color:#20231f;">{{service_name}}</div>
+                  <div style="padding-top:5px;font-size:14px;color:#696d66;">{{appointment_date}} · {{barber_name}}</div>
+                </div>
+              </td>
+            </tr>
+            {{/is_waitlist}}
+
+            {{#has_access_code}}
+            <tr>
+              <td class="email-pad" style="padding:4px 38px 26px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #cfc5ae;border-radius:14px;background:#fff9ea;">
+                  <tr>
+                    {{#has_qr}}
+                    <td class="email-column" width="190" align="center" style="padding:22px;vertical-align:middle;">
+                      <img src="cid:qr_code" width="146" height="146" alt="Código QR para abrir la reserva" style="width:146px;height:146px;display:block;border:0;border-radius:8px;">
+                    </td>
+                    {{/has_qr}}
+                    <td class="email-column" style="padding:22px;vertical-align:middle;">
+                      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">Código privado</div>
+                      <div style="padding:10px 0 8px;font-family:Consolas,Monaco,monospace;font-size:22px;line-height:1.35;font-weight:800;letter-spacing:.5px;word-break:break-all;color:#20231f;">
+                        {{access_code}}
+                      </div>
+                      <div style="font-size:13px;line-height:1.55;color:#696d66;">
+                        El QR y esta clave permiten consultar, mover o cancelar la cita. No los compartas públicamente.
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            {{/has_access_code}}
+
+            {{#has_manage_action}}
+            <tr>
+              <td class="email-pad" align="center" style="padding:2px 38px 28px;">
+                <a class="email-button" href="{{manage_url}}" target="_blank" style="display:inline-block;padding:15px 24px;border-radius:10px;background:#c8983f;color:#171914;text-decoration:none;font-size:15px;font-weight:800;">
+                  {{manage_button_label}}
+                </a>
+              </td>
+            </tr>
+            {{/has_manage_action}}
+
+            <tr>
+              <td class="email-pad" style="padding:26px 38px;border-top:1px solid #e3ded3;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">Cómo llegar</div>
+                <div style="padding:9px 0 18px;font-size:14px;line-height:1.6;color:#555a53;">{{location}}</div>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding-right:10px;">
+                      <a href="{{maps_url}}" target="_blank" style="display:inline-block;padding:12px 16px;border:1px solid #bdb7ab;border-radius:9px;color:#292d28;text-decoration:none;font-size:14px;font-weight:700;background:#ffffff;">
+                        Google Maps
+                      </a>
+                    </td>
+                    <td>
+                      <a href="{{waze_url}}" target="_blank" style="display:inline-block;padding:12px 16px;border:1px solid #bdb7ab;border-radius:9px;color:#292d28;text-decoration:none;font-size:14px;font-weight:700;background:#ffffff;">
+                        Abrir Waze
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="email-pad" style="padding:22px 38px;background:#f4f1e9;border-top:1px solid #ded9cd;">
+                <div style="font-size:12px;line-height:1.6;color:#777b74;">
+                  {{security_notice}}
+                </div>
+                <div style="padding-top:12px;font-size:12px;line-height:1.6;color:#969991;">
+                  © 2026 Sebas Barber. Este correo fue enviado para gestionar una reserva o solicitud realizada en nuestra web.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

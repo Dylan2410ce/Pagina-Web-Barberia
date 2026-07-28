@@ -11,4 +11,5 @@ google-auth==2.33.0
 bcrypt==4.2.0
 tzdata==2026.3
 python-multipart==0.0.32
+qrcode[pil]==8.2
 sentry-sdk[fastapi]==2.66.0

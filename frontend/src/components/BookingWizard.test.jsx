@@ -70,9 +70,8 @@ describe("flujo principal de reserva", () => {
     render(<BookingHarness onSubmit={onSubmit} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Corte Premium/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Elegir barbero/i }));
     fireEvent.click(screen.getByRole("button", { name: /Sebastián/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Elegir fecha/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Ver horarios/i }));
     fireEvent.click(screen.getByRole("button", { name: "8:00 a. m." }));
     fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
 
@@ -87,7 +86,7 @@ describe("flujo principal de reserva", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
-      "4",
+      "3",
     );
   });
 });

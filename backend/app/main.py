@@ -58,7 +58,7 @@ async def lifespan(_: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="Sebas Barber API", version="5.1.0", lifespan=lifespan)
+app = FastAPI(title="Sebas Barber API", version="5.2.0", lifespan=lifespan)
 
 allowed_origins = {
     config.FRONTEND_URL.rstrip("/"),

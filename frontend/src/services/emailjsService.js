@@ -1,4 +1,5 @@
 import emailjs from "@emailjs/browser";
+import { bookingManageUrl } from "../utils/bookingLinks";
 import { dinero } from "../utils/format";
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || "";
@@ -60,12 +61,22 @@ function extrasCita(cita, resumen) {
   return extras.length ? extras.join(", ") : "Sin extras";
 }
 
-function manageUrl(accessCode = "") {
-  if (typeof window === "undefined") return "https://sebasbarber.vercel.app/#mis-citas";
-  const code = accessCode
-    ? `?reserva=${encodeURIComponent(accessCode)}`
-    : "";
-  return `${window.location.origin}/#mis-citas${code}`;
+async function crearQrReserva(url) {
+  try {
+    const { toDataURL } = await import("qrcode");
+    return await toDataURL(url, {
+      errorCorrectionLevel: "M",
+      margin: 2,
+      width: 360,
+      color: {
+        dark: "#171914",
+        light: "#fffaf0",
+      },
+    });
+  } catch (error) {
+    console.warn("No se pudo generar el QR para el correo.", error);
+    return "";
+  }
 }
 
 function mensajeCliente(data) {
@@ -125,7 +136,11 @@ function puedeEnviar(barberEmail = BARBERO_EMAIL) {
   );
 }
 
-export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBERO_EMAIL) {
+export async function crearPayloadsEmail(
+  cita = {},
+  resumen = {},
+  barberEmail = BARBERO_EMAIL,
+) {
   const startsAt = new Date(cita.starts_at);
   const validDate = Number.isFinite(startsAt.getTime()) ? startsAt : new Date();
   const clientEmail = texto(cita.client_email, "");
@@ -153,7 +168,7 @@ export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBER
     location: UBICACION,
     maps_url: MAPS_URL,
     waze_url: WAZE_URL,
-    manage_url: manageUrl(cita.access_code),
+    manage_url: bookingManageUrl(cita.access_code),
     from_name: SHOP_NAME,
     security_notice: (
       "Sebas Barber nunca solicita contraseñas ni pagos mediante enlaces enviados por correo."
@@ -181,7 +196,22 @@ export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBER
     reply_to: base.barber_email,
     email_subject: `Recibimos tu reserva con ${base.barber_name}`,
     email_title: "Reserva recibida",
+    notification_badge: "Cita confirmada",
+    manage_button_label: "Ver o administrar mi cita",
+    has_booking_details: true,
+    has_access_code: Boolean(cita.access_code),
+    has_manage_action: true,
+    has_qr: Boolean(cita.access_code),
+    is_confirmation: true,
+    is_reminder: false,
+    is_reschedule: false,
+    is_cancellation: false,
+    is_waitlist: false,
   };
+  cliente.qr_code = cliente.has_qr
+    ? await crearQrReserva(cliente.manage_url)
+    : "";
+  cliente.has_qr = Boolean(cliente.qr_code);
   cliente.email_message = mensajeCliente(cliente);
 
   const barbero = {
@@ -291,7 +321,8 @@ export async function enviarCorreosCita(cita, resumen) {
     };
   }
 
-  return enviarPayloads(crearPayloadsEmail(cita, resumen, barberEmail));
+  const payloads = await crearPayloadsEmail(cita, resumen, barberEmail);
+  return enviarPayloads(payloads);
 }
 
 export async function enviarCorreosActualizacion(cita, resumen, tipo) {
@@ -299,7 +330,7 @@ export async function enviarCorreosActualizacion(cita, resumen, tipo) {
   if (!puedeEnviar(barberEmail)) {
     return { configurado: false, enviados: false };
   }
-  const payloads = crearPayloadsEmail(cita, resumen, barberEmail);
+  const payloads = await crearPayloadsEmail(cita, resumen, barberEmail);
   const cancelada = tipo === "cancelled";
   const actionLabel = cancelada ? "Cita cancelada" : "Cita reprogramada";
   const clientMessage = cancelada
@@ -314,6 +345,13 @@ export async function enviarCorreosActualizacion(cita, resumen, tipo) {
   payloads.cliente.email_subject = `${actionLabel} | ${SHOP_NAME}`;
   payloads.cliente.email_title = actionLabel;
   payloads.cliente.email_message = clientMessage;
+  payloads.cliente.notification_badge = actionLabel;
+  payloads.cliente.is_confirmation = false;
+  payloads.cliente.is_reschedule = !cancelada;
+  payloads.cliente.is_cancellation = cancelada;
+  payloads.cliente.has_access_code = !cancelada && Boolean(cita.access_code);
+  payloads.cliente.has_manage_action = !cancelada;
+  payloads.cliente.has_qr = !cancelada && Boolean(payloads.cliente.qr_code);
   payloads.barbero.notification_type = cancelada
     ? "barber_cancellation"
     : "barber_reschedule";

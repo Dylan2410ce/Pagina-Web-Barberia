@@ -822,7 +822,7 @@ export default function App() {
     };
     setReserva(siguiente);
     await cargarSlots(siguiente);
-    setPasoSolicitado({ step: 3, key: Date.now() });
+    setPasoSolicitado({ step: 2, key: Date.now() });
     irAReserva();
     avisar("ok", "Reserva preparada", "Solo falta elegir la nueva fecha y hora.");
   };
@@ -1038,21 +1038,15 @@ export default function App() {
     }
   };
 
-  const elegirEstilo = async (estilo) => {
+  const elegirEstilo = (estilo) => {
     const referencia = `Referencia: ${estilo.nombre}`;
     setReserva((actual) => ({
       ...actual,
-      barber_id: estilo.barber_id || actual.barber_id,
-      start_min: estilo.barber_id && estilo.barber_id !== actual.barber_id
-        ? null
-        : actual.start_min,
       notes: actual.notes.includes(referencia)
         ? actual.notes
         : [referencia, actual.notes].filter(Boolean).join(". ").slice(0, 240),
+      request_id: nuevoRequestId(),
     }));
-    if (estilo.barber_id) {
-      await cargarSlots({ barber_id: estilo.barber_id, start_min: null });
-    }
     avisar("ok", "Referencia guardada", "La verás en el último paso de tu reserva.");
     irAReserva();
   };
@@ -1484,21 +1478,12 @@ export default function App() {
         />
         <TeamSection
           barberos={datos.barbers}
-          seleccionado={reserva.barber_id}
           estados={estadosLocal}
-          onSeleccionar={seleccionarBarbero}
-          onContinuar={irAReserva}
         />
         <ServiceMenu
           servicios={datos.services}
           extras={datos.addons}
-          reserva={reserva}
-          onServicio={seleccionarServicio}
-          onExtra={toggleExtra}
-          onContinuar={irAReserva}
         />
-        <Gallery items={datos.gallery} onElegirEstilo={elegirEstilo} />
-        <ReviewsSection reviews={datos.reviews} />
         <BookingWizard
           reserva={reserva}
           setReserva={setReserva}
@@ -1520,6 +1505,8 @@ export default function App() {
           recordarContacto={recordarContacto}
           onRecordarContacto={setRecordarContacto}
         />
+        <Gallery items={datos.gallery} onElegirEstilo={elegirEstilo} />
+        <ReviewsSection reviews={datos.reviews} />
         <ClientAppointments
           codigo={codigoBusqueda}
           setCodigo={setCodigoBusqueda}

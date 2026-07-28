@@ -218,11 +218,18 @@ Subject: {{email_subject}}
 
 Template del cliente:
 
-```txt
-{{email_title}}
+Usa el HTML completo de `docs/emailjs-template-cliente.html`. En la pestaña
+**Attachments** del template agrega un **Variable Attachment** con:
 
-{{email_message}}
+```txt
+Filename: reserva-{{access_code}}.png
+Content type: image/png
+Parameter name: qr_code
 ```
+
+El CID utilizado dentro del HTML es `qr_code`. La confirmación y el
+recordatorio de 24 horas generan el PNG localmente; la clave privada no se
+envía a servicios externos para construir el QR.
 
 Template del barbero:
 
@@ -260,6 +267,18 @@ Cada envío recibe también las variables individuales de la cita:
 {{booking_code}}
 {{reservation_code}}
 {{security_notice}}
+{{notification_badge}}
+{{manage_button_label}}
+{{qr_code}}
+{{has_booking_details}}
+{{has_access_code}}
+{{has_manage_action}}
+{{has_qr}}
+{{is_confirmation}}
+{{is_reminder}}
+{{is_reschedule}}
+{{is_cancellation}}
+{{is_waitlist}}
 ```
 
 Los templates antiguos pueden seguir usando estos alias compatibles:

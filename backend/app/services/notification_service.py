@@ -19,6 +19,7 @@ from app.models import (
 from app.services.date_service import TZ, day_range, label_from_minutes
 from app.services.emailjs_service import EmailJSService
 from app.services.idempotency_service import decrypt_access_code
+from app.services.qr_service import qr_png_data_url
 
 logger = logging.getLogger("sebas_barber.notifications")
 
@@ -236,9 +237,25 @@ class NotificationService:
                 "total_price": "Según el servicio",
                 "total": "Según el servicio",
                 "manage_url": reserve_url,
+                "manage_button_label": "Revisar horarios",
+                "notification_badge": "Lista de espera",
+                "has_booking_details": False,
+                "has_access_code": False,
+                "has_manage_action": True,
+                "has_qr": False,
+                "is_confirmation": False,
+                "is_reminder": False,
+                "is_reschedule": False,
+                "is_cancellation": False,
+                "is_waitlist": True,
+                "qr_code": qr_png_data_url(reserve_url),
                 "maps_url": config.GOOGLE_MAPS_URL,
                 "waze_url": config.WAZE_URL,
                 "location": config.ADDRESS,
+                "security_notice": (
+                    "Sebas Barber nunca solicita contraseñas ni pagos "
+                    "mediante enlaces enviados por correo."
+                ),
             }
             self.db.add(
                 NotificationDelivery(

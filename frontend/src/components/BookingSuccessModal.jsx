@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import useDialogA11y from "../hooks/useDialogA11y";
 import { descargarIcs, googleCalendarUrl } from "../utils/calendar";
+import { bookingManageUrl } from "../utils/bookingLinks";
 import { dinero, fechaHumana } from "../utils/format";
 
 async function copiar(value) {
@@ -30,9 +31,7 @@ export default function BookingSuccessModal({ cita, barbero, onClose }) {
   const [copiado, setCopiado] = useState(false);
   const dialogRef = useDialogA11y(onClose);
   const codigo = cita.access_code || "";
-  const urlGestion = typeof window === "undefined"
-    ? codigo
-    : `${window.location.origin}/#mis-citas?reserva=${encodeURIComponent(codigo)}`;
+  const urlGestion = bookingManageUrl(codigo);
 
   const copiarCodigo = async () => {
     await copiar(codigo);

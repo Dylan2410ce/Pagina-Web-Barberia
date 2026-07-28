@@ -1,6 +1,5 @@
 import {
   CalendarCheck2,
-  Check,
   Instagram,
   MessageCircle,
   Phone,
@@ -23,10 +22,7 @@ function telefonoDisponible(phone) {
 
 export default function TeamSection({
   barberos,
-  seleccionado,
   estados = {},
-  onSeleccionar,
-  onContinuar,
 }) {
   return (
     <section id="equipo" className="seccion bloque team-section">
@@ -34,20 +30,15 @@ export default function TeamSection({
         <div>
           <span className="eyebrow">Nuestro equipo</span>
           <h2>Tu estilo, en buenas manos.</h2>
-          <p>Elige con quién atenderte y reserva directamente.</p>
+          <p>Conoce su trabajo y elige tu barbero cuando armes la cita.</p>
         </div>
       </div>
 
       <div className="team-grid reveal">
         {barberos.map((barbero, index) => {
-          const activo = seleccionado === barbero.id;
           const estado = estados[barbero.id];
           return (
-            <article
-              className={`team-card ${activo ? "activo" : ""}`}
-              key={barbero.id}
-              data-selected={activo || undefined}
-            >
+            <article className="team-card" key={barbero.id}>
               <div className={`team-visual team-visual-${index + 1}`}>
                 <BarberPhoto nombre={barbero.name} />
                 <span className="team-photo-accent"><Scissors size={24} /></span>
@@ -64,7 +55,6 @@ export default function TeamSection({
                     <span>{barbero.role}</span>
                     <h3>{barbero.name}</h3>
                   </div>
-                  {activo && <span className="team-selected"><Check size={15} />Elegido</span>}
                 </div>
                 <p>
                   {barbero.name.toLocaleLowerCase("es-CR").startsWith("sebas")
@@ -109,19 +99,19 @@ export default function TeamSection({
                     </>
                   )}
                 </div>
-                <button
-                  className={`btn btn-ancho ${activo ? "btn-secundario" : "btn-principal"}`}
-                  type="button"
-                  aria-pressed={activo}
-                  onClick={() => (activo ? onContinuar?.() : onSeleccionar(barbero.id))}
-                >
-                  <CalendarCheck2 size={18} />
-                  {activo ? `Continuar con ${barbero.name}` : `Elegir a ${barbero.name}`}
-                </button>
               </div>
             </article>
           );
         })}
+      </div>
+      <div className="team-section-cta reveal">
+        <div>
+          <CalendarCheck2 size={20} />
+          <span>Servicio y barbero se eligen juntos al reservar.</span>
+        </div>
+        <a className="btn btn-principal" href="#reserva">
+          Reservar cita
+        </a>
       </div>
     </section>
   );

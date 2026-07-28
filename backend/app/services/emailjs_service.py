@@ -4,10 +4,12 @@ import threading
 import time
 from datetime import datetime
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from app.config import config
 from app.services.date_service import TZ
+from app.services.qr_service import qr_png_data_url
 
 logger = logging.getLogger("sebas_barber.emailjs")
 
@@ -50,7 +52,7 @@ class EmailJSService:
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json, text/plain",
-                    "User-Agent": "SebasBarber-API/5.0",
+                    "User-Agent": "SebasBarber-API/5.2",
                 },
                 method="POST",
             )
@@ -85,10 +87,11 @@ class EmailJSService:
         access_code = getattr(appointment, "access_code", "") or ""
         manage_url = (
             f"{config.FRONTEND_URL.rstrip('/')}/"
-            f"#mis-citas?reserva={access_code}"
+            f"?reserva={quote(access_code, safe='')}#mis-citas"
             if access_code
             else f"{config.FRONTEND_URL.rstrip('/')}/#mis-citas"
         )
+        qr_code = qr_png_data_url(manage_url) if access_code else ""
         extras = ", ".join(appointment.addons or []) or "Sin extras"
         payload = {
             "notification_type": notification_type,
@@ -130,6 +133,18 @@ class EmailJSService:
             "maps_url": config.GOOGLE_MAPS_URL,
             "waze_url": config.WAZE_URL,
             "manage_url": manage_url,
+            "manage_button_label": "Ver o administrar mi cita",
+            "notification_badge": "Recordatorio de cita",
+            "has_booking_details": True,
+            "has_access_code": bool(access_code),
+            "has_manage_action": True,
+            "has_qr": bool(qr_code),
+            "is_confirmation": notification_type == "client_confirmation",
+            "is_reminder": notification_type == "appointment_reminder",
+            "is_reschedule": notification_type == "client_reschedule",
+            "is_cancellation": notification_type == "client_cancellation",
+            "is_waitlist": False,
+            "qr_code": qr_code,
             "security_notice": (
                 "Sebas Barber nunca solicita contraseñas ni pagos mediante "
                 "enlaces enviados por correo."
