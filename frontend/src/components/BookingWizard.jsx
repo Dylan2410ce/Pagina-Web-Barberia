@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  BellRing,
   Check,
   CircleCheckBig,
   Clock3,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { dinero, limpiarTelefono } from "../utils/format";
 import BarberPhoto from "./BarberPhoto";
+import WaitlistModal from "./WaitlistModal";
 
 const pasos = [
   { id: 1, label: "Servicio" },
@@ -45,8 +47,11 @@ export default function BookingWizard({
   onServicio,
   onExtra,
   onSubmit,
+  onWaitlist,
+  pasoSolicitado,
 }) {
   const [paso, setPaso] = useState(1);
+  const [listaEsperaAbierta, setListaEsperaAbierta] = useState(false);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -54,6 +59,11 @@ export default function BookingWizard({
     else if (!reserva.barber_id && paso > 2) setPaso(2);
     else if (reserva.start_min === null && paso > 3) setPaso(3);
   }, [paso, reserva.barber_id, reserva.service_id, reserva.start_min]);
+
+  useEffect(() => {
+    if (!pasoSolicitado?.key || !puedeAbrir(pasoSolicitado.step)) return;
+    setPaso(pasoSolicitado.step);
+  }, [pasoSolicitado]);
 
   const actualizar = (campo, valor) => {
     setReserva((actual) => ({
@@ -287,7 +297,19 @@ export default function BookingWizard({
                     </button>
                   ))}
                   {!cargandoSlots && slots.length === 0 && (
-                    <div className="slots-vacio">No quedan espacios ese día. Prueba con otra fecha.</div>
+                    <div className="slots-vacio slots-waitlist">
+                      <BellRing size={22} />
+                      <strong>Ese día está completo.</strong>
+                      <span>Prueba otra fecha o deja tus datos por si se libera una hora.</span>
+                      <button
+                        className="btn btn-linea"
+                        type="button"
+                        onClick={() => setListaEsperaAbierta(true)}
+                      >
+                        <BellRing size={16} />
+                        Entrar a la lista de espera
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -407,6 +429,13 @@ export default function BookingWizard({
           <p className="nota"><UserRound size={15} /> Llega unos minutos antes para empezar a tiempo.</p>
         </aside>
       </div>
+      <WaitlistModal
+        open={listaEsperaAbierta}
+        reserva={reserva}
+        resumen={resumen}
+        onClose={() => setListaEsperaAbierta(false)}
+        onSubmit={onWaitlist}
+      />
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { CalendarClock, X } from "lucide-react";
+import useDialogA11y from "../hooks/useDialogA11y";
 import { hoyISO } from "../utils/format";
 
 export default function RescheduleModal({
@@ -8,11 +9,13 @@ export default function RescheduleModal({
   onSlot,
   onConfirm,
 }) {
+  const dialogRef = useDialogA11y(data ? onClose : null);
   if (!data) return null;
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
+        ref={dialogRef}
         className="modal"
         role="dialog"
         aria-modal="true"

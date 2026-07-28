@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,57 +9,58 @@ import {
   X,
   ZoomIn,
 } from "lucide-react";
+import useDialogA11y from "../hooks/useDialogA11y";
 
-const estilos = [
+const fallback = [
   {
-    src: "/corte-fade.jpg",
-    alt: "Corte texturizado con degradado limpio",
-    nombre: "Textura y fade",
-    categoria: "Degradado",
-    detalle: "Transición suave, laterales limpios y movimiento arriba.",
-    ideal: "Cabello lacio u ondulado",
-    mantenimiento: "Cada 2 o 3 semanas",
+    id: "fade",
+    image_url: "/corte-fade.jpg",
+    alt_text: "Corte texturizado con degradado limpio",
+    title: "Textura y fade",
+    category: "Degradado",
+    description: "Transición suave, laterales limpios y movimiento arriba.",
+    barber_name: "Sebastián",
   },
   {
-    src: "/barba-perfilada.jpg",
-    alt: "Barba perfilada con contornos definidos",
-    nombre: "Barba definida",
-    categoria: "Barba",
-    detalle: "Contorno preciso y volumen equilibrado para marcar el rostro.",
-    ideal: "Barba media o completa",
-    mantenimiento: "Cada 2 semanas",
+    id: "barba",
+    image_url: "/barba-perfilada.jpg",
+    alt_text: "Barba perfilada con contornos definidos",
+    title: "Barba definida",
+    category: "Barba",
+    description: "Contorno preciso y volumen equilibrado para marcar el rostro.",
+    barber_name: "Sebastián",
   },
   {
-    src: "/barberia-hero.jpg",
-    alt: "Corte clásico trabajado en Sebas Barber",
-    nombre: "Clásico limpio",
-    categoria: "Clásico",
-    detalle: "Forma natural, acabado pulido y fácil de mantener en casa.",
-    ideal: "Cualquier tipo de cabello",
-    mantenimiento: "Cada 3 o 4 semanas",
+    id: "clasico",
+    image_url: "/barberia-hero.jpg",
+    alt_text: "Corte clásico trabajado en Sebas Barber",
+    title: "Clásico limpio",
+    category: "Clásico",
+    description: "Forma natural, acabado pulido y fácil de mantener.",
+    barber_name: "Sebastián",
   },
 ];
 
-export default function Gallery({ onElegirEstilo }) {
+export default function Gallery({ items = [], onElegirEstilo }) {
+  const estilos = useMemo(() => (items.length ? items : fallback), [items]);
   const [indice, setIndice] = useState(0);
   const [ampliado, setAmpliado] = useState(false);
-  const estilo = estilos[indice];
+  const estilo = estilos[Math.min(indice, estilos.length - 1)] || fallback[0];
+  const modalRef = useDialogA11y(ampliado ? () => setAmpliado(false) : null);
 
   useEffect(() => {
-    if (!ampliado) return undefined;
-    const cerrarConEscape = (event) => {
-      if (event.key === "Escape") setAmpliado(false);
-    };
-    window.addEventListener("keydown", cerrarConEscape);
-    return () => window.removeEventListener("keydown", cerrarConEscape);
-  }, [ampliado]);
+    if (indice >= estilos.length) setIndice(0);
+  }, [estilos.length, indice]);
 
   const mover = (direccion) => {
     setIndice((actual) => (actual + direccion + estilos.length) % estilos.length);
   };
 
   const elegir = () => {
-    onElegirEstilo?.(estilo);
+    onElegirEstilo?.({
+      nombre: estilo.title,
+      barber_id: estilo.barber_id,
+    });
     setAmpliado(false);
   };
 
@@ -67,9 +68,9 @@ export default function Gallery({ onElegirEstilo }) {
     <section id="trabajos" className="seccion bloque lookbook-section">
       <div className="cabecera-seccion reveal">
         <div>
-          <span className="eyebrow">Lookbook</span>
-          <h2>Encuentra el corte que va contigo.</h2>
-          <p>Explora algunos acabados y guarda una referencia para tu próxima cita.</p>
+          <span className="eyebrow">Cortes recientes</span>
+          <h2>Una referencia para tu próximo look.</h2>
+          <p>Explora acabados reales y guarda el que más se parece a lo que buscas.</p>
         </div>
         <div className="lookbook-nav" aria-label="Cambiar estilo">
           <button className="icon-btn" type="button" onClick={() => mover(-1)} aria-label="Estilo anterior">
@@ -82,22 +83,31 @@ export default function Gallery({ onElegirEstilo }) {
       </div>
 
       <div className="lookbook-main reveal" aria-live="polite">
-        <button className="lookbook-photo" type="button" onClick={() => setAmpliado(true)} aria-label={`Ampliar ${estilo.nombre}`}>
-          <img src={estilo.src} alt={estilo.alt} loading="lazy" />
+        <button
+          className="lookbook-photo"
+          type="button"
+          onClick={() => setAmpliado(true)}
+          aria-label={`Ampliar ${estilo.title}`}
+        >
+          <img src={estilo.image_url} alt={estilo.alt_text} loading="lazy" />
           <span><ZoomIn size={18} />Ver detalle</span>
         </button>
         <div className="lookbook-copy">
-          <span className="lookbook-count">0{indice + 1} / 0{estilos.length}</span>
-          <span className="chip">{estilo.categoria}</span>
-          <h3>{estilo.nombre}</h3>
-          <p>{estilo.detalle}</p>
+          <span className="lookbook-count">
+            {String(indice + 1).padStart(2, "0")}
+            {" / "}
+            {String(estilos.length).padStart(2, "0")}
+          </span>
+          <span className="chip">{estilo.category}</span>
+          <h3>{estilo.title}</h3>
+          <p>{estilo.description}</p>
           <dl>
-            <div><dt>Funciona bien en</dt><dd>{estilo.ideal}</dd></div>
-            <div><dt>Retoque recomendado</dt><dd>{estilo.mantenimiento}</dd></div>
+            <div><dt>Trabajo de</dt><dd>{estilo.barber_name || "Sebas Barber"}</dd></div>
+            <div><dt>Referencia</dt><dd>La añadimos a las notas de tu cita</dd></div>
           </dl>
           <button className="btn btn-principal" type="button" onClick={elegir}>
             <CalendarPlus size={18} />
-            Quiero este estilo
+            Reservar este estilo
           </button>
         </div>
       </div>
@@ -106,27 +116,28 @@ export default function Gallery({ onElegirEstilo }) {
         {estilos.map((item, itemIndex) => (
           <button
             className={itemIndex === indice ? "activo" : ""}
-            key={item.nombre}
+            key={item.id || item.title}
             type="button"
             role="tab"
             aria-selected={itemIndex === indice}
             onClick={() => setIndice(itemIndex)}
           >
-            <img src={item.src} alt="" loading="lazy" />
-            <span><strong>{item.nombre}</strong><small>{item.categoria}</small></span>
+            <img src={item.image_url} alt="" loading="lazy" />
+            <span><strong>{item.title}</strong><small>{item.category}</small></span>
           </button>
         ))}
       </div>
 
       <div className="service-promises reveal">
-        <article><CheckCircle2 size={20} /><div><strong>Precio claro</strong><span>Sabes el total antes de confirmar.</span></div></article>
-        <article><Clock3 size={20} /><div><strong>Tu espacio es tuyo</strong><span>La agenda evita cruces de horario.</span></div></article>
-        <article><Sparkles size={20} /><div><strong>Atención uno a uno</strong><span>Cada corte recibe el tiempo que necesita.</span></div></article>
+        <article><CheckCircle2 size={20} /><div><strong>Precio claro</strong><span>Conoces el total antes de confirmar.</span></div></article>
+        <article><Clock3 size={20} /><div><strong>Horario protegido</strong><span>Una sola reserva por espacio.</span></div></article>
+        <article><Sparkles size={20} /><div><strong>Atención personal</strong><span>Tu corte recibe su tiempo completo.</span></div></article>
       </div>
 
       {ampliado && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setAmpliado(false)}>
           <section
+            ref={modalRef}
             className="modal lookbook-modal"
             role="dialog"
             aria-modal="true"
@@ -136,11 +147,11 @@ export default function Gallery({ onElegirEstilo }) {
             <button className="icon-btn lookbook-modal-close" type="button" onClick={() => setAmpliado(false)} aria-label="Cerrar">
               <X size={18} />
             </button>
-            <img src={estilo.src} alt={estilo.alt} />
+            <img src={estilo.image_url} alt={estilo.alt_text} />
             <div>
-              <span className="chip">{estilo.categoria}</span>
-              <h2 id="lookbook-modal-title">{estilo.nombre}</h2>
-              <p>{estilo.detalle}</p>
+              <span className="chip">{estilo.category}</span>
+              <h2 id="lookbook-modal-title">{estilo.title}</h2>
+              <p>{estilo.description}</p>
               <button className="btn btn-principal" type="button" onClick={elegir}>
                 <CalendarPlus size={18} />
                 Reservar con esta referencia

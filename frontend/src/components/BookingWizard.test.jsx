@@ -34,7 +34,7 @@ function BookingHarness({ onSubmit }) {
     extras: [],
     total: reserva.service_id ? service.price : 0,
     duracion: reserva.service_id ? service.duration_min : 0,
-    hora: reserva.start_min === 480 ? "8:00 AM" : "",
+    hora: reserva.start_min === 480 ? "8:00 a. m." : "",
   }), [reserva.service_id, reserva.start_min]);
 
   return (
@@ -46,7 +46,7 @@ function BookingHarness({ onSubmit }) {
       extras={[]}
       barberos={[barber]}
       barbero={reserva.barber_id ? barber : null}
-      slots={[{ start_min: 480, label: "8:00 AM" }]}
+      slots={[{ start_min: 480, label: "8:00 a. m." }]}
       cargandoSlots={false}
       minFecha="2026-08-01"
       onFecha={(date) => setReserva((current) => ({ ...current, date }))}
@@ -73,7 +73,7 @@ describe("flujo principal de reserva", () => {
     fireEvent.click(screen.getByRole("button", { name: /Elegir barbero/i }));
     fireEvent.click(screen.getByRole("button", { name: /Sebastián/i }));
     fireEvent.click(screen.getByRole("button", { name: /Elegir fecha/i }));
-    fireEvent.click(screen.getByRole("button", { name: "8:00 AM" }));
+    fireEvent.click(screen.getByRole("button", { name: "8:00 a. m." }));
     fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
 
     fireEvent.change(screen.getByLabelText("Nombre completo"), {

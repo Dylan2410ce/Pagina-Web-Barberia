@@ -60,9 +60,12 @@ function extrasCita(cita, resumen) {
   return extras.length ? extras.join(", ") : "Sin extras";
 }
 
-function manageUrl() {
+function manageUrl(accessCode = "") {
+  const query = accessCode
+    ? `?reserva=${encodeURIComponent(accessCode)}`
+    : "";
   if (typeof window === "undefined") return "https://sebasbarber.vercel.app/#mis-citas";
-  return `${window.location.origin}/#mis-citas`;
+  return `${window.location.origin}/${query}#mis-citas`;
 }
 
 function mensajeCliente(data) {
@@ -78,6 +81,7 @@ function mensajeCliente(data) {
     `Duración: ${data.duration}`,
     `Extras: ${data.addons}`,
     `Total: ${data.total_price}`,
+    `Código privado: ${data.access_code}`,
     "",
     `Ubicación: ${UBICACION}`,
     `Google Maps: ${MAPS_URL}`,
@@ -104,7 +108,8 @@ function mensajeBarbero(data) {
     `Total: ${data.total_price}`,
     `Notas: ${data.notes}`,
     "",
-    `Código de cita: ${data.appointment_id}`,
+    `Código de reserva: ${data.access_code}`,
+    `ID interno: ${data.appointment_id}`,
   ].join("\n");
 }
 
@@ -128,6 +133,7 @@ export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBER
   );
   const base = {
     appointment_id: texto(cita.id, "Sin identificador"),
+    access_code: texto(cita.access_code, "No disponible"),
     shop_name: SHOP_NAME,
     barber_name: barberName,
     barber_email: texto(barberEmail, ""),
@@ -145,7 +151,7 @@ export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBER
     location: UBICACION,
     maps_url: MAPS_URL,
     waze_url: WAZE_URL,
-    manage_url: manageUrl(),
+    manage_url: manageUrl(cita.access_code),
     from_name: SHOP_NAME,
   };
 
@@ -157,6 +163,8 @@ export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBER
     extras: base.addons,
     starts_at: base.appointment_datetime,
     total: base.total_price,
+    booking_code: base.access_code,
+    reservation_code: base.access_code,
   };
 
   const cliente = {

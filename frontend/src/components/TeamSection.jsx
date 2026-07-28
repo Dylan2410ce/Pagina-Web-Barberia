@@ -24,6 +24,7 @@ function telefonoDisponible(phone) {
 export default function TeamSection({
   barberos,
   seleccionado,
+  estados = {},
   onSeleccionar,
   onContinuar,
 }) {
@@ -40,6 +41,7 @@ export default function TeamSection({
       <div className="team-grid reveal">
         {barberos.map((barbero, index) => {
           const activo = seleccionado === barbero.id;
+          const estado = estados[barbero.id];
           return (
             <article
               className={`team-card ${activo ? "activo" : ""}`}
@@ -49,6 +51,12 @@ export default function TeamSection({
               <div className={`team-visual team-visual-${index + 1}`}>
                 <BarberPhoto nombre={barbero.name} />
                 <span className="team-photo-accent"><Scissors size={24} /></span>
+                {estado && (
+                  <span className={`team-availability ${estado.is_open ? "open" : ""}`}>
+                    <i />
+                    {estado.message}
+                  </span>
+                )}
               </div>
               <div className="team-card-body">
                 <div className="team-card-head">

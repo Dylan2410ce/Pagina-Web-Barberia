@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   BarChart3,
+  BellRing,
   CalendarCheck2,
   CalendarDays,
   CalendarOff,
@@ -8,10 +9,12 @@ import {
   Database,
   Home,
   History,
+  Images,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
   Plus,
+  MessageSquareQuote,
   Scissors,
   ShieldCheck,
   Trash2,
@@ -30,15 +33,21 @@ import {
 import AdminAgenda from "./admin/AdminAgenda";
 import AdminClients from "./admin/AdminClients";
 import AdminDashboard from "./admin/AdminDashboard";
+import AdminGallery from "./admin/AdminGallery";
+import AdminReviews from "./admin/AdminReviews";
+import AdminWaitlist from "./admin/AdminWaitlist";
 import PageHead from "./admin/AdminPageHead";
 
 const secciones = [
   { id: "resumen", label: "Resumen", icon: LayoutDashboard },
   { id: "agenda", label: "Agenda", icon: CalendarCheck2 },
+  { id: "espera", label: "Lista de espera", icon: BellRing },
   { id: "bloqueos", label: "Bloqueos", icon: CalendarOff },
   { id: "servicios", label: "Servicios", icon: Scissors },
   { id: "horarios", label: "Horarios", icon: Clock3 },
   { id: "clientes", label: "Clientes", icon: Users },
+  { id: "resenas", label: "Reseñas", icon: MessageSquareQuote },
+  { id: "galeria", label: "Galería", icon: Images },
   { id: "reportes", label: "Reportes", icon: BarChart3 },
   { id: "actividad", label: "Actividad", icon: History },
   { id: "seguridad", label: "Seguridad", icon: LockKeyhole },
@@ -60,6 +69,12 @@ export default function AdminPanel({
   onGuardarHorario,
   onChangePassword,
   onBloqueoRapido,
+  onEstadoListaEspera,
+  onModerarReseña,
+  onCrearImagen,
+  onSubirImagen,
+  onEditarImagen,
+  onEliminarImagen,
 }) {
   if (!admin.token) {
     return <Login onLogin={onLogin} onResetPassword={onResetPassword} />;
@@ -90,7 +105,14 @@ export default function AdminPanel({
                   className={admin.tab === item.id ? "activo" : ""}
                   key={item.id}
                   type="button"
-                  onClick={() => onTab(item.id)}
+                  onClick={(event) => {
+                    onTab(item.id);
+                    event.currentTarget.scrollIntoView({
+                      behavior: "smooth",
+                      block: "nearest",
+                      inline: "center",
+                    });
+                  }}
                 >
                   <Icon size={18} />
                   <span>{item.label}</span>
@@ -114,6 +136,12 @@ export default function AdminPanel({
           {admin.tab === "agenda" && (
             <AdminAgenda admin={admin} onFiltrar={onFiltrar} onEstado={onEstado} onMover={onMover} />
           )}
+          {admin.tab === "espera" && (
+            <AdminWaitlist
+              items={admin.listaEspera}
+              onStatus={onEstadoListaEspera}
+            />
+          )}
           {admin.tab === "bloqueos" && (
             <Bloqueos
               perfil={admin.perfil}
@@ -128,6 +156,18 @@ export default function AdminPanel({
           {admin.tab === "servicios" && <Servicios servicios={admin.servicios} onGuardar={onGuardarServicio} />}
           {admin.tab === "horarios" && <Horarios horarios={admin.horarios} onGuardar={onGuardarHorario} />}
           {admin.tab === "clientes" && <AdminClients clientes={admin.clientes} />}
+          {admin.tab === "resenas" && (
+            <AdminReviews items={admin.reseñas} onStatus={onModerarReseña} />
+          )}
+          {admin.tab === "galeria" && (
+            <AdminGallery
+              items={admin.galeria}
+              onCreate={onCrearImagen}
+              onUpload={onSubirImagen}
+              onEdit={onEditarImagen}
+              onDelete={onEliminarImagen}
+            />
+          )}
           {admin.tab === "reportes" && <Reportes stats={admin.stats} />}
           {admin.tab === "actividad" && <Actividad items={admin.actividad} />}
           {admin.tab === "seguridad" && <Seguridad onChangePassword={onChangePassword} />}

@@ -6,7 +6,8 @@ Sistema de reservas, agenda y CRM para Sebastián y Gabriel.
 - Backend: FastAPI, Pydantic v2 y SQLAlchemy Async.
 - Base de datos: PostgreSQL en Neon.
 - Calendarios: Google Calendar independiente para cada barbero.
-- Operación: PWA instalable, auditoría, CRM y disponibilidad especial.
+- Operación: PWA instalable, auditoría, CRM, lista de espera, fidelidad,
+  reseñas verificadas y galería administrable.
 
 ## Estructura
 
@@ -68,12 +69,26 @@ CALENDAR_ENABLED=true
 CALENDAR_REQUIRED=true
 APPOINTMENT_BUFFER_MIN=0
 SERVICE_CACHE_TTL_SECONDS=300
+LOYALTY_VISITS_TARGET=6
+LOYALTY_REWARD_LABEL=Beneficio especial en tu próxima visita
 NOTIFY_EMAILS_ENABLED=false
 REMINDERS_ENABLED=false
 REMINDER_LEAD_HOURS=24
 REMINDER_BATCH_SIZE=50
 REMINDER_TASK_TOKEN=TOKEN_ALEATORIO_LARGO
 ```
+
+Para subir fotos desde el panel configura también una cuenta de Cloudinary:
+
+```txt
+CLOUDINARY_CLOUD_NAME=NOMBRE_DEL_CLOUD
+CLOUDINARY_API_KEY=API_KEY
+CLOUDINARY_API_SECRET=API_SECRET
+GALLERY_UPLOAD_MAX_MB=5
+```
+
+Estas cuatro variables son opcionales. Sin ellas, la galería sigue aceptando
+imágenes mediante una URL HTTPS.
 
 `ADMIN_PASSWORD_HASH` y `GABRIEL_PASSWORD_HASH` son alternativas opcionales a
 las contraseñas iniciales. No configures ambos mecanismos para la misma cuenta.
@@ -177,6 +192,7 @@ Cada envío recibe también las variables individuales de la cita:
 
 ```txt
 {{appointment_id}}
+{{access_code}}
 {{shop_name}}
 {{barber_name}}
 {{barber_email}}
@@ -197,6 +213,8 @@ Cada envío recibe también las variables individuales de la cita:
 {{manage_url}}
 {{notification_type}}
 {{recipient_name}}
+{{booking_code}}
+{{reservation_code}}
 ```
 
 Los templates antiguos pueden seguir usando estos alias compatibles:
@@ -234,7 +252,8 @@ Cada sesión queda asociada a un barbero. Citas, horarios, bloqueos, clientes,
 reportes y calendario se filtran en el servidor por ese perfil.
 
 El panel incluye estados de cita, exportación CSV, historial y frecuencia de
-clientes, feriados, vacaciones y una bitácora independiente por barbero.
+clientes, feriados, vacaciones, lista de espera, moderación de reseñas,
+galería de trabajos y una bitácora independiente por barbero.
 
 ## PWA y legales
 

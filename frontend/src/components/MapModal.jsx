@@ -1,9 +1,18 @@
 import { Map, Navigation, X } from "lucide-react";
+import useDialogA11y from "../hooks/useDialogA11y";
 
 export default function MapModal({ location, onClose }) {
+  const dialogRef = useDialogA11y(onClose);
   return (
-    <div className="modal-backdrop">
-      <section className="modal" role="dialog" aria-modal="true" aria-labelledby="map-title">
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        ref={dialogRef}
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="map-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <header>
           <strong id="map-title">Ubicación</strong>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Cerrar">

@@ -25,9 +25,13 @@ async function ejecutarSolicitud(ruta, opciones = {}) {
   const metodo = opciones.method || "GET";
   const timeout = opciones.timeout || (metodo === "GET" ? 65000 : 35000);
   const timer = setTimeout(() => controlador.abort(), timeout);
+  const esFormData = (
+    typeof FormData !== "undefined"
+    && opciones.body instanceof FormData
+  );
   const headers = {
     Accept: "application/json",
-    "Content-Type": "application/json",
+    ...(esFormData ? {} : { "Content-Type": "application/json" }),
     ...(opciones.headers || {}),
   };
 
@@ -39,7 +43,9 @@ async function ejecutarSolicitud(ruta, opciones = {}) {
     const respuesta = await fetch(`${API_URL}${ruta}`, {
       method: metodo,
       headers,
-      body: opciones.body ? JSON.stringify(opciones.body) : undefined,
+      body: opciones.body
+        ? (esFormData ? opciones.body : JSON.stringify(opciones.body))
+        : undefined,
       signal: controlador.signal,
       cache: "no-store",
     });
@@ -131,9 +137,17 @@ export const publicoApi = {
       })}`,
     ),
   crearCita: (datos) => api("/api/public/appointments", { method: "POST", body: datos }),
+  buscarPorCodigo: (codigo) =>
+    api(`/api/public/appointments/manage/${encodeURIComponent(codigo.trim())}`),
   buscarPorTelefono: (telefono) => api(`/api/public/appointments/by-phone${query({ phone: telefono })}`),
   cancelarCita: (id, datos) => api(`/api/public/appointments/${id}/cancel`, { method: "PATCH", body: datos }),
   reprogramarCita: (id, datos) => api(`/api/public/appointments/${id}/reschedule`, { method: "PATCH", body: datos }),
+  estadoLocal: (barberId) => api(`/api/public/shop-status/${barberId}`),
+  listaEspera: (datos) => api("/api/public/waitlist", { method: "POST", body: datos }),
+  reseñas: (limit = 12) => api(`/api/public/reviews${query({ limit })}`),
+  crearReseña: (datos) => api("/api/public/reviews", { method: "POST", body: datos }),
+  fidelidad: (codigo) =>
+    api(`/api/public/loyalty/${encodeURIComponent(codigo.trim())}`),
 };
 
 export const adminApi = {
@@ -162,6 +176,38 @@ export const adminApi = {
   actividad: (token) => api("/api/admin/audit-logs", { token }),
   clientes: (token) => api("/api/admin/clients", { token }),
   stats: (token, year, month) => api(`/api/admin/stats${query({ year, month })}`, { token }),
+  listaEspera: (token, filtros = {}) =>
+    api(`/api/admin/waitlist${query(filtros)}`, { token }),
+  estadoListaEspera: (token, id, status) =>
+    api(`/api/admin/waitlist/${id}/status${query({ status })}`, {
+      method: "PATCH",
+      token,
+    }),
+  reseñas: (token, status = "") =>
+    api(`/api/admin/reviews${query({ status })}`, { token }),
+  estadoReseña: (token, id, status) =>
+    api(`/api/admin/reviews/${id}/status${query({ status })}`, {
+      method: "PATCH",
+      token,
+    }),
+  galeria: (token) => api("/api/admin/gallery", { token }),
+  crearImagen: (token, datos) =>
+    api("/api/admin/gallery", { method: "POST", token, body: datos }),
+  subirImagen: (token, datos) =>
+    api("/api/admin/gallery/upload", {
+      method: "POST",
+      token,
+      body: datos,
+      timeout: 60000,
+    }),
+  editarImagen: (token, id, datos) =>
+    api(`/api/admin/gallery/${id}`, {
+      method: "PATCH",
+      token,
+      body: datos,
+    }),
+  eliminarImagen: (token, id) =>
+    api(`/api/admin/gallery/${id}`, { method: "DELETE", token }),
   resetPassword: (datos) => api("/api/admin/reset-password", { method: "POST", body: datos }),
   changePassword: (token, datos) =>
     api("/api/admin/change-password", { method: "POST", token, body: datos }),

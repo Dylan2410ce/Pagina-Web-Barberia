@@ -1,14 +1,27 @@
 import { CalendarCheck, Clock3, MapPinned, Scissors } from "lucide-react";
 
-export default function Hero({ barberos = [], barbero, primerSlot, onMapa }) {
+export default function Hero({
+  barberos = [],
+  barbero,
+  primerSlot,
+  estados = {},
+  onMapa,
+}) {
+  const estadoActivo = barbero
+    ? estados[barbero.id]
+    : Object.values(estados).find((item) => item.is_open)
+      || Object.values(estados)[0];
+  const estadoTexto = estadoActivo?.message
+    || (primerSlot ? `Próxima hora libre: ${primerSlot}` : "Reservas online abiertas");
+
   return (
     <section id="inicio" className="hero">
       <div className="hero-overlay" />
       <div className="hero-inner seccion">
         <div className="hero-copy reveal">
-          <span className="hero-status">
+          <span className={`hero-status ${estadoActivo?.is_open ? "is-open" : "is-closed"}`}>
             <span />
-            {primerSlot ? `Próxima hora libre: ${primerSlot}` : "Reservas abiertas"}
+            {estadoTexto}
           </span>
           <p className="hero-kicker">Barbería en Esparza</p>
           <h1>Sebas Barber</h1>

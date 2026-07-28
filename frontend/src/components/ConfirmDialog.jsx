@@ -1,11 +1,14 @@
 import { AlertCircle, X } from "lucide-react";
+import useDialogA11y from "../hooks/useDialogA11y";
 
 export default function ConfirmDialog({ config, onCancel, onConfirm }) {
+  const dialogRef = useDialogA11y(config ? onCancel : null);
   if (!config) return null;
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onCancel}>
       <section
+        ref={dialogRef}
         className="modal confirm-dialog"
         role="alertdialog"
         aria-modal="true"
