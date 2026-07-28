@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import {
+  ArrowUpRight,
   Clock3,
   Instagram,
   MessageCircle,
   RefreshCw,
   Scissors,
+  ShieldCheck,
 } from "lucide-react";
 
 export default function MaintenancePage({ status, onRefresh }) {
@@ -18,32 +20,40 @@ export default function MaintenancePage({ status, onRefresh }) {
 
   return (
     <main className="maintenance-page">
+      <div className="maintenance-visual" aria-hidden="true">
+        <img src="/barberia-hero.jpg" alt="" />
+      </div>
+
       <header className="maintenance-header">
-        <a className="maintenance-brand" href="/" aria-label="Sebas Barber">
+        <div className="maintenance-brand" aria-label="Sebas Barber">
           <span><Scissors size={21} /></span>
           <strong>Sebas Barber</strong>
-        </a>
+        </div>
         <span className="maintenance-status">
           <i aria-hidden="true" />
-          Pausa breve
+          Agenda en pausa
         </span>
       </header>
 
       <section className="maintenance-stage" aria-labelledby="maintenance-title">
-        <div className="maintenance-art" aria-hidden="true">
-          <span className="maintenance-ring ring-one" />
-          <span className="maintenance-ring ring-two" />
-          <span className="maintenance-icon">
-            <Scissors size={46} strokeWidth={1.6} />
-          </span>
-          <span className="maintenance-line line-one" />
-          <span className="maintenance-line line-two" />
-        </div>
-
         <div className="maintenance-copy">
-          <span className="eyebrow">Un momento</span>
+          <span className="maintenance-kicker">
+            <Scissors size={15} aria-hidden="true" />
+            Pausa breve
+          </span>
           <h1 id="maintenance-title">{status.maintenance_title}</h1>
           <p>{status.maintenance_message}</p>
+
+          <div className="maintenance-assurances" aria-label="Estado del servicio">
+            <span>
+              <ShieldCheck size={17} aria-hidden="true" />
+              Tus citas siguen guardadas
+            </span>
+            <span aria-live="polite">
+              <Clock3 size={17} aria-hidden="true" />
+              {status.maintenance_note}
+            </span>
+          </div>
 
           <div className="maintenance-actions">
             <button
@@ -65,23 +75,33 @@ export default function MaintenancePage({ status, onRefresh }) {
               rel="noreferrer"
             >
               <MessageCircle size={18} />
-              Escribir por WhatsApp
+              Hablar con Sebastián
+              <ArrowUpRight size={16} aria-hidden="true" />
             </a>
           </div>
 
-          <span className="maintenance-note">
-            <Clock3 size={16} />
-            {status.maintenance_note}
-          </span>
+          <p className="maintenance-help">
+            ¿Necesitás coordinar algo hoy? Escribinos y te ayudamos.
+          </p>
         </div>
       </section>
 
       <footer className="maintenance-footer">
-        <small>© {new Date().getFullYear()} Sebas Barber</small>
+        <div className="maintenance-legal">
+          <small>
+            © {new Date().getFullYear()} Sebas Barber. Todos los derechos
+            reservados.
+          </small>
+          <small>
+            Diseñado y desarrollado por{" "}
+            <strong>Dylan Calvo Escobar</strong>
+          </small>
+        </div>
         <a
           href="https://www.instagram.com/__andres29__/"
           target="_blank"
           rel="noreferrer"
+          aria-label="Instagram de Sebastián"
         >
           <Instagram size={16} />
           Instagram

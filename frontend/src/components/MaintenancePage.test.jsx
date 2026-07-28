@@ -21,6 +21,10 @@ describe("MaintenancePage", () => {
       screen.getByRole("heading", { name: "Volvemos en un momento." }),
     ).toBeInTheDocument();
     expect(screen.getByText("Estamos ajustando la agenda.")).toBeInTheDocument();
+    expect(screen.getByText("Dylan Calvo Escobar")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Instagram de Sebastián" }),
+    ).toHaveAttribute("href", "https://www.instagram.com/__andres29__/");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Intentar de nuevo" }),
