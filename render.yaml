@@ -4,7 +4,7 @@ services:
     env: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
@@ -50,10 +50,34 @@ services:
       - key: GALLERY_UPLOAD_MAX_MB
         value: "5"
       - key: REMINDERS_ENABLED
-        value: "false"
+        value: "true"
       - key: REMINDER_LEAD_HOURS
         value: "24"
       - key: REMINDER_BATCH_SIZE
         value: "50"
       - key: REMINDER_TASK_TOKEN
+        sync: false
+      - key: DAILY_SUMMARY_HOUR
+        value: "6"
+      - key: NOTIFICATION_MAX_ATTEMPTS
+        value: "4"
+      - key: RETENTION_DAYS
+        value: "730"
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: OWNER_EMAIL
+        value: sebasbarberg2021@gmail.com
+      - key: GABRIEL_EMAIL
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: emailjs
+      - key: EMAILJS_SERVICE_ID
+        sync: false
+      - key: EMAILJS_TEMPLATE_CLIENTE
+        sync: false
+      - key: EMAILJS_TEMPLATE_BARBERO
+        sync: false
+      - key: EMAILJS_PUBLIC_KEY
+        sync: false
+      - key: EMAILJS_PRIVATE_KEY
         sync: false

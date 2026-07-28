@@ -6,8 +6,8 @@ Sistema de reservas, agenda y CRM para Sebastián y Gabriel.
 - Backend: FastAPI, Pydantic v2 y SQLAlchemy Async.
 - Base de datos: PostgreSQL en Neon.
 - Calendarios: Google Calendar independiente para cada barbero.
-- Operación: PWA instalable, auditoría, CRM, lista de espera, fidelidad,
-  reseñas verificadas y galería administrable.
+- Operación: PWA, auditoría, CRM, lista de espera, fidelidad, promociones,
+  gastos, cierres de caja, encuestas privadas y recordatorios automáticos.
 
 ## Estructura
 
@@ -47,7 +47,7 @@ sebas-barber/
 ```txt
 Root Directory: backend
 Build Command: pip install -r requirements.txt
-Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Start Command: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
 Health Check Path: /health
 ```
 
@@ -71,11 +71,22 @@ APPOINTMENT_BUFFER_MIN=0
 SERVICE_CACHE_TTL_SECONDS=300
 LOYALTY_VISITS_TARGET=6
 LOYALTY_REWARD_LABEL=Beneficio especial en tu próxima visita
-NOTIFY_EMAILS_ENABLED=false
-REMINDERS_ENABLED=false
+REMINDERS_ENABLED=true
 REMINDER_LEAD_HOURS=24
 REMINDER_BATCH_SIZE=50
 REMINDER_TASK_TOKEN=TOKEN_ALEATORIO_LARGO
+DAILY_SUMMARY_HOUR=6
+NOTIFICATION_MAX_ATTEMPTS=4
+RETENTION_DAYS=730
+RATE_LIMIT_ENABLED=true
+OWNER_EMAIL=sebasbarberg2021@gmail.com
+GABRIEL_EMAIL=CORREO_DE_GABRIEL
+EMAIL_PROVIDER=emailjs
+EMAILJS_SERVICE_ID=SERVICE_ID_DE_EMAILJS
+EMAILJS_TEMPLATE_CLIENTE=TEMPLATE_ID_DEL_CLIENTE
+EMAILJS_TEMPLATE_BARBERO=TEMPLATE_ID_DEL_BARBERO
+EMAILJS_PUBLIC_KEY=PUBLIC_KEY_DE_EMAILJS
+EMAILJS_PRIVATE_KEY=PRIVATE_KEY_DE_EMAILJS
 ```
 
 Para subir fotos desde el panel configura también una cuenta de Cloudinary:
@@ -105,27 +116,33 @@ https://TU-SERVICIO.onrender.com/health/calendar
 ```
 
 `/health` comprueba la conexión con PostgreSQL y devuelve `503` cuando Neon no
-está disponible. Las tablas, índices y migraciones compatibles se aplican al
-iniciar Render; no hay un comando manual de migración.
+está disponible. Alembic aplica las migraciones antes de iniciar la API. El
+arranque conserva además migraciones idempotentes para instalaciones previas.
 
-Los recordatorios quedan desactivados por defecto. Para activarlos configura
-SMTP, cambia `REMINDERS_ENABLED=true` y ejecuta periódicamente:
+Los recordatorios usan el mismo template de EmailJS del cliente. La tarea
+persistente reintenta fallos, evita duplicados y envía el correo al cumplirse
+las 24 horas previas a la cita:
 
 ```txt
-EMAIL_PROVIDER=smtp
-NOTIFY_EMAILS_ENABLED=false
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=usuario_smtp
-SMTP_PASSWORD=clave_smtp
-SMTP_FROM=reservas@tu-dominio.com
+EMAIL_PROVIDER=emailjs
+REMINDERS_ENABLED=true
+EMAILJS_SERVICE_ID=...
+EMAILJS_TEMPLATE_CLIENTE=...
+EMAILJS_TEMPLATE_BARBERO=...
+EMAILJS_PUBLIC_KEY=...
+EMAILJS_PRIVATE_KEY=...
 ```
-
-`NOTIFY_EMAILS_ENABLED=false` conserva EmailJS para las confirmaciones
-inmediatas y usa SMTP únicamente para recordatorios. La tarea protegida es:
 
 ```txt
 POST https://TU-SERVICIO.onrender.com/api/tasks/reminders
+X-Task-Token: valor_de_REMINDER_TASK_TOKEN
+```
+
+Programa esa petición cada 5 minutos. Para la limpieza de datos antiguos,
+programa una vez al mes:
+
+```txt
+POST https://TU-SERVICIO.onrender.com/api/tasks/retention
 X-Task-Token: valor_de_REMINDER_TASK_TOKEN
 ```
 
@@ -159,9 +176,10 @@ VITE_BARBERO_EMAIL=CORREO_QUE_RECIBE_LAS_RESERVAS
 
 ## EmailJS
 
-EmailJS se ejecuta desde el frontend. No requiere variables adicionales en
-Render. En Vercel, las seis variables del bloque anterior deben existir para
-los entornos **Production**, **Preview** y **Development**.
+EmailJS se ejecuta en el frontend para confirmaciones inmediatas y en Render
+para recordatorios, lista de espera y resúmenes diarios. Las variables
+`EMAILJS_*` deben existir en ambos servicios; `EMAILJS_PRIVATE_KEY` solo se
+guarda en Render y nunca se expone en Vercel.
 
 Configura ambos templates con estos campos:
 
@@ -215,6 +233,7 @@ Cada envío recibe también las variables individuales de la cita:
 {{recipient_name}}
 {{booking_code}}
 {{reservation_code}}
+{{security_notice}}
 ```
 
 Los templates antiguos pueden seguir usando estos alias compatibles:
@@ -251,9 +270,10 @@ Gabriel: usuario gabriel
 Cada sesión queda asociada a un barbero. Citas, horarios, bloqueos, clientes,
 reportes y calendario se filtran en el servidor por ese perfil.
 
-El panel incluye estados de cita, exportación CSV, historial y frecuencia de
-clientes, feriados, vacaciones, lista de espera, moderación de reseñas,
-galería de trabajos y una bitácora independiente por barbero.
+El panel incluye estados de cita, exportación CSV, historial, etiquetas y
+preferencias del cliente, feriados, vacaciones, pausas recurrentes, lista de
+espera, promociones, gastos, cierres diarios, encuestas privadas, trazabilidad
+de correos, galería y bitácora independiente por barbero.
 
 ## PWA y legales
 
@@ -274,5 +294,5 @@ npm test
 npm run build
 
 cd ../backend
-python -m unittest discover -s tests -v
+python -m pytest -q
 ```
