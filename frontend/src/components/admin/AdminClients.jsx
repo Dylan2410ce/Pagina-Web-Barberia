@@ -4,10 +4,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Gift,
   Mail,
   Phone,
   Search,
   Scissors,
+  Save,
+  ShieldOff,
+  Tags,
   UserRound,
 } from "lucide-react";
 import {
@@ -39,7 +43,12 @@ function coincide(cliente, query, status, desde) {
   return (!term || content.includes(term)) && statusMatch && dateMatch;
 }
 
-export default function AdminClients({ clientes = [] }) {
+export default function AdminClients({
+  clientes = [],
+  onUpdate,
+  onRedeem,
+  onAnonymize,
+}) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [desde, setDesde] = useState("");
@@ -62,6 +71,11 @@ export default function AdminClients({ clientes = [] }) {
   const clienteActivo = visibles.find(
     (cliente) => cliente.phone === seleccionado,
   ) || paginaVisible[0];
+  const [profileForm, setProfileForm] = useState({
+    tags: "",
+    preferences: "",
+    internal_notes: "",
+  });
 
   useEffect(() => {
     setPagina(1);
@@ -71,6 +85,19 @@ export default function AdminClients({ clientes = [] }) {
   useEffect(() => {
     if (pagina > totalPaginas) setPagina(totalPaginas);
   }, [pagina, totalPaginas]);
+
+  useEffect(() => {
+    setProfileForm({
+      tags: (clienteActivo?.tags || []).join(", "),
+      preferences: clienteActivo?.preferences || "",
+      internal_notes: clienteActivo?.internal_notes || "",
+    });
+  }, [
+    clienteActivo?.internal_notes,
+    clienteActivo?.phone,
+    clienteActivo?.preferences,
+    clienteActivo?.tags,
+  ]);
 
   const exportar = () => descargarCsv(
     "clientes-sebas-barber.csv",
@@ -233,7 +260,91 @@ export default function AdminClients({ clientes = [] }) {
                   <span>Frecuencia</span>
                   <strong>{clienteActivo.frequency_days ? `Cada ${clienteActivo.frequency_days} días` : "Por calcular"}</strong>
                 </article>
+                <article>
+                  <span>No asistió</span>
+                  <strong>{clienteActivo.no_show_count || 0} veces</strong>
+                </article>
               </div>
+              {clienteActivo.profile_id && (
+                <form
+                  className="client-profile-editor formulario"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    onUpdate(clienteActivo.profile_id, {
+                      tags: profileForm.tags
+                        .split(",")
+                        .map((item) => item.trim())
+                        .filter(Boolean),
+                      preferences: profileForm.preferences.trim() || null,
+                      internal_notes: profileForm.internal_notes.trim() || null,
+                    });
+                  }}
+                >
+                  <div className="campo">
+                    <label htmlFor="client-tags"><Tags size={15} />Etiquetas</label>
+                    <input
+                      id="client-tags"
+                      value={profileForm.tags}
+                      placeholder="Frecuente, fade, puntual"
+                      onChange={(event) => setProfileForm((current) => ({
+                        ...current,
+                        tags: event.target.value,
+                      }))}
+                    />
+                  </div>
+                  <div className="campo">
+                    <label htmlFor="client-preferences">Preferencias del corte</label>
+                    <textarea
+                      id="client-preferences"
+                      rows="2"
+                      maxLength="600"
+                      value={profileForm.preferences}
+                      placeholder="Máquina, estilo habitual o detalles que conviene recordar"
+                      onChange={(event) => setProfileForm((current) => ({
+                        ...current,
+                        preferences: event.target.value,
+                      }))}
+                    />
+                  </div>
+                  <div className="campo">
+                    <label htmlFor="client-notes-admin">Notas privadas</label>
+                    <textarea
+                      id="client-notes-admin"
+                      rows="2"
+                      maxLength="1000"
+                      value={profileForm.internal_notes}
+                      onChange={(event) => setProfileForm((current) => ({
+                        ...current,
+                        internal_notes: event.target.value,
+                      }))}
+                    />
+                  </div>
+                  <div className="client-profile-actions">
+                    <button className="btn btn-principal" type="submit">
+                      <Save size={16} />
+                      Guardar ficha
+                    </button>
+                    {clienteActivo.loyalty_available > 0 && (
+                      <button
+                        className="btn btn-linea"
+                        type="button"
+                        onClick={() => onRedeem(clienteActivo)}
+                      >
+                        <Gift size={16} />
+                        Canjear beneficio ({clienteActivo.loyalty_available})
+                      </button>
+                    )}
+                    <button
+                      className="btn btn-peligro"
+                      type="button"
+                      onClick={() => onAnonymize(clienteActivo)}
+                    >
+                      <ShieldOff size={16} />
+                      Eliminar datos personales
+                    </button>
+                  </div>
+                </form>
+              )}
               <div className="client-history-list">
                 {(clienteActivo.history || []).map((visita) => (
                   <article key={visita.id}>

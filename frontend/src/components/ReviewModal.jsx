@@ -5,6 +5,7 @@ import useDialogA11y from "../hooks/useDialogA11y";
 export default function ReviewModal({ cita, onClose, onSubmit }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [website, setWebsite] = useState("");
   const dialogRef = useDialogA11y(onClose);
 
   if (!cita) return null;
@@ -15,6 +16,7 @@ export default function ReviewModal({ cita, onClose, onSubmit }) {
       access_code: cita._access_code,
       rating,
       comment: comment.trim(),
+      website,
     });
     if (saved) onClose();
   };
@@ -39,6 +41,16 @@ export default function ReviewModal({ cita, onClose, onSubmit }) {
           </button>
         </header>
         <form className="modal-body formulario" onSubmit={submit}>
+          <div className="honeypot" aria-hidden="true">
+            <label htmlFor="review-website">Sitio web</label>
+            <input
+              id="review-website"
+              tabIndex="-1"
+              autoComplete="off"
+              value={website}
+              onChange={(event) => setWebsite(event.target.value)}
+            />
+          </div>
           <div className="rating-picker">
             <span>Calificación</span>
             <div role="radiogroup" aria-label="Calificación de la cita">

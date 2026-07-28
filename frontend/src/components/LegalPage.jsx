@@ -30,7 +30,7 @@ const pages = {
       {
         title: "Conservación y derechos",
         paragraphs: [
-          "Conservamos la información mientras sea necesaria para administrar la relación con el cliente, respaldar la agenda y cumplir obligaciones aplicables. Después puede eliminarse o anonimizarse.",
+          "Como regla operativa, los datos identificables se conservan hasta 24 meses. Después se anonimizan y se eliminan los registros de notificación que ya no son necesarios, salvo que exista una obligación legítima de conservarlos.",
           "Puedes solicitar acceso, corrección o eliminación de tus datos mediante el correo indicado. Atenderemos la solicitud después de verificar que corresponde a la persona titular.",
         ],
       },
@@ -71,7 +71,7 @@ const pages = {
         title: "Puntualidad y cambios",
         paragraphs: [
           "Te recomendamos llegar unos minutos antes. Una llegada tardía puede reducir el tiempo disponible o requerir reprogramación para no afectar las citas siguientes.",
-          "Puedes consultar, cancelar o mover una cita desde la sección Mis citas usando el mismo teléfono de la reserva.",
+          "Puedes consultar, cancelar o mover una cita desde la sección Mis citas usando el código privado de la reserva. La anticipación mínima aparece junto a cada cita.",
         ],
       },
       {
@@ -90,7 +90,7 @@ const pages = {
       {
         title: "Cómo cancelar",
         paragraphs: [
-          "Entra en Mis citas, escribe el teléfono utilizado al reservar y selecciona Cancelar. El horario se libera de inmediato en la agenda y en el calendario del barbero.",
+          "Entra en Mis citas, escribe el código privado del comprobante y selecciona Cancelar. El horario se libera de inmediato en la agenda y en el calendario del barbero.",
           "Si la web no está disponible, contacta directamente al barbero por teléfono o WhatsApp.",
         ],
       },

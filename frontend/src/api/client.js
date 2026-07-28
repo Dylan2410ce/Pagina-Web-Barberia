@@ -6,14 +6,18 @@ export const API_URL = (
 const ADMIN_TOKEN_KEY = "sebas_admin_token";
 
 export function obtenerToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+  return token;
 }
 
 export function guardarToken(token) {
-  localStorage.setItem(ADMIN_TOKEN_KEY, token);
+  sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
 
 export function borrarToken() {
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
   localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
 
@@ -72,7 +76,12 @@ async function ejecutarSolicitud(ruta, opciones = {}) {
 
 export async function api(ruta, opciones = {}) {
   const metodo = opciones.method || "GET";
-  const intentos = metodo === "GET" ? 2 : 1;
+  const esReservaIdempotente = (
+    metodo === "POST"
+    && ruta === "/api/public/appointments"
+    && opciones.body?.request_id
+  );
+  const intentos = metodo === "GET" || esReservaIdempotente ? 2 : 1;
   let ultimoError;
 
   for (let intento = 0; intento < intentos; intento += 1) {
@@ -139,6 +148,8 @@ export const publicoApi = {
   crearCita: (datos) => api("/api/public/appointments", { method: "POST", body: datos }),
   buscarPorCodigo: (codigo) =>
     api(`/api/public/appointments/manage/${encodeURIComponent(codigo.trim())}`),
+  historialPorCodigo: (codigo) =>
+    api(`/api/public/appointments/history/${encodeURIComponent(codigo.trim())}`),
   buscarPorTelefono: (telefono) => api(`/api/public/appointments/by-phone${query({ phone: telefono })}`),
   cancelarCita: (id, datos) => api(`/api/public/appointments/${id}/cancel`, { method: "PATCH", body: datos }),
   reprogramarCita: (id, datos) => api(`/api/public/appointments/${id}/reschedule`, { method: "PATCH", body: datos }),
@@ -148,6 +159,7 @@ export const publicoApi = {
   crearReseña: (datos) => api("/api/public/reviews", { method: "POST", body: datos }),
   fidelidad: (codigo) =>
     api(`/api/public/loyalty/${encodeURIComponent(codigo.trim())}`),
+  crearEncuesta: (datos) => api("/api/public/feedback", { method: "POST", body: datos }),
 };
 
 export const adminApi = {
@@ -211,4 +223,44 @@ export const adminApi = {
   resetPassword: (datos) => api("/api/admin/reset-password", { method: "POST", body: datos }),
   changePassword: (token, datos) =>
     api("/api/admin/change-password", { method: "POST", token, body: datos }),
+  configuracion: (token) => api("/api/admin/settings", { token }),
+  guardarConfiguracion: (token, datos) =>
+    api("/api/admin/settings", { method: "PATCH", token, body: datos }),
+  pausas: (token) => api("/api/admin/business-breaks", { token }),
+  crearPausa: (token, datos) =>
+    api("/api/admin/business-breaks", { method: "POST", token, body: datos }),
+  eliminarPausa: (token, id) =>
+    api(`/api/admin/business-breaks/${id}`, { method: "DELETE", token }),
+  actualizarCliente: (token, id, datos) =>
+    api(`/api/admin/client-profiles/${id}`, { method: "PATCH", token, body: datos }),
+  canjearFidelidad: (token, id, datos = {}) =>
+    api(`/api/admin/client-profiles/${id}/redeem-loyalty`, {
+      method: "POST",
+      token,
+      body: datos,
+    }),
+  anonimizarCliente: (token, id) =>
+    api(`/api/admin/client-profiles/${id}/anonymize`, { method: "POST", token }),
+  encuestas: (token) => api("/api/admin/feedback", { token }),
+  promociones: (token) => api("/api/admin/promotions", { token }),
+  crearPromocion: (token, datos) =>
+    api("/api/admin/promotions", { method: "POST", token, body: datos }),
+  editarPromocion: (token, id, datos) =>
+    api(`/api/admin/promotions/${id}`, { method: "PATCH", token, body: datos }),
+  eliminarPromocion: (token, id) =>
+    api(`/api/admin/promotions/${id}`, { method: "DELETE", token }),
+  gastos: (token, filtros = {}) =>
+    api(`/api/admin/expenses${query(filtros)}`, { token }),
+  crearGasto: (token, datos) =>
+    api("/api/admin/expenses", { method: "POST", token, body: datos }),
+  eliminarGasto: (token, id) =>
+    api(`/api/admin/expenses/${id}`, { method: "DELETE", token }),
+  cierres: (token) => api("/api/admin/cash-closes", { token }),
+  crearCierre: (token, datos) =>
+    api("/api/admin/cash-closes", { method: "POST", token, body: datos }),
+  notificaciones: (token) => api("/api/admin/notifications", { token }),
+  metricasOperativas: (token, days = 30) =>
+    api(`/api/admin/operations-metrics${query({ days })}`, { token }),
+  operaciones: (token) => api("/api/admin/operations-overview", { token }),
+  respaldo: (token) => api("/api/admin/backup", { token }),
 };

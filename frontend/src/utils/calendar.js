@@ -35,6 +35,19 @@ export function googleCalendarUrl(cita, barbero) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+export function outlookCalendarUrl(cita, barbero) {
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: `${cita.service_name} | ${SHOP_NAME}`,
+    startdt: new Date(cita.starts_at).toISOString(),
+    enddt: new Date(cita.ends_at).toISOString(),
+    body: appointmentDescription(cita, barbero),
+    location: LOCATION,
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
 export function descargarIcs(cita, barbero) {
   const now = googleTimestamp(new Date());
   const uid = `${cita.id}@sebasbarber.vercel.app`;

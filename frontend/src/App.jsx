@@ -25,7 +25,10 @@ import ServiceMenu from "./components/ServiceMenu";
 import ScrollToTop from "./components/ScrollToTop";
 import TeamSection from "./components/TeamSection";
 import Toasts from "./components/Toasts";
-import { enviarCorreosCita } from "./services/emailjsService";
+import {
+  enviarCorreosActualizacion,
+  enviarCorreosCita,
+} from "./services/emailjsService";
 import {
   fechaHumana,
   hoyISO,
@@ -49,8 +52,29 @@ const LEGAL_ROUTES = new Set([
   "/terminos-reserva",
   "/aviso-cancelacion",
 ]);
+const CONTACT_KEY = "sebas_booking_contact";
+
+function nuevoRequestId() {
+  return globalThis.crypto?.randomUUID?.()
+    || `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function leerContactoRecordado() {
+  try {
+    return JSON.parse(localStorage.getItem(CONTACT_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function codigoReservaDesdeUrl() {
+  const searchCode = new URLSearchParams(window.location.search).get("reserva");
+  const hashQuery = window.location.hash.split("?")[1] || "";
+  return new URLSearchParams(hashQuery).get("reserva") || searchCode || "";
+}
 
 const reservaInicial = {
+  request_id: "",
   barber_id: "",
   service_id: "",
   addon_ids: [],
@@ -60,7 +84,19 @@ const reservaInicial = {
   client_phone: "",
   client_email: "",
   notes: "",
+  website: "",
 };
+
+function nuevaReserva(recordarContacto = true) {
+  const contact = recordarContacto ? leerContactoRecordado() : {};
+  return {
+    ...reservaInicial,
+    request_id: nuevoRequestId(),
+    client_name: contact.client_name || "",
+    client_phone: contact.client_phone || "",
+    client_email: contact.client_email || "",
+  };
+}
 
 const adminBase = {
   token: "",
@@ -76,6 +112,16 @@ const adminBase = {
   listaEspera: [],
   reseñas: [],
   galeria: [],
+  operaciones: {
+    settings: null,
+    breaks: [],
+    promotions: [],
+    expenses: [],
+    cash_closes: [],
+    notifications: [],
+    feedback: [],
+    metrics: null,
+  },
   stats: null,
   tab: "resumen",
   filtros: { date: hoyISO(), status: "", q: "" },
@@ -89,11 +135,16 @@ export default function App() {
     services: [],
     addons: [],
     business_hours: [],
+    business_breaks: [],
+    promotions: [],
     reviews: [],
     gallery: [],
     location: {},
   });
-  const [reserva, setReserva] = useState(reservaInicial);
+  const [reserva, setReserva] = useState(nuevaReserva);
+  const [recordarContacto, setRecordarContacto] = useState(
+    () => Boolean(localStorage.getItem(CONTACT_KEY)),
+  );
   const [slots, setSlots] = useState([]);
   const [estadosLocal, setEstadosLocal] = useState({});
   const [cargando, setCargando] = useState(!esRutaLegal);
@@ -105,7 +156,7 @@ export default function App() {
   const [modalMapa, setModalMapa] = useState(false);
   const [telefonoBusqueda, setTelefonoBusqueda] = useState("");
   const [codigoBusqueda, setCodigoBusqueda] = useState(() => (
-    new URLSearchParams(window.location.search).get("reserva")
+    codigoReservaDesdeUrl()
     || ultimaReservaGuardada()?.access_code
     || ""
   ));
@@ -149,19 +200,60 @@ export default function App() {
     [datos.barbers, reserva.barber_id],
   );
 
+  const resumenCorreo = useCallback((cita) => ({
+    barbero: datos.barbers.find((item) => item.id === cita.barber_id),
+    servicio: datos.services.find((item) => item.id === cita.service_id),
+    extras: datos.addons.filter((item) => cita.addons?.includes(item.name)),
+    duracion: datos.services.find((item) => item.id === cita.service_id)?.duration_min,
+  }), [datos.addons, datos.barbers, datos.services]);
+
   const horariosActivos = useMemo(() => {
     const barberId = barberoActivo?.id || datos.barbers[0]?.id;
     return datos.business_hours.filter((item) => item.barber_id === barberId);
   }, [barberoActivo, datos.barbers, datos.business_hours]);
 
-  const resumen = useMemo(() => ({
-    barbero: barberoActivo,
-    servicio: servicioActivo,
-    extras: extrasActivos,
-    total: (servicioActivo?.price || 0) + extrasActivos.reduce((sum, item) => sum + item.price, 0),
-    duracion: servicioActivo?.duration_min || 0,
-    hora: slots.find((slot) => slot.start_min === reserva.start_min)?.label || "",
-  }), [barberoActivo, servicioActivo, extrasActivos, reserva.start_min, slots]);
+  const resumen = useMemo(() => {
+    const subtotal = (servicioActivo?.price || 0)
+      + extrasActivos.reduce((sum, item) => sum + item.price, 0);
+    const promociones = (datos.promotions || []).filter((item) => (
+      item.barber_id === barberoActivo?.id
+      && (!item.service_id || item.service_id === servicioActivo?.id)
+      && item.start_date <= reserva.date
+      && item.end_date >= reserva.date
+      && item.is_active
+    ));
+    const aplicada = promociones
+      .map((item) => ({
+        ...item,
+        discount: item.discount_type === "percentage"
+          ? Math.round(subtotal * item.discount_value / 100)
+          : item.discount_value,
+      }))
+      .sort((a, b) => b.discount - a.discount)[0];
+    const descuento = Math.min(
+      Math.max(aplicada?.discount || 0, 0),
+      Math.max(subtotal - 1, 0),
+    );
+    return {
+      barbero: barberoActivo,
+      servicio: servicioActivo,
+      extras: extrasActivos,
+      subtotal,
+      descuento,
+      promocion: aplicada?.name || "",
+      total: subtotal - descuento,
+      duracion: servicioActivo?.duration_min || 0,
+      hora: slots.find((slot) => slot.start_min === reserva.start_min)?.label || "",
+    };
+  }, [
+    barberoActivo,
+    datos.promotions,
+    extrasActivos,
+    reserva.date,
+    reserva.start_min,
+    servicioActivo,
+    slots,
+  ]);
 
   const cargarSlots = useCallback(async (override = {}) => {
     const siguiente = { ...reserva, ...override };
@@ -205,6 +297,7 @@ export default function App() {
         adminApi.listaEspera(tokenActual),
         adminApi.reseñas(tokenActual),
         adminApi.galeria(tokenActual),
+        adminApi.operaciones(tokenActual),
       ]);
 
       const valor = (index, fallback) => resultados[index].status === "fulfilled" ? resultados[index].value : fallback;
@@ -226,6 +319,7 @@ export default function App() {
         listaEspera: valor(9, actual.listaEspera || []),
         reseñas: valor(10, actual.reseñas || []),
         galeria: valor(11, actual.galeria || []),
+        operaciones: valor(12, actual.operaciones || adminBase.operaciones),
       }));
 
       if (cargaParcial) {
@@ -251,21 +345,35 @@ export default function App() {
           services: normalizarServicios(bootstrap.services || []),
           addons: normalizarServicios(bootstrap.addons || []),
           business_hours: bootstrap.business_hours || [],
+          business_breaks: bootstrap.business_breaks || [],
+          promotions: bootstrap.promotions || [],
           reviews: bootstrap.reviews || [],
           gallery: bootstrap.gallery || [],
         };
         setDatos(normalizados);
-        setReserva({ ...reservaInicial });
+        setReserva(nuevaReserva);
         setCargando(false);
-        const codigoUrl = new URLSearchParams(window.location.search).get("reserva");
+        const codigoUrl = codigoReservaDesdeUrl();
         if (codigoUrl) {
+          if (new URLSearchParams(window.location.search).has("reserva")) {
+            window.history.replaceState(
+              null,
+              "",
+              `/#mis-citas?reserva=${encodeURIComponent(codigoUrl)}`,
+            );
+          }
           try {
-            const [cita, progreso] = await Promise.all([
+            const [cita, historial, progreso] = await Promise.all([
               publicoApi.buscarPorCodigo(codigoUrl),
+              publicoApi.historialPorCodigo(codigoUrl),
               publicoApi.fidelidad(codigoUrl),
             ]);
             setCodigoBusqueda(codigoUrl);
-            setCitasCliente([{ ...cita, _access_code: codigoUrl }]);
+            setCitasCliente(historial.map((item) => (
+              item.id === cita?.id
+                ? { ...item, _access_code: codigoUrl }
+                : item
+            )));
             setFidelidad(progreso);
             requestAnimationFrame(() => {
               document.getElementById("mis-citas")?.scrollIntoView({ block: "start" });
@@ -341,13 +449,21 @@ export default function App() {
   }, []);
 
   const seleccionarBarbero = async (id) => {
-    const siguiente = { barber_id: id, start_min: null };
+    const siguiente = {
+      barber_id: id,
+      start_min: null,
+      request_id: nuevoRequestId(),
+    };
     setReserva((actual) => ({ ...actual, ...siguiente }));
     await cargarSlots(siguiente);
   };
 
   const seleccionarServicio = async (id) => {
-    const siguiente = { service_id: id, start_min: null };
+    const siguiente = {
+      service_id: id,
+      start_min: null,
+      request_id: nuevoRequestId(),
+    };
     setReserva((actual) => ({ ...actual, ...siguiente }));
     await cargarSlots(siguiente);
   };
@@ -356,12 +472,22 @@ export default function App() {
     const addon_ids = reserva.addon_ids.includes(id)
       ? reserva.addon_ids.filter((item) => item !== id)
       : [...reserva.addon_ids, id];
-    setReserva((actual) => ({ ...actual, addon_ids, start_min: null }));
+    setReserva((actual) => ({
+      ...actual,
+      addon_ids,
+      start_min: null,
+      request_id: nuevoRequestId(),
+    }));
     await cargarSlots({ addon_ids, start_min: null });
   };
 
   const cambiarFecha = async (date) => {
-    setReserva((actual) => ({ ...actual, date, start_min: null }));
+    setReserva((actual) => ({
+      ...actual,
+      date,
+      start_min: null,
+      request_id: nuevoRequestId(),
+    }));
     await cargarSlots({ date, start_min: null });
   };
 
@@ -381,6 +507,15 @@ export default function App() {
         client_email: reserva.client_email.trim() || null,
         notes: reserva.notes.trim() || null,
       });
+      if (recordarContacto) {
+        localStorage.setItem(CONTACT_KEY, JSON.stringify({
+          client_name: reserva.client_name.trim(),
+          client_phone: telefono,
+          client_email: reserva.client_email.trim(),
+        }));
+      } else {
+        localStorage.removeItem(CONTACT_KEY);
+      }
       guardarReservaLocal(citaCreada);
       setReservasGuardadas(leerReservasGuardadas());
       setCodigoBusqueda(citaCreada.access_code);
@@ -399,7 +534,13 @@ export default function App() {
       enviarCorreosCita(citaCreada, resumen).catch((error) => {
         console.warn("La confirmación por correo no se pudo completar.", error);
       });
-      const limpia = { ...reserva, start_min: null, client_name: "", client_phone: "", client_email: "", notes: "" };
+      const limpia = {
+        ...nuevaReserva(recordarContacto),
+        barber_id: reserva.barber_id,
+        service_id: reserva.service_id,
+        addon_ids: [],
+        date: reserva.date,
+      };
       setReserva(limpia);
       await cargarSlots(limpia);
     } catch (error) {
@@ -417,12 +558,17 @@ export default function App() {
     }
     setProcesando("Abriendo tu reserva...");
     try {
-      const [cita, progreso] = await Promise.all([
+      const [cita, historial, progreso] = await Promise.all([
         publicoApi.buscarPorCodigo(limpio),
+        publicoApi.historialPorCodigo(limpio),
         publicoApi.fidelidad(limpio),
       ]);
       setCodigoBusqueda(limpio);
-      setCitasCliente([{ ...cita, _access_code: limpio }]);
+      setCitasCliente(historial.map((item) => (
+        item.id === cita.id
+          ? { ...item, _access_code: limpio }
+          : item
+      )));
       setFidelidad(progreso);
       if (notificar) avisar("ok", "Reserva encontrada");
       return true;
@@ -471,6 +617,11 @@ export default function App() {
         phone: accessCode ? null : telefonoBusqueda,
         reason: "Cancelada desde la web",
       });
+      enviarCorreosActualizacion(
+        { ...actualizada, access_code: accessCode },
+        resumenCorreo(actualizada),
+        "cancelled",
+      ).catch(() => {});
       if (accessCode) {
         setCitasCliente([{ ...actualizada, _access_code: accessCode }]);
       } else {
@@ -573,6 +724,11 @@ export default function App() {
           date: modalReprogramar.date,
           start_min: modalReprogramar.start_min,
         });
+        enviarCorreosActualizacion(
+          { ...actualizada, access_code: accessCode },
+          resumenCorreo(actualizada),
+          "rescheduled",
+        ).catch(() => {});
         if (accessCode) {
           const citaSegura = { ...actualizada, _access_code: accessCode };
           setCitasCliente([citaSegura]);
@@ -582,10 +738,15 @@ export default function App() {
           setCitasCliente(await publicoApi.buscarPorTelefono(telefonoBusqueda));
         }
       } else {
-        await adminApi.moverCita(admin.token, modalReprogramar.cita.id, {
+        const actualizada = await adminApi.moverCita(admin.token, modalReprogramar.cita.id, {
           date: modalReprogramar.date,
           start_min: modalReprogramar.start_min,
         });
+        enviarCorreosActualizacion(
+          actualizada,
+          resumenCorreo(actualizada),
+          "rescheduled",
+        ).catch(() => {});
         await cargarAdmin();
       }
       setModalReprogramar(null);
@@ -636,7 +797,7 @@ export default function App() {
       .filter((item) => cita.addons?.includes(item.name))
       .map((item) => item.id);
     const siguiente = {
-      ...reservaInicial,
+      ...nuevaReserva(recordarContacto),
       barber_id: cita.barber_id,
       service_id: servicio.id,
       addon_ids: addonIds,
@@ -656,6 +817,20 @@ export default function App() {
     try {
       await publicoApi.crearReseña(data);
       avisar("ok", "Gracias por tu reseña", "Se publicará después de revisarla.");
+      return true;
+    } catch (error) {
+      avisar("error", "No se pudo enviar", error.message);
+      return false;
+    } finally {
+      setProcesando("");
+    }
+  };
+
+  const crearEncuesta = async (data) => {
+    setProcesando("Guardando tu opinión...");
+    try {
+      await publicoApi.crearEncuesta(data);
+      avisar("ok", "Gracias por ayudarnos", "Tu respuesta es privada.");
       return true;
     } catch (error) {
       avisar("error", "No se pudo enviar", error.message);
@@ -738,7 +913,14 @@ export default function App() {
   const cambiarEstadoAdmin = async (id, status) => {
     setProcesando("Actualizando agenda...");
     try {
-      await adminApi.estadoCita(admin.token, id, status);
+      const actualizada = await adminApi.estadoCita(admin.token, id, status);
+      if (status === "cancelled" && actualizada.client_email) {
+        enviarCorreosActualizacion(
+          actualizada,
+          resumenCorreo(actualizada),
+          "cancelled",
+        ).catch(() => {});
+      }
       await cargarAdmin();
       await cargarSlots();
       avisar("ok", "Agenda actualizada");
@@ -906,6 +1088,171 @@ export default function App() {
     }
   };
 
+  const refrescarOperacion = async (publica = false) => {
+    const tasks = [cargarAdmin()];
+    if (publica) tasks.push(publicoApi.iniciar());
+    const results = await Promise.all(tasks);
+    const bootstrap = results[1];
+    if (bootstrap) {
+      setDatos((actual) => ({
+        ...actual,
+        barbers: normalizarBarberos(bootstrap.barbers || []),
+        business_hours: bootstrap.business_hours || [],
+        business_breaks: bootstrap.business_breaks || [],
+        promotions: bootstrap.promotions || [],
+      }));
+    }
+  };
+
+  const ejecutarOperacion = async ({
+    loading,
+    action,
+    success,
+    publica = false,
+  }) => {
+    setProcesando(loading);
+    try {
+      await action();
+      await refrescarOperacion(publica);
+      avisar("ok", success);
+      return true;
+    } catch (error) {
+      avisar("error", "No se pudo completar", error.message);
+      return false;
+    } finally {
+      setProcesando("");
+    }
+  };
+
+  const guardarConfiguracion = (data) => ejecutarOperacion({
+    loading: "Guardando configuración...",
+    action: () => adminApi.guardarConfiguracion(admin.token, data),
+    success: "Configuración guardada",
+    publica: true,
+  });
+
+  const crearPausa = (data) => ejecutarOperacion({
+    loading: "Añadiendo pausa...",
+    action: () => adminApi.crearPausa(admin.token, data),
+    success: "Pausa añadida",
+    publica: true,
+  });
+
+  const eliminarPausa = (item) => setConfirmacion({
+    title: "¿Eliminar esta pausa?",
+    message: `${item.label} dejará de bloquear ese horario semanal.`,
+    confirmLabel: "Eliminar pausa",
+    danger: true,
+    onConfirm: () => ejecutarOperacion({
+      loading: "Eliminando pausa...",
+      action: () => adminApi.eliminarPausa(admin.token, item.id),
+      success: "Pausa eliminada",
+      publica: true,
+    }),
+  });
+
+  const crearPromocion = (data) => ejecutarOperacion({
+    loading: "Publicando promoción...",
+    action: () => adminApi.crearPromocion(admin.token, data),
+    success: "Promoción publicada",
+    publica: true,
+  });
+
+  const alternarPromocion = (item) => ejecutarOperacion({
+    loading: "Actualizando promoción...",
+    action: () => adminApi.editarPromocion(admin.token, item.id, {
+      is_active: !item.is_active,
+    }),
+    success: item.is_active ? "Promoción pausada" : "Promoción activada",
+    publica: true,
+  });
+
+  const eliminarPromocion = (item) => setConfirmacion({
+    title: "¿Eliminar esta promoción?",
+    message: `"${item.name}" desaparecerá del cálculo de precios.`,
+    confirmLabel: "Eliminar promoción",
+    danger: true,
+    onConfirm: () => ejecutarOperacion({
+      loading: "Eliminando promoción...",
+      action: () => adminApi.eliminarPromocion(admin.token, item.id),
+      success: "Promoción eliminada",
+      publica: true,
+    }),
+  });
+
+  const crearGasto = (data) => ejecutarOperacion({
+    loading: "Guardando gasto...",
+    action: () => adminApi.crearGasto(admin.token, data),
+    success: "Gasto registrado",
+  });
+
+  const eliminarGasto = (item) => setConfirmacion({
+    title: "¿Eliminar este gasto?",
+    message: `${item.description} por ${item.amount} colones saldrá del reporte.`,
+    confirmLabel: "Eliminar gasto",
+    danger: true,
+    onConfirm: () => ejecutarOperacion({
+      loading: "Eliminando gasto...",
+      action: () => adminApi.eliminarGasto(admin.token, item.id),
+      success: "Gasto eliminado",
+    }),
+  });
+
+  const crearCierre = (data) => ejecutarOperacion({
+    loading: "Cerrando caja...",
+    action: () => adminApi.crearCierre(admin.token, data),
+    success: "Cierre diario guardado",
+  });
+
+  const actualizarCliente = (id, data) => ejecutarOperacion({
+    loading: "Guardando ficha...",
+    action: () => adminApi.actualizarCliente(admin.token, id, data),
+    success: "Ficha actualizada",
+  });
+
+  const canjearFidelidad = (cliente) => ejecutarOperacion({
+    loading: "Registrando beneficio...",
+    action: () => adminApi.canjearFidelidad(admin.token, cliente.profile_id),
+    success: "Beneficio canjeado",
+  });
+
+  const anonimizarCliente = (cliente) => setConfirmacion({
+    title: "¿Eliminar los datos personales?",
+    message: (
+      `Se borrarán el nombre, teléfono, correo y notas de ${cliente.name}. `
+      + "Los totales históricos se conservarán sin identificar a la persona."
+    ),
+    confirmLabel: "Eliminar datos",
+    danger: true,
+    onConfirm: () => ejecutarOperacion({
+      loading: "Anonimizando cliente...",
+      action: () => adminApi.anonimizarCliente(admin.token, cliente.profile_id),
+      success: "Datos personales eliminados",
+    }),
+  });
+
+  const descargarRespaldo = async () => {
+    setProcesando("Preparando respaldo...");
+    try {
+      const payload = await adminApi.respaldo(admin.token);
+      const blob = new Blob(
+        [JSON.stringify(payload, null, 2)],
+        { type: "application/json;charset=utf-8" },
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `respaldo-sebas-barber-${hoyISO()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      avisar("ok", "Respaldo descargado");
+    } catch (error) {
+      avisar("error", "No se pudo descargar", error.message);
+    } finally {
+      setProcesando("");
+    }
+  };
+
   const cambiarEstadoListaEspera = async (id, status) => {
     setProcesando("Actualizando la lista...");
     try {
@@ -1049,6 +1396,19 @@ export default function App() {
     onSubirImagen: subirImagenGaleria,
     onEditarImagen: editarImagenGaleria,
     onEliminarImagen: eliminarImagenGaleria,
+    onGuardarConfiguracion: guardarConfiguracion,
+    onCrearPausa: crearPausa,
+    onEliminarPausa: eliminarPausa,
+    onCrearPromocion: crearPromocion,
+    onAlternarPromocion: alternarPromocion,
+    onEliminarPromocion: eliminarPromocion,
+    onCrearGasto: crearGasto,
+    onEliminarGasto: eliminarGasto,
+    onCrearCierre: crearCierre,
+    onDescargarRespaldo: descargarRespaldo,
+    onActualizarCliente: actualizarCliente,
+    onCanjearFidelidad: canjearFidelidad,
+    onAnonimizarCliente: anonimizarCliente,
   };
 
   if (ruta.startsWith("/admin")) {
@@ -1131,6 +1491,8 @@ export default function App() {
           onSubmit={crearCita}
           onWaitlist={crearListaEspera}
           pasoSolicitado={pasoSolicitado}
+          recordarContacto={recordarContacto}
+          onRecordarContacto={setRecordarContacto}
         />
         <ClientAppointments
           codigo={codigoBusqueda}
@@ -1148,6 +1510,7 @@ export default function App() {
           onReprogramar={(cita) => abrirReprogramar(cita, "cliente")}
           onRepetir={repetirCita}
           onReseña={crearReseña}
+          onEncuesta={crearEncuesta}
         />
         <FaqSection />
         <LocationSection

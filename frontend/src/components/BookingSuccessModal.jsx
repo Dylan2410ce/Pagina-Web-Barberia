@@ -32,7 +32,7 @@ export default function BookingSuccessModal({ cita, barbero, onClose }) {
   const codigo = cita.access_code || "";
   const urlGestion = typeof window === "undefined"
     ? codigo
-    : `${window.location.origin}/?reserva=${encodeURIComponent(codigo)}#mis-citas`;
+    : `${window.location.origin}/#mis-citas?reserva=${encodeURIComponent(codigo)}`;
 
   const copiarCodigo = async () => {
     await copiar(codigo);

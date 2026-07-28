@@ -14,12 +14,14 @@ import AdminPageHead from "./AdminPageHead";
 export default function AdminDashboard({
   data,
   stats,
+  operations,
   perfil,
   onTab,
   onBloqueoRapido,
 }) {
   const safe = data || {};
   const monthly = stats || {};
+  const business = operations || {};
   const proximas = safe.upcoming || [];
   const citasHoy = safe.appointments_today || 0;
   const completadasHoy = safe.completed_today || 0;
@@ -66,6 +68,14 @@ export default function AdminDashboard({
           <strong className="metric-service">{safe.top_service_week || monthly.top_service || "Sin datos"}</strong>
           <small>Demanda de la semana</small>
         </article>
+      </div>
+      <div className="business-pulse">
+        <span>Ingreso neto (30 días)<strong>{dinero(business.net_income || 0)}</strong></span>
+        <span>Clientes recurrentes<strong>{business.repeat_rate || 0}%</strong></span>
+        <span>Satisfacción<strong>{business.average_satisfaction || 0}/5</strong></span>
+        <button type="button" onClick={() => onTab("operacion")}>
+          Abrir negocio <ArrowRight size={15} />
+        </button>
       </div>
 
       <div className="dashboard-grid dashboard-grid-premium">

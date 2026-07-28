@@ -9,6 +9,7 @@ const initialForm = {
   client_email: "",
   preferred_period: "any",
   notes: "",
+  website: "",
 };
 
 export default function WaitlistModal({
@@ -73,6 +74,16 @@ export default function WaitlistModal({
           </button>
         </header>
         <form className="modal-body formulario waitlist-form" onSubmit={submit}>
+          <div className="honeypot" aria-hidden="true">
+            <label htmlFor="waitlist-website">Sitio web</label>
+            <input
+              id="waitlist-website"
+              tabIndex="-1"
+              autoComplete="off"
+              value={form.website}
+              onChange={(event) => update("website", event.target.value)}
+            />
+          </div>
           <div className="waitlist-context">
             <Clock3 size={18} />
             <span>

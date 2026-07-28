@@ -49,6 +49,8 @@ export default function BookingWizard({
   onSubmit,
   onWaitlist,
   pasoSolicitado,
+  recordarContacto,
+  onRecordarContacto,
 }) {
   const [paso, setPaso] = useState(1);
   const [listaEsperaAbierta, setListaEsperaAbierta] = useState(false);
@@ -69,6 +71,8 @@ export default function BookingWizard({
     setReserva((actual) => ({
       ...actual,
       [campo]: campo === "client_phone" ? limpiarTelefono(valor) : valor,
+      request_id: globalThis.crypto?.randomUUID?.()
+        || `web-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     }));
   };
 
@@ -291,7 +295,12 @@ export default function BookingWizard({
                       className={`slot ${reserva.start_min === slot.start_min ? "activo" : ""}`}
                       type="button"
                       aria-pressed={reserva.start_min === slot.start_min}
-                      onClick={() => setReserva((actual) => ({ ...actual, start_min: slot.start_min }))}
+                      onClick={() => setReserva((actual) => ({
+                        ...actual,
+                        start_min: slot.start_min,
+                        request_id: globalThis.crypto?.randomUUID?.()
+                          || `web-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                      }))}
                     >
                       {slot.label}
                     </button>
@@ -333,6 +342,17 @@ export default function BookingWizard({
 
           {paso === 4 && (
             <form className="wizard-stage formulario" onSubmit={onSubmit}>
+              <div className="honeypot" aria-hidden="true">
+                <label htmlFor="booking-website">Sitio web</label>
+                <input
+                  id="booking-website"
+                  name="website"
+                  tabIndex="-1"
+                  autoComplete="off"
+                  value={reserva.website || ""}
+                  onChange={(event) => actualizar("website", event.target.value)}
+                />
+              </div>
               <div className="stage-heading">
                 <span>4 de 4</span>
                 <h3>¿A nombre de quién?</h3>
@@ -393,6 +413,14 @@ export default function BookingWizard({
                 <ShieldCheck size={17} />
                 Tus datos se usan únicamente para gestionar esta cita.
               </div>
+              <label className="remember-contact">
+                <input
+                  type="checkbox"
+                  checked={recordarContacto}
+                  onChange={(event) => onRecordarContacto(event.target.checked)}
+                />
+                Recordar mis datos en este dispositivo
+              </label>
               <div className="wizard-actions">
                 <button className="btn btn-linea" type="button" onClick={() => cambiarPaso(3)}>
                   <ArrowLeft size={18} />
@@ -420,6 +448,12 @@ export default function BookingWizard({
             <div className="resumen-extras">
               <span>Extras</span>
               <p>{resumen.extras.map((item) => item.name).join(", ")}</p>
+            </div>
+          )}
+          {resumen.descuento > 0 && (
+            <div className="resumen-promo">
+              <span>{resumen.promocion}</span>
+              <strong>- {dinero(resumen.descuento)}</strong>
             </div>
           )}
           <div className="resumen-total">

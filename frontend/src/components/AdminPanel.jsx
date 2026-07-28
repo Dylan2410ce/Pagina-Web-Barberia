@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   BarChart3,
   BellRing,
+  BriefcaseBusiness,
   CalendarCheck2,
   CalendarDays,
   CalendarOff,
@@ -36,6 +37,7 @@ import AdminDashboard from "./admin/AdminDashboard";
 import AdminGallery from "./admin/AdminGallery";
 import AdminReviews from "./admin/AdminReviews";
 import AdminWaitlist from "./admin/AdminWaitlist";
+import AdminOperations from "./admin/AdminOperations";
 import PageHead from "./admin/AdminPageHead";
 
 const secciones = [
@@ -49,6 +51,7 @@ const secciones = [
   { id: "resenas", label: "Reseñas", icon: MessageSquareQuote },
   { id: "galeria", label: "Galería", icon: Images },
   { id: "reportes", label: "Reportes", icon: BarChart3 },
+  { id: "operacion", label: "Negocio", icon: BriefcaseBusiness },
   { id: "actividad", label: "Actividad", icon: History },
   { id: "seguridad", label: "Seguridad", icon: LockKeyhole },
 ];
@@ -75,6 +78,19 @@ export default function AdminPanel({
   onSubirImagen,
   onEditarImagen,
   onEliminarImagen,
+  onGuardarConfiguracion,
+  onCrearPausa,
+  onEliminarPausa,
+  onCrearPromocion,
+  onAlternarPromocion,
+  onEliminarPromocion,
+  onCrearGasto,
+  onEliminarGasto,
+  onCrearCierre,
+  onDescargarRespaldo,
+  onActualizarCliente,
+  onCanjearFidelidad,
+  onAnonimizarCliente,
 }) {
   if (!admin.token) {
     return <Login onLogin={onLogin} onResetPassword={onResetPassword} />;
@@ -128,6 +144,7 @@ export default function AdminPanel({
             <AdminDashboard
               data={admin.dashboard}
               stats={admin.stats}
+              operations={admin.operaciones?.metrics}
               perfil={admin.perfil}
               onTab={onTab}
               onBloqueoRapido={onBloqueoRapido}
@@ -155,7 +172,14 @@ export default function AdminPanel({
           )}
           {admin.tab === "servicios" && <Servicios servicios={admin.servicios} onGuardar={onGuardarServicio} />}
           {admin.tab === "horarios" && <Horarios horarios={admin.horarios} onGuardar={onGuardarHorario} />}
-          {admin.tab === "clientes" && <AdminClients clientes={admin.clientes} />}
+          {admin.tab === "clientes" && (
+            <AdminClients
+              clientes={admin.clientes}
+              onUpdate={onActualizarCliente}
+              onRedeem={onCanjearFidelidad}
+              onAnonymize={onAnonimizarCliente}
+            />
+          )}
           {admin.tab === "resenas" && (
             <AdminReviews items={admin.reseñas} onStatus={onModerarReseña} />
           )}
@@ -169,6 +193,22 @@ export default function AdminPanel({
             />
           )}
           {admin.tab === "reportes" && <Reportes stats={admin.stats} />}
+          {admin.tab === "operacion" && (
+            <AdminOperations
+              data={admin.operaciones}
+              services={admin.servicios}
+              onSaveSettings={onGuardarConfiguracion}
+              onCreateBreak={onCrearPausa}
+              onDeleteBreak={onEliminarPausa}
+              onCreatePromotion={onCrearPromocion}
+              onTogglePromotion={onAlternarPromocion}
+              onDeletePromotion={onEliminarPromocion}
+              onCreateExpense={onCrearGasto}
+              onDeleteExpense={onEliminarGasto}
+              onCreateCashClose={onCrearCierre}
+              onDownloadBackup={onDescargarRespaldo}
+            />
+          )}
           {admin.tab === "actividad" && <Actividad items={admin.actividad} />}
           {admin.tab === "seguridad" && <Seguridad onChangePassword={onChangePassword} />}
         </main>

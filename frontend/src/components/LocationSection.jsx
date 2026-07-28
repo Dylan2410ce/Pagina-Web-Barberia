@@ -22,6 +22,10 @@ export default function LocationSection({ location, horarios = [], barbero, onMa
           <span className="eyebrow"><MapPinned size={14} />Ubicación</span>
           <h2>Nos vemos en Barrio Marañonal.</h2>
           <p>{location.address}</p>
+          <div className="arrival-notes">
+            <span><Navigation size={15} />{barbero?.directions_hint || location.directionsHint}</span>
+            <span><MapPinned size={15} />{barbero?.parking_info || location.parkingInfo}</span>
+          </div>
           <div className="location-actions">
             <button className="btn btn-principal" type="button" onClick={onMapa}>
               <Navigation size={18} />

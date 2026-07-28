@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
   CalendarPlus,
+  Clock3,
   Download,
   KeyRound,
+  MessageSquareText,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -11,7 +13,11 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { descargarIcs, googleCalendarUrl } from "../utils/calendar";
+import {
+  descargarIcs,
+  googleCalendarUrl,
+  outlookCalendarUrl,
+} from "../utils/calendar";
 import {
   claseEstado,
   dinero,
@@ -20,9 +26,23 @@ import {
   textoEstado,
 } from "../utils/format";
 import ReviewModal from "./ReviewModal";
+import FeedbackModal from "./FeedbackModal";
 
 function normalizeCode(value) {
   return String(value || "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 35);
+}
+
+function remainingTime(value, now) {
+  const minutes = Math.max(
+    Math.floor((new Date(value).getTime() - now) / 60000),
+    0,
+  );
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const rest = minutes % 60;
+  if (days) return `${days} d ${hours} h`;
+  if (hours) return `${hours} h ${rest} min`;
+  return `${rest} min`;
 }
 
 export default function ClientAppointments({
@@ -41,9 +61,26 @@ export default function ClientAppointments({
   onReprogramar,
   onRepetir,
   onReseña,
+  onEncuesta,
 }) {
   const [mostrarAnteriores, setMostrarAnteriores] = useState(false);
   const [citaReseña, setCitaReseña] = useState(null);
+  const [citaEncuesta, setCitaEncuesta] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  const proxima = useMemo(
+    () => [...citas]
+      .filter((item) => (
+        ["pending", "confirmed", "booked"].includes(item.status)
+        && new Date(item.starts_at).getTime() > now
+      ))
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0],
+    [citas, now],
+  );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <section id="mis-citas" className="seccion bloque client-area">
@@ -121,6 +158,16 @@ export default function ClientAppointments({
         </div>
 
         <div className="lista-citas" aria-live="polite">
+          {proxima && (
+            <div className="appointment-countdown">
+              <Clock3 size={19} />
+              <div>
+                <span>Tu próxima cita comienza en</span>
+                <strong>{remainingTime(proxima.starts_at, now)}</strong>
+              </div>
+              <small>{fechaHumana(proxima.starts_at)}</small>
+            </div>
+          )}
           {citas.length === 0 && (
             <div className="empty-appointments">
               <CalendarClock size={28} />
@@ -159,8 +206,17 @@ export default function ClientAppointments({
                     onClick={() => descargarIcs(cita, barbero)}
                   >
                     <Download size={15} />
-                    Descargar .ics
+                    Apple / .ics
                   </button>
+                  <a
+                    className="text-action"
+                    href={outlookCalendarUrl(cita, barbero)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <CalendarPlus size={15} />
+                    Outlook
+                  </a>
                 </div>
 
                 {fidelidad && cita._access_code && (
@@ -168,7 +224,7 @@ export default function ClientAppointments({
                     <div>
                       <span><Sparkles size={15} />Club Sebas</span>
                       <strong>
-                        {fidelidad.rewards_unlocked > 0
+                        {fidelidad.rewards_available > 0
                           && fidelidad.current_progress === 0
                           ? "Beneficio listo"
                           : fidelidad.completed_visits === 0
@@ -191,7 +247,7 @@ export default function ClientAppointments({
                       />
                     </div>
                     <small>
-                      {fidelidad.rewards_unlocked > 0
+                      {fidelidad.rewards_available > 0
                         ? fidelidad.reward_label
                         : `Faltan ${fidelidad.visits_remaining} visitas`}
                     </small>
@@ -203,7 +259,7 @@ export default function ClientAppointments({
                     <RefreshCw size={16} />
                     Repetir
                   </button>
-                  {activa && (
+                  {activa && cita._access_code && (
                     <>
                       <button className="btn btn-linea" type="button" onClick={() => onReprogramar(cita)}>
                         <CalendarClock size={16} />
@@ -216,12 +272,25 @@ export default function ClientAppointments({
                     </>
                   )}
                   {cita.status === "completed" && cita._access_code && (
-                    <button className="btn btn-principal" type="button" onClick={() => setCitaReseña(cita)}>
-                      <Star size={16} />
-                      Dejar reseña
-                    </button>
+                    <>
+                      <button className="btn btn-principal" type="button" onClick={() => setCitaReseña(cita)}>
+                        <Star size={16} />
+                        Dejar reseña
+                      </button>
+                      <button className="btn btn-linea" type="button" onClick={() => setCitaEncuesta(cita)}>
+                        <MessageSquareText size={16} />
+                        Encuesta privada
+                      </button>
+                    </>
                   )}
                 </div>
+                {activa && cita._access_code && barbero && (
+                  <span className="appointment-policy">
+                    Puedes cancelar hasta {barbero.cancellation_notice_hours} h antes
+                    {" · "}
+                    reprogramar hasta {barbero.reschedule_notice_hours} h antes.
+                  </span>
+                )}
                 {!activa && cita.status !== "completed" && (
                   <span className="nota">Esta cita ya no admite cambios.</span>
                 )}
@@ -235,6 +304,13 @@ export default function ClientAppointments({
           cita={citaReseña}
           onClose={() => setCitaReseña(null)}
           onSubmit={onReseña}
+        />
+      )}
+      {citaEncuesta && (
+        <FeedbackModal
+          cita={citaEncuesta}
+          onClose={() => setCitaEncuesta(null)}
+          onSubmit={onEncuesta}
         />
       )}
     </section>

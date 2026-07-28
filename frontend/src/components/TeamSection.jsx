@@ -71,6 +71,11 @@ export default function TeamSection({
                     ? "Degradados precisos, textura limpia y atención al detalle."
                     : "Cortes actuales, acabados definidos y trato directo."}
                 </p>
+                {barbero.public_message && (
+                  <div className="barber-public-message">
+                    {barbero.public_message}
+                  </div>
+                )}
                 <div className="team-contact" aria-label={`Contacto de ${barbero.name}`}>
                   {barbero.instagram_url && (
                     <a

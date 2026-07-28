@@ -61,11 +61,11 @@ function extrasCita(cita, resumen) {
 }
 
 function manageUrl(accessCode = "") {
-  const query = accessCode
+  if (typeof window === "undefined") return "https://sebasbarber.vercel.app/#mis-citas";
+  const code = accessCode
     ? `?reserva=${encodeURIComponent(accessCode)}`
     : "";
-  if (typeof window === "undefined") return "https://sebasbarber.vercel.app/#mis-citas";
-  return `${window.location.origin}/${query}#mis-citas`;
+  return `${window.location.origin}/#mis-citas${code}`;
 }
 
 function mensajeCliente(data) {
@@ -90,6 +90,8 @@ function mensajeCliente(data) {
     `Para consultar, mover o cancelar tu cita: ${data.manage_url}`,
     "",
     "Gracias por reservar con nosotros.",
+    "",
+    "Seguridad: Sebas Barber nunca solicita contraseñas ni pagos mediante enlaces enviados por correo.",
   ].join("\n");
 }
 
@@ -113,13 +115,13 @@ function mensajeBarbero(data) {
   ].join("\n");
 }
 
-function puedeEnviar() {
+function puedeEnviar(barberEmail = BARBERO_EMAIL) {
   return Boolean(
     EMAILJS_SERVICE_ID
     && EMAILJS_TEMPLATE_CLIENTE
     && EMAILJS_TEMPLATE_BARBERO
     && EMAILJS_PUBLIC_KEY
-    && BARBERO_EMAIL
+    && barberEmail
   );
 }
 
@@ -153,6 +155,9 @@ export function crearPayloadsEmail(cita = {}, resumen = {}, barberEmail = BARBER
     waze_url: WAZE_URL,
     manage_url: manageUrl(cita.access_code),
     from_name: SHOP_NAME,
+    security_notice: (
+      "Sebas Barber nunca solicita contraseñas ni pagos mediante enlaces enviados por correo."
+    ),
   };
 
   const aliases = {
@@ -200,6 +205,11 @@ async function enviar(templateId, parametros) {
     return await Promise.race([
       emailjs.send(EMAILJS_SERVICE_ID, templateId, parametros, {
         publicKey: EMAILJS_PUBLIC_KEY,
+        blockHeadless: true,
+        limitRate: {
+          id: "sebas-barber-web",
+          throttle: 1000,
+        },
       }),
       new Promise((_, reject) => {
         timer = setTimeout(
@@ -213,8 +223,63 @@ async function enviar(templateId, parametros) {
   }
 }
 
+async function enviarLote(envios) {
+  const resultados = [];
+  for (const item of envios) {
+    try {
+      await item.promise();
+      resultados.push({ destinatario: item.destinatario, enviado: true });
+    } catch (error) {
+      resultados.push({
+        destinatario: item.destinatario,
+        enviado: false,
+        error,
+      });
+    }
+    if (item !== envios.at(-1)) {
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+    }
+  }
+  return resultados;
+}
+
+async function enviarPayloads(payloads) {
+  const envios = [
+    {
+      destinatario: "barbero",
+      promise: () => enviar(EMAILJS_TEMPLATE_BARBERO, payloads.barbero),
+    },
+  ];
+  if (payloads.cliente.to_email) {
+    envios.push({
+      destinatario: "cliente",
+      promise: () => enviar(EMAILJS_TEMPLATE_CLIENTE, payloads.cliente),
+    });
+  }
+  const resultados = await enviarLote(envios);
+  const fallos = resultados.filter((item) => !item.enviado);
+  if (fallos.length) {
+    console.warn(
+      `EmailJS no pudo enviar: ${fallos.map((item) => item.destinatario).join(", ")}.`,
+    );
+  }
+  return {
+    configurado: true,
+    enviados: fallos.length === 0,
+    total: resultados.length,
+    fallos: fallos.length,
+    cliente_enviado: resultados.some(
+      (item) => item.destinatario === "cliente" && item.enviado,
+    ),
+    barbero_enviado: resultados.some(
+      (item) => item.destinatario === "barbero" && item.enviado,
+    ),
+  };
+}
+
 export async function enviarCorreosCita(cita, resumen) {
-  if (!puedeEnviar()) {
+  const barberEmail = resumen?.barbero?.email || BARBERO_EMAIL;
+  if (!puedeEnviar(barberEmail)) {
     console.warn("EmailJS no está configurado en este despliegue.");
     return {
       configurado: false,
@@ -226,46 +291,34 @@ export async function enviarCorreosCita(cita, resumen) {
     };
   }
 
-  const payloads = crearPayloadsEmail(cita, resumen);
-  const envios = [
-    {
-      destinatario: "barbero",
-      promise: enviar(EMAILJS_TEMPLATE_BARBERO, payloads.barbero),
-    },
-  ];
+  return enviarPayloads(crearPayloadsEmail(cita, resumen, barberEmail));
+}
 
-  if (payloads.cliente.to_email) {
-    envios.push({
-      destinatario: "cliente",
-      promise: enviar(EMAILJS_TEMPLATE_CLIENTE, payloads.cliente),
-    });
+export async function enviarCorreosActualizacion(cita, resumen, tipo) {
+  const barberEmail = resumen?.barbero?.email || BARBERO_EMAIL;
+  if (!puedeEnviar(barberEmail)) {
+    return { configurado: false, enviados: false };
   }
-
-  const resultados = await Promise.allSettled(
-    envios.map((item) => item.promise),
-  );
-  const estado = Object.fromEntries(
-    envios.map((item, index) => [
-      item.destinatario,
-      resultados[index].status === "fulfilled",
-    ]),
-  );
-  const fallos = resultados.filter((resultado) => resultado.status === "rejected");
-
-  if (fallos.length) {
-    const destinatariosFallidos = envios
-      .filter((_, index) => resultados[index].status === "rejected")
-      .map((item) => item.destinatario)
-      .join(", ");
-    console.warn(`EmailJS no pudo enviar: ${destinatariosFallidos}.`);
-  }
-
-  return {
-    configurado: true,
-    enviados: fallos.length === 0,
-    total: resultados.length,
-    fallos: fallos.length,
-    cliente_enviado: Boolean(estado.cliente),
-    barbero_enviado: Boolean(estado.barbero),
-  };
+  const payloads = crearPayloadsEmail(cita, resumen, barberEmail);
+  const cancelada = tipo === "cancelled";
+  const actionLabel = cancelada ? "Cita cancelada" : "Cita reprogramada";
+  const clientMessage = cancelada
+    ? `Hola, ${payloads.cliente.client_name}.\n\nTu cita con ${payloads.cliente.barber_name} fue cancelada y el horario quedó liberado.`
+    : `Hola, ${payloads.cliente.client_name}.\n\nTu cita fue reprogramada para el ${payloads.cliente.appointment_date} a las ${payloads.cliente.appointment_time}.`;
+  const barberMessage = cancelada
+    ? `${payloads.barbero.client_name} canceló la cita del ${payloads.barbero.appointment_date} a las ${payloads.barbero.appointment_time}.`
+    : `${payloads.barbero.client_name} reprogramó su cita para el ${payloads.barbero.appointment_date} a las ${payloads.barbero.appointment_time}.`;
+  payloads.cliente.notification_type = cancelada
+    ? "client_cancellation"
+    : "client_reschedule";
+  payloads.cliente.email_subject = `${actionLabel} | ${SHOP_NAME}`;
+  payloads.cliente.email_title = actionLabel;
+  payloads.cliente.email_message = clientMessage;
+  payloads.barbero.notification_type = cancelada
+    ? "barber_cancellation"
+    : "barber_reschedule";
+  payloads.barbero.email_subject = `${actionLabel}: ${payloads.barbero.client_name}`;
+  payloads.barbero.email_title = actionLabel;
+  payloads.barbero.email_message = barberMessage;
+  return enviarPayloads(payloads);
 }
