@@ -7,59 +7,88 @@
     <title>{{email_subject}}</title>
     <style>
       @media only screen and (max-width: 620px) {
+        .email-page {
+          padding: 14px 6px !important;
+        }
+
         .email-shell {
           width: 100% !important;
+          border-radius: 12px !important;
         }
 
         .email-pad {
-          padding-left: 22px !important;
-          padding-right: 22px !important;
+          padding-left: 20px !important;
+          padding-right: 20px !important;
         }
 
         .email-title {
-          font-size: 30px !important;
+          font-size: 29px !important;
         }
 
-        .email-column {
-          width: 100% !important;
+        .email-brand {
+          font-size: 22px !important;
+        }
+
+        .email-badge-cell {
           display: block !important;
-        }
-
-        .email-column + .email-column {
-          padding-top: 18px !important;
-        }
-
-        .email-button {
           width: 100% !important;
+          padding-top: 16px !important;
+          text-align: left !important;
+        }
+
+        .email-value {
+          max-width: 185px !important;
+        }
+
+        .email-button,
+        .location-button {
           display: block !important;
+          width: 100% !important;
           box-sizing: border-box !important;
+          text-align: center !important;
+        }
+
+        .location-cell {
+          display: block !important;
+          width: 100% !important;
+          padding: 0 0 10px !important;
+        }
+
+        .access-code {
+          font-size: 18px !important;
         }
       }
     </style>
   </head>
-  <body style="margin:0;padding:0;background:#ece9e1;color:#20231f;font-family:Arial,Helvetica,sans-serif;">
+
+  <body style="margin:0;padding:0;background:#0d0f0f;color:#f8f5ee;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
       {{email_title}} · {{appointment_date}} · {{appointment_time}}
     </div>
 
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#ece9e1;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#0d0f0f;">
       <tr>
-        <td align="center" style="padding:28px 12px;">
-          <table class="email-shell" role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:620px;max-width:620px;background:#fffdf8;border:1px solid #d9d4c8;border-radius:18px;overflow:hidden;box-shadow:0 14px 34px rgba(28,31,27,.10);">
+        <td class="email-page" align="center" style="padding:38px 14px;">
+          <table class="email-shell" role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:620px;max-width:620px;background:#181b19;border:1px solid #31352f;border-radius:18px;overflow:hidden;box-shadow:0 20px 55px rgba(0,0,0,.34);">
             <tr>
-              <td class="email-pad" style="padding:30px 38px;background:#171a17;">
+              <td style="height:4px;background:#d6ad55;font-size:0;line-height:0;">&nbsp;</td>
+            </tr>
+
+            <tr>
+              <td class="email-pad" style="padding:28px 36px;border-bottom:1px solid #30332f;background:#141715;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td style="vertical-align:middle;">
-                      <div style="font-size:22px;line-height:1;font-weight:800;letter-spacing:.2px;color:#fffaf0;">
+                      <div class="email-brand" style="font-size:25px;line-height:1.1;font-weight:800;color:#fffaf0;">
                         Sebas Barber
                       </div>
-                      <div style="padding-top:7px;font-size:12px;line-height:1.4;color:#b8bdb5;">
+                      <div style="padding-top:7px;font-size:12px;line-height:1.4;color:#9da39b;">
                         Barrio Marañonal · Esparza
                       </div>
                     </td>
-                    <td align="right" style="vertical-align:middle;">
-                      <span style="display:inline-block;padding:8px 11px;border:1px solid #6e6040;border-radius:999px;background:#292a23;color:#f1d48a;font-size:11px;line-height:1;font-weight:700;text-transform:uppercase;">
+
+                    <td class="email-badge-cell" align="right" style="vertical-align:middle;">
+                      <span style="display:inline-block;padding:9px 12px;border:1px solid #675733;border-radius:999px;background:#24231d;color:#edce83;font-size:11px;line-height:1;font-weight:800;text-transform:uppercase;">
                         {{notification_badge}}
                       </span>
                     </td>
@@ -69,39 +98,42 @@
             </tr>
 
             <tr>
-              <td class="email-pad" style="padding:38px 38px 20px;">
-                <div style="font-size:14px;line-height:1.6;color:#696d66;">Hola, {{client_name}}.</div>
-                <h1 class="email-title" style="margin:9px 0 14px;font-size:38px;line-height:1.08;letter-spacing:-.4px;color:#20231f;">
+              <td class="email-pad" style="padding:38px 36px 22px;">
+                <div style="font-size:15px;line-height:1.6;color:#aeb3ad;">
+                  Hola, <strong style="color:#f8f5ee;">{{client_name}}</strong>.
+                </div>
+
+                <h1 class="email-title" style="margin:10px 0 15px;font-size:37px;line-height:1.1;font-weight:800;color:#fffaf0;">
                   {{email_title}}
                 </h1>
 
                 {{#is_confirmation}}
-                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
-                  Tu espacio quedó reservado. Aquí tienes todo lo necesario para llegar y administrar la cita.
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#b8bdb6;">
+                  Tu espacio quedó reservado. Revisa los detalles y guarda tu clave privada para administrar la cita.
                 </p>
                 {{/is_confirmation}}
 
                 {{#is_reminder}}
-                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
-                  Mañana te esperamos en Sebas Barber. Revisa la hora y guarda tu código privado a mano.
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#b8bdb6;">
+                  Mañana te esperamos en Sebas Barber. Confirma la hora y conserva tu clave privada a mano.
                 </p>
                 {{/is_reminder}}
 
                 {{#is_reschedule}}
-                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#b8bdb6;">
                   El cambio quedó listo. Estos son los datos actualizados de tu cita.
                 </p>
                 {{/is_reschedule}}
 
                 {{#is_cancellation}}
-                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
-                  La cita fue cancelada y el horario quedó disponible nuevamente.
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#b8bdb6;">
+                  Tu cita fue cancelada y el horario quedó disponible nuevamente.
                 </p>
                 {{/is_cancellation}}
 
                 {{#is_waitlist}}
-                <p style="margin:0;font-size:16px;line-height:1.7;color:#555a53;">
-                  Se liberó un espacio en la fecha que buscabas. La hora seguirá abierta hasta que alguien termine la reserva.
+                <p style="margin:0;font-size:16px;line-height:1.7;color:#b8bdb6;">
+                  Se liberó un espacio en la fecha que buscabas. El horario seguirá disponible hasta que alguien complete la reserva.
                 </p>
                 {{/is_waitlist}}
               </td>
@@ -109,43 +141,78 @@
 
             {{#has_booking_details}}
             <tr>
-              <td class="email-pad" style="padding:12px 38px 22px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #ded9cd;border-radius:14px;background:#f6f3eb;">
+              <td class="email-pad" style="padding:10px 36px 24px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#101311;border:1px solid #30342f;border-radius:13px;">
                   <tr>
-                    <td style="padding:20px 20px 10px;font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">
-                      Resumen de la cita
+                    <td style="padding:20px 20px 8px;font-size:11px;line-height:1.2;font-weight:800;text-transform:uppercase;color:#d6ad55;">
+                      Detalles de la cita
                     </td>
                   </tr>
+
                   <tr>
                     <td style="padding:0 20px 20px;">
                       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                         <tr>
-                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Servicio</td>
-                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{service_name}}</td>
+                          <td style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;color:#8f958e;">
+                            Servicio
+                          </td>
+                          <td class="email-value" align="right" style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;font-weight:700;color:#f6f3ec;">
+                            {{service_name}}
+                          </td>
                         </tr>
+
                         <tr>
-                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Barbero</td>
-                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{barber_name}}</td>
+                          <td style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;color:#8f958e;">
+                            Barbero
+                          </td>
+                          <td class="email-value" align="right" style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;font-weight:700;color:#f6f3ec;">
+                            {{barber_name}}
+                          </td>
                         </tr>
+
                         <tr>
-                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Fecha</td>
-                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{appointment_date}}</td>
+                          <td style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;color:#8f958e;">
+                            Fecha
+                          </td>
+                          <td class="email-value" align="right" style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;font-weight:700;color:#f6f3ec;">
+                            {{appointment_date}}
+                          </td>
                         </tr>
+
                         <tr>
-                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Hora</td>
-                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{appointment_time}}</td>
+                          <td style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;color:#8f958e;">
+                            Hora
+                          </td>
+                          <td class="email-value" align="right" style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;font-weight:700;color:#f6f3ec;">
+                            {{appointment_time}}
+                          </td>
                         </tr>
+
                         <tr>
-                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Duración</td>
-                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{duration}}</td>
+                          <td style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;color:#8f958e;">
+                            Duración
+                          </td>
+                          <td class="email-value" align="right" style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;font-weight:700;color:#f6f3ec;">
+                            {{duration}}
+                          </td>
                         </tr>
+
                         <tr>
-                          <td style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;color:#777b74;">Extras</td>
-                          <td align="right" style="padding:10px 0;border-bottom:1px solid #ded9cd;font-size:14px;font-weight:700;color:#20231f;">{{addons}}</td>
+                          <td style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;color:#8f958e;">
+                            Extras
+                          </td>
+                          <td class="email-value" align="right" style="padding:11px 0;border-bottom:1px solid #292d29;font-size:14px;font-weight:700;color:#f6f3ec;">
+                            {{addons}}
+                          </td>
                         </tr>
+
                         <tr>
-                          <td style="padding:12px 0 0;font-size:15px;font-weight:700;color:#20231f;">Total</td>
-                          <td align="right" style="padding:12px 0 0;font-size:20px;font-weight:800;color:#9c7125;">{{total_price}}</td>
+                          <td style="padding:14px 0 2px;font-size:15px;font-weight:700;color:#f6f3ec;">
+                            Total
+                          </td>
+                          <td align="right" style="padding:14px 0 2px;font-size:21px;font-weight:800;color:#e0b85f;">
+                            {{total_price}}
+                          </td>
                         </tr>
                       </table>
                     </td>
@@ -157,33 +224,42 @@
 
             {{#is_waitlist}}
             <tr>
-              <td class="email-pad" style="padding:12px 38px 22px;">
-                <div style="padding:20px;border:1px solid #ded9cd;border-radius:14px;background:#f6f3eb;">
-                  <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">Espacio solicitado</div>
-                  <div style="padding-top:10px;font-size:17px;font-weight:700;color:#20231f;">{{service_name}}</div>
-                  <div style="padding-top:5px;font-size:14px;color:#696d66;">{{appointment_date}} · {{barber_name}}</div>
-                </div>
+              <td class="email-pad" style="padding:10px 36px 24px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#101311;border:1px solid #30342f;border-radius:13px;">
+                  <tr>
+                    <td style="padding:20px;">
+                      <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#d6ad55;">
+                        Espacio solicitado
+                      </div>
+                      <div style="padding-top:10px;font-size:17px;font-weight:700;color:#f6f3ec;">
+                        {{service_name}}
+                      </div>
+                      <div style="padding-top:6px;font-size:14px;line-height:1.5;color:#9da39b;">
+                        {{appointment_date}} · {{barber_name}}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             {{/is_waitlist}}
 
             {{#has_access_code}}
             <tr>
-              <td class="email-pad" style="padding:4px 38px 26px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #cfc5ae;border-radius:14px;background:#fff9ea;">
+              <td class="email-pad" style="padding:2px 36px 24px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#23231d;border:1px solid #665630;border-radius:13px;">
                   <tr>
-                    {{#has_qr}}
-                    <td class="email-column" width="190" align="center" style="padding:22px;vertical-align:middle;">
-                      <img src="cid:qr_code" width="146" height="146" alt="Código QR para abrir la reserva" style="width:146px;height:146px;display:block;border:0;border-radius:8px;">
-                    </td>
-                    {{/has_qr}}
-                    <td class="email-column" style="padding:22px;vertical-align:middle;">
-                      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">Código privado</div>
-                      <div style="padding:10px 0 8px;font-family:Consolas,Monaco,monospace;font-size:22px;line-height:1.35;font-weight:800;letter-spacing:.5px;word-break:break-all;color:#20231f;">
+                    <td align="center" style="padding:24px;">
+                      <div style="font-size:11px;line-height:1.2;font-weight:800;text-transform:uppercase;color:#d9b766;">
+                        Clave privada de tu reserva
+                      </div>
+
+                      <div class="access-code" style="padding:12px 0 10px;font-family:Consolas,Monaco,monospace;font-size:22px;line-height:1.35;font-weight:800;letter-spacing:1px;word-break:break-all;color:#fff8e8;">
                         {{access_code}}
                       </div>
-                      <div style="font-size:13px;line-height:1.55;color:#696d66;">
-                        El QR y esta clave permiten consultar, mover o cancelar la cita. No los compartas públicamente.
+
+                      <div style="max-width:440px;margin:0 auto;font-size:13px;line-height:1.6;color:#b6b29f;">
+                        Guarda esta clave. La necesitarás para consultar, reprogramar o cancelar tu cita. No la compartas públicamente.
                       </div>
                     </td>
                   </tr>
@@ -194,27 +270,38 @@
 
             {{#has_manage_action}}
             <tr>
-              <td class="email-pad" align="center" style="padding:2px 38px 28px;">
-                <a class="email-button" href="{{manage_url}}" target="_blank" style="display:inline-block;padding:15px 24px;border-radius:10px;background:#c8983f;color:#171914;text-decoration:none;font-size:15px;font-weight:800;">
+              <td class="email-pad" align="center" style="padding:2px 36px 30px;">
+                <a class="email-button" href="{{manage_url}}" target="_blank" style="display:inline-block;padding:15px 25px;border-radius:9px;background:#d6ad55;color:#11130f;text-decoration:none;font-size:15px;font-weight:800;">
                   {{manage_button_label}}
                 </a>
+
+                <div style="padding-top:12px;font-size:12px;line-height:1.6;color:#858b84;">
+                  También puedes escribir tu clave privada en la sección “Mis citas”.
+                </div>
               </td>
             </tr>
             {{/has_manage_action}}
 
             <tr>
-              <td class="email-pad" style="padding:26px 38px;border-top:1px solid #e3ded3;">
-                <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#8a7550;">Cómo llegar</div>
-                <div style="padding:9px 0 18px;font-size:14px;line-height:1.6;color:#555a53;">{{location}}</div>
+              <td class="email-pad" style="padding:27px 36px;border-top:1px solid #30332f;background:#151815;">
+                <div style="font-size:11px;line-height:1.2;font-weight:800;text-transform:uppercase;color:#d6ad55;">
+                  Ubicación
+                </div>
+
+                <div style="padding:10px 0 19px;font-size:14px;line-height:1.6;color:#aeb3ad;">
+                  {{location}}
+                </div>
+
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                   <tr>
-                    <td style="padding-right:10px;">
-                      <a href="{{maps_url}}" target="_blank" style="display:inline-block;padding:12px 16px;border:1px solid #bdb7ab;border-radius:9px;color:#292d28;text-decoration:none;font-size:14px;font-weight:700;background:#ffffff;">
+                    <td class="location-cell" style="padding-right:10px;">
+                      <a class="location-button" href="{{maps_url}}" target="_blank" style="display:inline-block;padding:12px 18px;border-radius:8px;background:#d6ad55;color:#11130f;text-decoration:none;font-size:14px;font-weight:800;">
                         Google Maps
                       </a>
                     </td>
-                    <td>
-                      <a href="{{waze_url}}" target="_blank" style="display:inline-block;padding:12px 16px;border:1px solid #bdb7ab;border-radius:9px;color:#292d28;text-decoration:none;font-size:14px;font-weight:700;background:#ffffff;">
+
+                    <td class="location-cell">
+                      <a class="location-button" href="{{waze_url}}" target="_blank" style="display:inline-block;padding:11px 18px;border:1px solid #444943;border-radius:8px;background:#232724;color:#f8f5ee;text-decoration:none;font-size:14px;font-weight:700;">
                         Abrir Waze
                       </a>
                     </td>
@@ -224,12 +311,16 @@
             </tr>
 
             <tr>
-              <td class="email-pad" style="padding:22px 38px;background:#f4f1e9;border-top:1px solid #ded9cd;">
-                <div style="font-size:12px;line-height:1.6;color:#777b74;">
+              <td class="email-pad" align="center" style="padding:24px 36px;border-top:1px solid #292d29;background:#101210;">
+                <div style="font-size:12px;line-height:1.6;color:#858b84;">
                   {{security_notice}}
                 </div>
-                <div style="padding-top:12px;font-size:12px;line-height:1.6;color:#969991;">
-                  © 2026 Sebas Barber. Este correo fue enviado para gestionar una reserva o solicitud realizada en nuestra web.
+
+                <div style="padding-top:14px;font-size:12px;line-height:1.65;color:#6f756e;">
+                  © 2026 Sebas Barber. Todos los derechos reservados.<br>
+                  Desarrollado por
+                  <span style="font-weight:800;color:#d6ad55;">Dylan Calvo Escobar</span>
+                  · Innovación y Tecnología.
                 </div>
               </td>
             </tr>
