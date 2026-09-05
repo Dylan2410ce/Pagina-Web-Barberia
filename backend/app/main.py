@@ -54,7 +54,12 @@ async def lifespan(_: FastAPI):
     await init_db()
     async with AsyncSessionLocal() as db:
         await seed_data(db)
+        
+    from app.tasks.reminder_cron import start_cron, shutdown_cron
+    start_cron()
+    
     yield
+    shutdown_cron()
     await engine.dispose()
 
 

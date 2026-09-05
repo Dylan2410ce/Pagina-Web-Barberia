@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap");
+
 @import "tailwindcss";
 
 :root {
@@ -90,7 +90,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -337,7 +337,7 @@ label {
 
 .marca strong {
   white-space: nowrap;
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 .hamburguesa {
@@ -607,7 +607,7 @@ label {
 
 .barber-photo-fallback {
   color: rgba(255, 250, 242, 0.92);
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: 6rem;
   font-weight: 700;
   line-height: 1;
@@ -1560,7 +1560,7 @@ label {
 
 .resumen-total strong {
   color: var(--gold-light);
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: 1.8rem;
 }
 
@@ -1788,7 +1788,7 @@ label {
 
 .footer-brand strong {
   color: var(--text);
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: 1.45rem;
   text-transform: uppercase;
 }
@@ -2286,7 +2286,7 @@ label {
 
 .admin-metrics strong {
   color: var(--text);
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: 1.55rem;
 }
 
@@ -5187,7 +5187,7 @@ textarea:focus {
 
 .reviews-average > strong {
   color: var(--gold-light);
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: 2.35rem;
 }
 
@@ -5271,7 +5271,7 @@ textarea:focus {
   gap: 16px;
   padding: 15px 2px;
   color: var(--text);
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-weight: 700;
   cursor: pointer;
   list-style: none;
@@ -5955,7 +5955,7 @@ textarea:focus {
   display: inline-flex;
   align-items: center;
   gap: 11px;
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-weight: 800;
   color: #fffaf0;
 }

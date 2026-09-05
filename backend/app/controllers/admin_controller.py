@@ -382,6 +382,11 @@ async def create_service(
     barber: Barber = Depends(current_barber),
     db: AsyncSession = Depends(get_db),
 ):
+    if barber.role != "owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el administrador principal puede crear servicios globales"
+        )
     service = Service(
         name=data.name,
         duration_min=0 if data.is_addon else data.duration_min,
@@ -419,6 +424,11 @@ async def update_service(
     barber: Barber = Depends(current_barber),
     db: AsyncSession = Depends(get_db),
 ):
+    if barber.role != "owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el administrador principal puede modificar servicios globales"
+        )
     service = await ServiceRepository(db).by_id_any(service_id)
     if not service:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
