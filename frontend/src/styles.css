@@ -3,11 +3,11 @@
 
 :root {
   color-scheme: dark;
-  --bg: #111411;
-  --bg-soft: #171b18;
-  --surface: #1c211e;
-  --surface-raised: #252b27;
-  --surface-warm: #29261f;
+  --bg: #11100c;
+  --bg-soft: #171612;
+  --surface: #1a1814;
+  --surface-raised: #22201b;
+  --surface-warm: #26241e;
   --line: rgba(248, 243, 232, 0.11);
   --line-strong: rgba(248, 243, 232, 0.22);
   --text: #f7f2e8;
@@ -208,6 +208,12 @@ label {
   transform: none;
 }
 
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(215, 174, 85, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(215, 174, 85, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(215, 174, 85, 0); }
+}
+
 .btn-principal {
   border-color: rgba(234, 216, 165, 0.7);
   color: #17130a;
@@ -218,7 +224,8 @@ label {
 .btn-principal:hover {
   color: #17130a;
   background: linear-gradient(135deg, #f0dfae 0%, #dfb86b 62%, #ce9364 100%);
-  box-shadow: 0 14px 30px rgba(201, 164, 90, 0.2);
+  box-shadow: 0 14px 30px rgba(201, 164, 90, 0.3);
+  animation: pulseGlow 1.5s infinite;
 }
 
 .btn-secundario {
@@ -553,10 +560,11 @@ label {
 }
 
 .team-card:hover {
-  transform: translateY(-3px) scale(1.006);
-  border-color: rgba(229, 206, 145, 0.42);
-  background: #222724;
-  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.26);
+  transform: translateY(-5px) scale(1.02);
+  border-color: rgba(229, 206, 145, 0.6);
+  background: #242926;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.4), 0 0 20px rgba(215, 174, 85, 0.1);
+  z-index: 10;
 }
 
 .team-card.activo {
@@ -826,10 +834,11 @@ label {
 }
 
 .servicio-card:hover {
-  transform: translateY(-3px) scale(1.006);
-  border-color: rgba(229, 206, 145, 0.42);
-  background: #222724;
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.24);
+  transform: translateY(-4px) scale(1.015);
+  border-color: rgba(229, 206, 145, 0.6);
+  background: #242926;
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.35), 0 0 15px rgba(215, 174, 85, 0.08);
+  z-index: 5;
 }
 
 .servicio-card.activo {

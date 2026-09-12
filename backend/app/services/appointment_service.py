@@ -38,6 +38,7 @@ from app.services.idempotency_service import (
 )
 from app.services.notification_service import NotificationService
 from app.services.promotion_service import PromotionService
+from app.services.whatsapp_service import whatsapp_service
 
 
 class AppointmentService:
@@ -443,6 +444,21 @@ class AppointmentService:
             await self.db.commit()
             await self.db.refresh(appointment)
             await self._notify("appointment_created", appointment)
+            # Enviar confirmación por WhatsApp (fire-and-forget, no bloquea)
+            try:
+                date_str = appointment.starts_at.astimezone(TZ).strftime("%d/%m/%Y")
+                time_str = appointment.starts_at.astimezone(TZ).strftime("%I:%M %p")
+                await whatsapp_service.send_booking_confirmation(
+                    to_phone=appointment.client_phone,
+                    client_name=appointment.client_name,
+                    date_str=date_str,
+                    time_str=time_str,
+                    service_name=appointment.service_name,
+                    barber_name=barber.name,
+                    access_code=access_code,
+                )
+            except Exception:
+                pass  # No falla la reserva si WhatsApp no se envía
             return appointment
         except CalendarError as exc:
             await self.db.rollback()
