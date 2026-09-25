@@ -20,9 +20,10 @@ flowchart LR
   API --> Email[EmailJS]
 ```
 
-El navegador puede usar EmailJS para confirmaciones inmediatas. Las tareas de
-Render usan la integración del backend para recordatorios y operaciones que
-no dependen de la sesión del usuario.
+El navegador no envía correos ni incluye claves de EmailJS. La API registra
+notificaciones en la misma transacción de la cita. Un único despachador lógico
+usa una concesión en PostgreSQL, deduplicación y presupuesto mensual persistente.
+El cron interno y el endpoint de tareas utilizan ese mismo despachador.
 
 ## Capas del backend
 
@@ -55,10 +56,14 @@ HTTP request
 - `App.jsx`: composición de rutas y estado global.
 - `components/`: UI pública, wizard, modales y panel administrativo.
 - `api/client.js`: cliente HTTP y normalización de errores.
-- `services/`: integraciones del navegador, especialmente EmailJS.
-- `hooks/`: comportamiento reutilizable y accesibilidad.
+- `hooks/useBookingState.js`: selección, cálculo y disponibilidad con protección contra respuestas obsoletas.
+- `hooks/useClientBookings.js`: creación, consulta y modificación de reservas.
+- `hooks/useAdminController.js`: estado y acciones administrativas.
+- Otros `hooks/`: accesibilidad y mantenimiento.
 - `utils/`: fechas, formatos, CSV y almacenamiento local.
-- `styles.css`: sistema visual global y responsive.
+- `styles.css`: imports de `styles/`, en orden explícito para conservar la cascada.
+- `config/seo.mjs`: datos públicos de negocio y CSP compartidos por Vite y Vercel.
+- `config/seo-plugin.mjs`: HTML inicial, metadatos, sitemap, robots y versión del SW.
 
 ## Aislamiento por barbero
 
@@ -74,14 +79,18 @@ gastos, caja, reseñas, galería, promociones, auditoría y calendario.
 
 1. El frontend solicita el bootstrap público y los servicios activos.
 2. El cliente elige barbero, servicio, fecha y hora.
-3. `GET /api/availability` consulta bloqueos, citas locales y calendario
+3. `GET /api/public/availability` consulta bloqueos, citas locales y calendario
    externo cuando corresponde.
-4. `POST /api/appointments` valida de nuevo todos los datos en el servidor.
+4. `POST /api/public/appointments` valida de nuevo todos los datos en el servidor.
 5. La transacción impide duplicados y conserva la cita local.
 6. Si el perfil tiene sincronización activa, se crea el evento externo en
    `America/Costa_Rica`.
 7. La respuesta devuelve la cita y su clave de administración.
-8. El frontend muestra confirmación y dispara los avisos configurados.
+8. El frontend muestra confirmación; la API despacha la cola después de responder.
+9. Un resultado de envío ambiguo queda en `uncertain`; nunca se reintenta a ciegas.
+
+Alembic es la única entrada de cambios de esquema. El lifespan no ejecuta DDL.
+`/health` no abre conexiones; `/health/ready` comprueba PostgreSQL con timeout.
 
 Nunca se debe confiar en que un slot disponible en una respuesta anterior
 seguirá libre al enviar la reserva.

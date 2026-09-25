@@ -16,6 +16,8 @@
 ### Base, seguridad y CORS
 
 ```text
+ENVIRONMENT                       # production
+TRUSTED_PROXY_CIDRS                 # ver detalle en FREE_TIER_SEO.md
 DATABASE_URL
 DATABASE_SSL
 SECRET_KEY
@@ -62,6 +64,9 @@ REMINDER_LEAD_HOURS
 REMINDER_BATCH_SIZE
 REMINDER_TASK_TOKEN
 DAILY_SUMMARY_HOUR
+DAILY_SUMMARIES_ENABLED             # false para ahorrar cuota
+EMAIL_MONTHLY_LIMIT                 # 180 o menos, según saldo actual
+NOTIFICATION_POLL_SECONDS           # 300
 NOTIFICATION_MAX_ATTEMPTS
 RETENTION_DAYS
 RATE_LIMIT_ENABLED
@@ -91,11 +96,8 @@ configura en Render, no en el repositorio.
 ```text
 EDGE_CONFIG
 VITE_API_URL
-VITE_EMAILJS_PUBLIC_KEY
-VITE_EMAILJS_SERVICE_ID
-VITE_EMAILJS_TEMPLATE_CLIENTE
-VITE_EMAILJS_TEMPLATE_BARBERO
-VITE_BARBERO_EMAIL
+VITE_SITE_URL
+GOOGLE_SITE_VERIFICATION            # opcional; token HTML de Search Console
 ```
 
 Las variables `VITE_*` se incluyen en el bundle público. Nunca coloques allí
@@ -127,6 +129,7 @@ El historial actual contiene:
 ```text
 backend/alembic/versions/20260728_01_operations_security.py
 backend/alembic/versions/20260728_02_remove_loyalty.py
+backend/alembic/versions/20260924_03_delivery_security.py
 ```
 
 Comandos habituales:
@@ -143,10 +146,10 @@ revisable, prueba el upgrade y documenta impacto y rollback.
 
 ## Cron jobs
 
-Cada cinco minutos:
+Durante el horario útil, cada 15 minutos (y cron interno cada 5 minutos mientras Render está activo):
 
 ```http
-POST https://TU-SERVICIO.onrender.com/api/tasks/reminders
+POST https://pagina-web-barberia.onrender.com/api/tasks/reminders
 X-Task-Token: valor_de_REMINDER_TASK_TOKEN
 ```
 
@@ -157,13 +160,17 @@ POST https://TU-SERVICIO.onrender.com/api/tasks/retention
 X-Task-Token: valor_de_REMINDER_TASK_TOKEN
 ```
 
-Para mantener despierto un servicio gratuito:
+Para comprobar disponibilidad y versión (no es un mecanismo para evitar toda suspensión):
 
 ```http
 GET https://TU-SERVICIO.onrender.com/health
 ```
 
-No uses el endpoint de health para tareas de negocio.
+No uses el endpoint de health para tareas de negocio ni hagas pings permanentes
+para impedir el sleep: consumen las horas gratuitas. La cola recupera pendientes
+al despertar; en un plan que duerme no hay garantía de entrega exacta a las 24 h.
+
+Guía paso a paso y variables nuevas: [Actualización gratuita y SEO](FREE_TIER_SEO.md).
 
 ## Modo mantenimiento
 

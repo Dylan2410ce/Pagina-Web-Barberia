@@ -67,19 +67,12 @@ reprogramación, cancelación y lista de espera.
 
 ## Frontend y backend
 
-El frontend envía confirmaciones inmediatas desde
-`frontend/src/services/emailjsService.js`. El backend utiliza su servicio de
-notificaciones para recordatorios y tareas sin sesión de navegador.
+El backend es el único emisor. Confirmaciones, cambios, cancelaciones y
+recordatorios usan `NotificationDelivery`, con deduplicación, presupuesto y
+concesión exclusiva en Neon. El navegador solo crea o modifica la cita por la API.
 
-Frontend:
-
-```text
-VITE_EMAILJS_PUBLIC_KEY
-VITE_EMAILJS_SERVICE_ID
-VITE_EMAILJS_TEMPLATE_CLIENTE
-VITE_EMAILJS_TEMPLATE_BARBERO
-VITE_BARBERO_EMAIL
-```
+Frontend: no necesita variables EmailJS; elimina las antiguas `VITE_EMAILJS_*`
+y `VITE_BARBERO_EMAIL` de Vercel. El próximo build ya no incluye el SDK.
 
 Backend:
 
@@ -94,6 +87,28 @@ EMAILJS_PRIVATE_KEY
 
 `EMAILJS_PRIVATE_KEY` es exclusivo del backend. Nunca debe tener prefijo
 `VITE_` ni aparecer en el navegador.
+
+## Plan gratuito y estados de entrega
+
+- Usa los mismos dos templates; el recordatorio reutiliza el template del cliente.
+- `EMAIL_MONTHLY_LIMIT=180` limita intentos acumulados por mes UTC. Ajusta al saldo
+  restante antes de activar la migración; no conoce envíos históricos o de otras apps.
+- `DAILY_SUMMARIES_ENABLED=false` evita resúmenes que consuman cuota.
+- Habilita solicitudes desde aplicaciones no navegador en la configuración de seguridad
+  de EmailJS. No envíes claves privadas al frontend.
+- La lista de dominios permitidos no está incluida en el plan Free actual.
+  No se considera una barrera de seguridad de esta implementación.
+- `sent` significa aceptado por EmailJS, no entrega garantizada a la bandeja de entrada.
+- `uncertain` requiere revisar EmailJS History: puede haberse aceptado antes de un timeout.
+  No se reenvía automáticamente para evitar duplicados.
+- `failed` por rechazo transitorio (429) se reintenta con espera; un rechazo permanente
+  detiene los intentos. `quota_exhausted` conserva la cola sin hacer más llamadas.
+- La clave viaja en JSON hacia la API. El enlace de correo usa un fragmento `#mis-citas?...`,
+  que no se transmite al servidor HTTP y se retira de la barra al abrir la aplicación.
+- El QR permanece en el comprobante web; no se envía como adjunto ni imagen base64.
+
+[Planes EmailJS](https://www.emailjs.com/pricing/) ·
+[API oficial de envío](https://www.emailjs.com/docs/rest-api/send/)
 
 ## Prueba manual
 

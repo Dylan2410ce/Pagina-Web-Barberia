@@ -27,6 +27,7 @@ aislamiento en el servidor.
 | [API](docs/API.md) | Endpoints, autenticación, errores y contratos |
 | [Operación](docs/OPERATIONS.md) | Variables, despliegues, migraciones y runbooks |
 | [EmailJS](docs/EMAILJS.md) | Templates, variables y diagnóstico de correos |
+| [Actualización gratuita y SEO](docs/FREE_TIER_SEO.md) | Cambios, límites, variables exactas y Search Console |
 | [Contribución](CONTRIBUTING.md) | Flujo de trabajo para mantenimiento |
 
 ## Estructura
@@ -54,12 +55,12 @@ sebas-barber/
 │   │   ├── api/               # Cliente HTTP
 │   │   ├── components/        # UI pública y administración
 │   │   ├── hooks/             # Estado y comportamiento reutilizable
-│   │   ├── services/          # EmailJS y servicios del cliente
+│   │   ├── styles/            # CSS modular, conservando el orden de cascada
 │   │   ├── utils/             # Fechas, CSV, almacenamiento y formatos
 │   │   ├── App.jsx
 │   │   └── styles.css
 │   ├── package.json
-│   └── vercel.json
+│   └── vercel.mjs            # CSP calculada desde VITE_API_URL
 ├── docs/
 ├── .env.example
 ├── render.yaml
@@ -88,8 +89,9 @@ alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-La API queda disponible en `http://localhost:8000`; FastAPI publica Swagger
-en `/docs` y ReDoc en `/redoc`.
+La API queda disponible en `http://localhost:8000`. Solo con
+`ENVIRONMENT=development` se habilitan `/docs` y `/openapi.json`.
+En producción están deshabilitados; ReDoc permanece deshabilitado.
 
 ### Frontend
 

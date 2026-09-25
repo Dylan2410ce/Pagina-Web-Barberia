@@ -3,7 +3,7 @@
 Base URL de producción:
 
 ```text
-https://TU-SERVICIO.onrender.com
+https://pagina-web-barberia.onrender.com
 ```
 
 La API usa JSON. Las fechas de negocio se interpretan en
@@ -41,7 +41,8 @@ Las respuestas de error siguen esta forma:
 | Método | Ruta | Auth | Descripción |
 | --- | --- | --- | --- |
 | `GET` | `/` | No | Identidad y estado básico |
-| `GET` | `/health` | No | PostgreSQL, latencia y versión |
+| `GET` | `/health` | No | 200, estado, SHA (`commit`) y versión; sin tocar la BD |
+| `GET` | `/health/ready` | No | PostgreSQL y latencia; 503 si no está disponible |
 | `GET` | `/health/calendar` | No | Credenciales, calendarios y zona horaria |
 
 ## Endpoints públicos
@@ -53,17 +54,21 @@ Las respuestas de error siguen esta forma:
 | `GET` | `/api/public/init` | Bootstrap de barberos, servicios y configuración |
 | `GET` | `/api/public/services` | Servicios activos y precios |
 | `GET` | `/api/public/shop-status/{barber_id}` | Estado comercial del barbero |
-| `GET` | `/api/availability` | Slots libres para barbero, servicio y fecha |
+| `GET` | `/api/public/availability` | Slots libres para barbero, servicio y fecha |
 
 ### Citas
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
-| `POST` | `/api/appointments` | Crea una cita con validación transaccional |
-| `GET` | `/api/appointments/manage/{access_code}` | Consulta una cita mediante clave |
-| `GET` | `/api/appointments/by-phone` | Lista citas asociadas a teléfono |
-| `PATCH` | `/api/appointments/{appointment_id}/cancel` | Cancela una cita |
-| `PATCH` | `/api/appointments/{appointment_id}/reschedule` | Reprograma una cita |
+| `POST` | `/api/public/appointments` | Crea una cita con validación transaccional |
+| `POST` | `/api/public/appointments/lookup` | Cuerpo `{ "access_code": "SB-..." }` |
+| `POST` | `/api/public/appointments/history` | Historial autorizado con el mismo cuerpo |
+| `PATCH` | `/api/public/appointments/{appointment_id}/cancel` | Cancela una cita |
+| `PATCH` | `/api/public/appointments/{appointment_id}/reschedule` | Reprograma una cita |
+
+No existe búsqueda pública solo por teléfono ni por código en el path/query.
+Cancelación y reprogramación exigen `access_code` en el JSON, incluso en citas antiguas.
+Las consultas de reservas devuelven `Cache-Control: no-store`.
 
 ### Participación pública
 
