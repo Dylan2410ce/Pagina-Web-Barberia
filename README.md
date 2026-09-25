@@ -60,7 +60,7 @@ sebas-barber/
 │   │   ├── App.jsx
 │   │   └── styles.css
 │   ├── package.json
-│   └── vercel.mjs            # CSP calculada desde VITE_API_URL
+│   └── vercel.json           # Rutas y cabeceras; CSP dinámica en el build HTML
 ├── docs/
 ├── .env.example
 ├── render.yaml
@@ -123,7 +123,7 @@ Render debe apuntar a `backend`:
 
 ```text
 Build: pip install -r requirements.txt
-Start: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Start: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
 Health check: /health
 ```
 

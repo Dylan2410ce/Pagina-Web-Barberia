@@ -193,10 +193,12 @@ El service worker ya usaba navegación network-first; ahora su versión se deriv
 HTML generado, limita assets, captura fallos y excluye API, admin y queries privadas.
 La reserva nunca funciona offline ni se encola desde el teléfono.
 
-Vercel usa **`vercel.mjs`**, reemplazo oficial de `vercel.json`: la CSP permite
-solo el origen exacto de `VITE_API_URL`, no `*.onrender.com`. El hash JSON-LD se
-calcula desde la misma fuente que genera el HTML.
-[Configuración programática oficial](https://vercel.com/docs/project-configuration/vercel-ts).
+Vercel conserva **`vercel.json`** para rutas y cabeceras. El build inserta la CSP
+como primera etiqueta de seguridad del HTML, permitiendo solo el origen exacto
+de `VITE_API_URL`, no `*.onrender.com`. El hash JSON-LD se calcula desde la misma
+fuente que genera el HTML. `frame-ancestors`, incompatible con meta, permanece en
+la cabecera HTTP junto con `X-Frame-Options: DENY`. Ambas políticas se aplican.
+[CSP y etiquetas meta](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP).
 
 En **Vercel → Project → Settings → Environment Variables**, configura:
 

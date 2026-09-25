@@ -194,6 +194,13 @@ class SecurityTests(unittest.IsolatedAsyncioTestCase):
 
 @unittest.skipUnless(os.getenv("TEST_POSTGRES_URL"), "Solo base PostgreSQL desechable de pruebas")
 class PostgresConcurrencyTests(unittest.IsolatedAsyncioTestCase):
+    async def test_lifespan_starts_on_migrated_schema(self):
+        if config.DATABASE_URL != os.environ["TEST_POSTGRES_URL"]:
+            self.skipTest("El arranque solo se prueba con DATABASE_URL de pruebas")
+        with patch.object(config, "EMAILJS_PUBLIC_KEY", ""):
+            async with app.router.lifespan_context(app):
+                self.assertEqual(app.version, "5.3.0")
+
     async def test_overlapping_reservations_are_atomic_and_isolated_by_barber(self):
         engine = create_async_engine(os.environ["TEST_POSTGRES_URL"])
         sessions = async_sessionmaker(engine, expire_on_commit=False)

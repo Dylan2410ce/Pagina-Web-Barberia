@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { datosSEO, descripcion, servicios, titulo } from "./seo.mjs";
+import { datosSEO, descripcion, politicaCSP, servicios, titulo } from "./seo.mjs";
 
 const escapar = (valor) => String(valor).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
@@ -17,7 +17,8 @@ export default function seoPlugin(env) {
       handler(html) {
         const verificacion = env.GOOGLE_SITE_VERIFICATION
           ? '<meta name="google-site-verification" content="' + escapar(env.GOOGLE_SITE_VERIFICATION) + '" />' : "";
-        const meta = '<title>' + titulo + '</title>'
+        const meta = '<meta http-equiv="Content-Security-Policy" content="' + escapar(politicaCSP(env, { enMeta: true })) + '" />'
+          + '<title>' + titulo + '</title>'
           + '<meta name="description" content="' + descripcion + '" />'
           + '<link rel="canonical" href="' + seo.origen + '/" />'
           + '<meta property="og:locale" content="es_CR" /><meta property="og:type" content="website" />'

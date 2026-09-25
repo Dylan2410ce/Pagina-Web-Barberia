@@ -42,14 +42,14 @@ export function datosSEO(env = process.env) {
   return { origen, json, hash: createHash("sha256").update(json).digest("base64") };
 }
 
-export function politicaCSP(env = process.env) {
+export function politicaCSP(env = process.env, { enMeta = false } = {}) {
   if (!env.VITE_API_URL && env.VERCEL) throw new Error("Configura VITE_API_URL en Vercel antes de desplegar.");
   const api = origenSeguro(env.VITE_API_URL || "http://localhost:8000", "VITE_API_URL", !env.VERCEL);
   return [
-    "default-src 'self'", "base-uri 'self'", "object-src 'none'", "frame-ancestors 'none'", "form-action 'self'",
+    "default-src 'self'", "base-uri 'self'", "object-src 'none'", !enMeta && "frame-ancestors 'none'", "form-action 'self'",
     "script-src 'self' 'sha256-" + datosSEO(env).hash + "'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: https:", "connect-src 'self' " + api,
     "frame-src https://www.google.com https://maps.google.com", "manifest-src 'self'", "worker-src 'self'", "upgrade-insecure-requests",
-  ].join("; ");
+  ].filter(Boolean).join("; ");
 }
