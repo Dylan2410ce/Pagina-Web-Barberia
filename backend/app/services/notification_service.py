@@ -1,8 +1,7 @@
-import asyncio
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config
@@ -70,26 +69,72 @@ class NotificationService:
         )
         return result.scalar_one_or_none() is not None
 
+    async def enqueue_event(self, action: str, appointment: Appointment, barber: Barber):
+        messages = {
+            "appointment_created": ("Recibimos tu reserva", "Tu espacio quedó reservado. Te esperamos."),
+            "appointment_cancelled": ("Cita cancelada", "Tu cita se canceló y el horario quedó libre."),
+            "appointment_rescheduled": ("Nuevo horario de tu cita", "Este es el horario actualizado de tu reserva."),
+        }
+        title, message = messages[action]
+        event_type = {
+            "appointment_created": "client_confirmation",
+            "appointment_cancelled": "client_cancellation",
+            "appointment_rescheduled": "client_reschedule",
+        }[action]
+        appointment.access_code = decrypt_access_code(appointment.access_code_encrypted) or ""
+        destinations = [
+            ("cliente", appointment.client_email, config.EMAILJS_TEMPLATE_CLIENTE),
+            ("barbero", barber.email, config.EMAILJS_TEMPLATE_BARBERO),
+        ]
+        for recipient, email, template in destinations:
+            if not email or not template:
+                continue
+            key = f"{action}:{appointment.id}:{appointment.starts_at.astimezone(timezone.utc).isoformat()}:{recipient}"
+            if await self._exists(key):
+                continue
+            payload = self.emailjs.appointment_payload(
+                appointment, barber, notification_type=event_type, title=title,
+                message=message if recipient == "cliente" else f"{title}: {appointment.client_name}, con {barber.name}.",
+                to_email=email,
+            )
+            payload["recipient_name"] = appointment.client_name if recipient == "cliente" else barber.name
+            self.db.add(NotificationDelivery(
+                barber_id=barber.id, appointment_id=appointment.id,
+                kind=NotificationKind(action), status=NotificationStatus.pending,
+                dedupe_key=key, recipient_email=email, template_id=template,
+                payload=payload, scheduled_for=datetime.now(TZ),
+            ))
+
     async def enqueue_reminder(
         self,
         appointment: Appointment,
         barber: Barber,
     ) -> bool:
-        if not appointment.client_email or appointment.status not in {
+        if not config.REMINDERS_ENABLED or not appointment.client_email or appointment.status not in {
             AppointmentStatus.pending,
             AppointmentStatus.confirmed,
         }:
             return False
-        dedupe_key = f"reminder:{appointment.id}:{appointment.starts_at.isoformat()}"
+        if getattr(appointment, "reminder_sent_at", None):
+            return False
+        dedupe_key = f"reminder:{appointment.id}:{appointment.starts_at.astimezone(timezone.utc).isoformat()}"
         if await self._exists(dedupe_key):
             return False
         now = datetime.now(TZ)
         scheduled_for = appointment.starts_at.astimezone(TZ) - timedelta(
             hours=config.REMINDER_LEAD_HOURS
         )
+        existing = await self.db.execute(select(NotificationDelivery.id).where(
+            NotificationDelivery.appointment_id == appointment.id,
+            NotificationDelivery.kind == NotificationKind.appointment_reminder,
+            NotificationDelivery.scheduled_for == scheduled_for,
+            NotificationDelivery.status != NotificationStatus.skipped,
+        ).limit(1))
+        if existing.scalar_one_or_none() is not None:
+            return False
         if appointment.starts_at.astimezone(TZ) <= now + timedelta(hours=1):
             return False
-        if scheduled_for <= now:
+        if getattr(appointment, "created_at", None) and scheduled_for <= appointment.created_at.astimezone(TZ):
             return False
         access_code = decrypt_access_code(appointment.access_code_encrypted)
         appointment.access_code = access_code or ""
@@ -97,7 +142,7 @@ class NotificationService:
         total_text = f"₡{appointment.total_price:,.0f}".replace(",", " ")
         message = (
             f"Hola {appointment.client_name}.\n\n"
-            f"Te recordamos que mañana tienes una cita en {config.SHOP_NAME}.\n\n"
+            f"Te recordamos tu próxima cita en {config.SHOP_NAME}.\n\n"
             f"Barbero: {barber.name}\n"
             f"Servicio: {appointment.service_name}\n"
             f"Fecha y hora: {date_text}\n"
@@ -384,99 +429,5 @@ class NotificationService:
         return created
 
     async def process_due(self) -> dict:
-        if not config.REMINDERS_ENABLED or not self.emailjs.available():
-            return {
-                "enabled": False,
-                "processed": 0,
-                "skipped": 0,
-                "failed": 0,
-                "status": "disabled",
-                "daily_summaries": 0,
-                "waitlist_notices": 0,
-            }
-
-        await self.prepare_due_reminders()
-        daily_created = await self.prepare_daily_summaries()
-        now = datetime.now(TZ)
-        result = await self.db.execute(
-            select(NotificationDelivery)
-            .where(
-                NotificationDelivery.scheduled_for <= now,
-                NotificationDelivery.attempts < config.NOTIFICATION_MAX_ATTEMPTS,
-                or_(
-                    NotificationDelivery.status.in_(
-                        [NotificationStatus.pending, NotificationStatus.failed]
-                    ),
-                    NotificationDelivery.status == NotificationStatus.processing,
-                ),
-            )
-            .order_by(NotificationDelivery.scheduled_for.asc())
-            .limit(config.REMINDER_BATCH_SIZE)
-        )
-        jobs = list(result.scalars().all())
-        processed = 0
-        failed = 0
-        skipped = 0
-        waitlist_notices = 0
-
-        for job in jobs:
-            job.status = NotificationStatus.processing
-            job.attempts += 1
-            await self.db.commit()
-            try:
-                await asyncio.to_thread(
-                    self.emailjs.send,
-                    job.template_id,
-                    job.payload,
-                )
-                job.status = NotificationStatus.sent
-                job.sent_at = datetime.now(TZ)
-                job.last_error = None
-                processed += 1
-                if job.kind == NotificationKind.appointment_reminder:
-                    appointment = await self.db.get(
-                        Appointment,
-                        job.appointment_id,
-                    )
-                    if appointment:
-                        appointment.reminder_sent_at = job.sent_at
-                        appointment.reminder_attempts = job.attempts
-                        appointment.last_notification_error = None
-                elif job.kind == NotificationKind.waitlist_available:
-                    entry = await self.db.get(WaitlistEntry, job.waitlist_id)
-                    if entry:
-                        entry.notified_at = job.sent_at
-                        entry.notification_attempts = job.attempts
-                        entry.status = WaitlistStatus.contacted
-                    waitlist_notices += 1
-            except Exception as exc:
-                logger.exception(
-                    "No se pudo enviar la notificación %s",
-                    job.id,
-                    exc_info=exc,
-                )
-                job.status = NotificationStatus.failed
-                job.last_error = str(exc)[:500]
-                job.scheduled_for = datetime.now(TZ) + timedelta(
-                    minutes=min(2 ** job.attempts, 30)
-                )
-                failed += 1
-                if job.appointment_id:
-                    appointment = await self.db.get(
-                        Appointment,
-                        job.appointment_id,
-                    )
-                    if appointment:
-                        appointment.reminder_attempts = job.attempts
-                        appointment.last_notification_error = job.last_error
-            await self.db.commit()
-
-        return {
-            "enabled": True,
-            "processed": processed,
-            "skipped": skipped,
-            "failed": failed,
-            "status": "ok",
-            "daily_summaries": daily_created,
-            "waitlist_notices": waitlist_notices,
-        }
+        from app.services.delivery_dispatcher import dispatch_due
+        return await dispatch_due(self)

@@ -11,6 +11,7 @@ from app.schemas import (
     AppointmentCreatedOut,
     AppointmentOut,
     AppointmentReschedule,
+    BookingLookup,
     SlotOut,
 )
 from app.services.appointment_service import AppointmentService
@@ -41,31 +42,23 @@ async def create_appointment(
     return await AppointmentService(db).create(data)
 
 
-@router.get("/appointments/manage/{access_code}", response_model=AppointmentOut)
+@router.post("/appointments/lookup", response_model=AppointmentOut)
 async def appointment_by_access_code(
-    access_code: str,
+    data: BookingLookup,
     db: AsyncSession = Depends(get_db),
 ):
-    return await AppointmentService(db).get_by_access_code(access_code)
+    return await AppointmentService(db).get_by_access_code(data.access_code)
 
 
-@router.get(
-    "/appointments/history/{access_code}",
+@router.post(
+    "/appointments/history",
     response_model=list[AppointmentOut],
 )
 async def appointment_history(
-    access_code: str,
+    data: BookingLookup,
     db: AsyncSession = Depends(get_db),
 ):
-    return await AppointmentService(db).history_by_access_code(access_code)
-
-
-@router.get("/appointments/by-phone", response_model=list[AppointmentOut])
-async def appointments_by_phone(
-    phone: str = Query(pattern=r"^[24678][0-9]{7}$"),
-    db: AsyncSession = Depends(get_db),
-):
-    return await AppointmentService(db).list_by_phone(phone)
+    return await AppointmentService(db).history_by_access_code(data.access_code)
 
 
 @router.patch("/appointments/{appointment_id}/cancel", response_model=AppointmentOut)

@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.background import BackgroundTasks
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -21,7 +22,7 @@ from app.controllers import (
     public_controller,
     tasks_controller,
 )
-from app.database import AsyncSessionLocal, engine, init_db
+from app.database import AsyncSessionLocal, engine
 from app.routers import bookings
 from app.services.calendar_service import CalendarService
 from app.services.seed_service import seed_data
@@ -51,7 +52,6 @@ async def lifespan(_: FastAPI):
             "Faltan variables de seguridad; se usaron valores aleatorios de cierre seguro: %s",
             ", ".join(config.MISSING_SECURITY_ENV),
         )
-    await init_db()
     async with AsyncSessionLocal() as db:
         await seed_data(db)
         
@@ -59,11 +59,16 @@ async def lifespan(_: FastAPI):
     start_cron()
     
     yield
-    shutdown_cron()
+    await shutdown_cron()
     await engine.dispose()
 
 
-app = FastAPI(title="Sebas Barber API", version="5.2.0", lifespan=lifespan)
+app = FastAPI(
+    title="Sebas Barber API", version="5.3.0", lifespan=lifespan,
+    docs_url="/docs" if config.ENVIRONMENT == "development" else None,
+    redoc_url=None,
+    openapi_url="/openapi.json" if config.ENVIRONMENT == "development" else None,
+)
 
 allowed_origins = {
     config.FRONTEND_URL.rstrip("/"),
@@ -99,6 +104,17 @@ async def security_headers(request: Request, call_next):
             headers={"X-Request-ID": request_id},
         )
     response = await call_next(request)
+    if (
+        request.method in {"POST", "PATCH", "PUT"} and 200 <= response.status_code < 300
+        and request.url.path.startswith(("/api/public/appointments", "/api/admin/appointments"))
+        and not request.url.path.endswith(("/lookup", "/history"))
+    ):
+        from app.tasks.reminder_cron import run_delivery_job
+        background = BackgroundTasks()
+        if response.background:
+            background.add_task(response.background)
+        background.add_task(run_delivery_job)
+        response.background = background
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -107,11 +123,11 @@ async def security_headers(request: Request, call_next):
     response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
     response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
-    if request.url.scheme == "https":
+    if config.ENVIRONMENT == "production" or request.url.scheme == "https":
         response.headers["Strict-Transport-Security"] = (
             "max-age=31536000; includeSubDomains"
         )
-    if request.url.path.startswith("/api/admin"):
+    if request.url.path.startswith(("/api/admin", "/api/public/appointments", "/health")):
         response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -171,7 +187,7 @@ async def validation_exception_handler(_: Request, exc: RequestValidationError):
 
 @app.exception_handler(SQLAlchemyError)
 async def database_exception_handler(request: Request, exc: SQLAlchemyError):
-    logger.exception("Error de base de datos en %s", request.url.path, exc_info=exc)
+    logger.error("Error de base de datos: %s", type(exc).__name__)
     return JSONResponse(
         status_code=503,
         content={
@@ -186,7 +202,7 @@ async def database_exception_handler(request: Request, exc: SQLAlchemyError):
 
 @app.exception_handler(Exception)
 async def unexpected_exception_handler(request: Request, exc: Exception):
-    logger.exception("Error no controlado en %s", request.url.path, exc_info=exc)
+    logger.error("Error no controlado: %s", type(exc).__name__)
     return JSONResponse(
         status_code=500,
         content={
@@ -214,10 +230,16 @@ async def root():
 
 @app.get("/health")
 async def health():
+    return {"status": "ok", "commit": config.BUILD_SHA, "version": app.version}
+
+
+@app.get("/health/ready")
+async def readiness():
     started_at = perf_counter()
     try:
-        async with AsyncSessionLocal() as db:
-            await db.execute(text("SELECT 1"))
+        async with asyncio.timeout(10):
+            async with AsyncSessionLocal() as db:
+                await db.execute(text("SELECT 1"))
         latency_ms = round((perf_counter() - started_at) * 1000, 2)
         return {
             "status": "ok",
@@ -229,8 +251,8 @@ async def health():
                 "latency_ms": latency_ms,
             },
         }
-    except SQLAlchemyError as exc:
-        logger.exception("Healthcheck sin conexión a PostgreSQL", exc_info=exc)
+    except (SQLAlchemyError, TimeoutError) as exc:
+        logger.warning("Healthcheck sin conexión: %s", type(exc).__name__)
         return JSONResponse(
             status_code=503,
             content={

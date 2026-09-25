@@ -4,9 +4,19 @@ services:
     env: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
     healthCheckPath: /health
     envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: TRUSTED_PROXY_CIDRS
+        value: "127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"
+      - key: EMAIL_MONTHLY_LIMIT
+        value: "180"
+      - key: DAILY_SUMMARIES_ENABLED
+        value: "false"
+      - key: NOTIFICATION_POLL_SECONDS
+        value: "300"
       - key: PYTHON_VERSION
         value: 3.12.11
       - key: DATABASE_URL

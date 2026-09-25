@@ -30,7 +30,6 @@ from app.services.access_code_service import (
 from app.services.calendar_service import CalendarError, CalendarService, parse_calendar_datetime
 from app.services.audit_service import AuditService
 from app.services.date_service import TZ, day_range, label_from_minutes, range_from_minutes
-from app.services.email_service import EmailService
 from app.services.idempotency_service import (
     decrypt_access_code,
     encrypt_access_code,
@@ -38,7 +37,6 @@ from app.services.idempotency_service import (
 )
 from app.services.notification_service import NotificationService
 from app.services.promotion_service import PromotionService
-from app.services.whatsapp_service import whatsapp_service
 
 
 class AppointmentService:
@@ -48,7 +46,6 @@ class AppointmentService:
         self.barbers = BarberRepository(db)
         self.services = ServiceRepository(db)
         self.calendar = CalendarService()
-        self.email = EmailService()
         self.audit = AuditService(db)
         self.notifications = NotificationService(db)
         self.promotions = PromotionService(db)
@@ -230,8 +227,8 @@ class AppointmentService:
                     raise
 
     async def _notify(self, method_name: str, appointment: Appointment) -> None:
-        if self.email.enabled():
-            await asyncio.to_thread(getattr(self.email, method_name), appointment)
+        barber = await self.barbers.by_id(appointment.barber_id)
+        await self.notifications.enqueue_event(method_name, appointment, barber)
 
     async def availability(self, barber_id: UUID, day: date, duration: int) -> list[dict]:
         now = datetime.now(TZ)
@@ -434,6 +431,7 @@ class AppointmentService:
             appointment.calendar_event_id = created_event_id
             await self.upsert_client_profile(appointment)
             await self.notifications.enqueue_reminder(appointment, barber)
+            await self._notify("appointment_created", appointment)
             self.audit.record(
                 barber_id=barber.id,
                 action="appointment.created",
@@ -443,22 +441,6 @@ class AppointmentService:
             )
             await self.db.commit()
             await self.db.refresh(appointment)
-            await self._notify("appointment_created", appointment)
-            # Enviar confirmación por WhatsApp (fire-and-forget, no bloquea)
-            try:
-                date_str = appointment.starts_at.astimezone(TZ).strftime("%d/%m/%Y")
-                time_str = appointment.starts_at.astimezone(TZ).strftime("%I:%M %p")
-                await whatsapp_service.send_booking_confirmation(
-                    to_phone=appointment.client_phone,
-                    client_name=appointment.client_name,
-                    date_str=date_str,
-                    time_str=time_str,
-                    service_name=appointment.service_name,
-                    barber_name=barber.name,
-                    access_code=access_code,
-                )
-            except Exception:
-                pass  # No falla la reserva si WhatsApp no se envía
             return appointment
         except CalendarError as exc:
             await self.db.rollback()
@@ -680,6 +662,8 @@ class AppointmentService:
                 released_date,
             )
         appointment.status = next_status
+        if next_status == AppointmentStatus.cancelled:
+            await self._notify("appointment_cancelled", appointment)
         self.audit.record(
             barber_id=barber.id,
             action="appointment.status_changed",
@@ -692,8 +676,6 @@ class AppointmentService:
         )
         await self.db.commit()
         await self.db.refresh(appointment)
-        if appointment.status == AppointmentStatus.cancelled:
-            await self._notify("appointment_cancelled", appointment)
         return appointment
 
     async def list_by_phone(self, phone: str) -> list[Appointment]:
@@ -755,11 +737,10 @@ class AppointmentService:
                     detail="El código de reserva no coincide",
                 )
             return
-        if not phone or appointment.client_phone != phone:
-            raise HTTPException(
-                status_code=404,
-                detail="Cita no encontrada para ese teléfono",
-            )
+        raise HTTPException(
+            status_code=403,
+            detail="Esta reserva antigua debe gestionarse directamente con el barbero.",
+        )
 
     async def cancel_by_client(
         self,
@@ -804,6 +785,7 @@ class AppointmentService:
         )
         appointment.calendar_event_id = None
         await self.notifications.cancel_reminders(appointment)
+        await self._notify("appointment_cancelled", appointment)
         await self.notifications.enqueue_waitlist_release(
             barber,
             released_date,
@@ -817,7 +799,6 @@ class AppointmentService:
         )
         await self.db.commit()
         await self.db.refresh(appointment)
-        await self._notify("appointment_cancelled", appointment)
         return appointment
 
     async def _reschedule(
@@ -881,6 +862,7 @@ class AppointmentService:
             appointment.calendar_event_id = new_event_id
             await self._delete_calendar_event(barber, old_event_id)
             await self.notifications.refresh_reminder(appointment, barber)
+            await self._notify("appointment_rescheduled", appointment)
             if old_date != day:
                 await self.notifications.enqueue_waitlist_release(
                     barber,
@@ -899,7 +881,6 @@ class AppointmentService:
             )
             await self.db.commit()
             await self.db.refresh(appointment)
-            await self._notify("appointment_rescheduled", appointment)
             return appointment
         except CalendarError as exc:
             await self.db.rollback()

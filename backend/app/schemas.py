@@ -155,9 +155,12 @@ class AppointmentLookup(StrictInput):
     phone: str = Field(pattern=r"^[24678][0-9]{7}$")
 
 
-class AppointmentCancel(StrictInput):
+class BookingLookup(StrictInput):
+    access_code: str = Field(min_length=16, max_length=40, pattern=r"^[A-Za-z0-9-]+$")
+
+
+class AppointmentCancel(BookingLookup):
     phone: str | None = Field(default=None, pattern=r"^[24678][0-9]{7}$")
-    access_code: str | None = Field(default=None, min_length=16, max_length=40)
     reason: str | None = Field(default=None, max_length=240)
 
     @model_validator(mode="after")
@@ -167,9 +170,8 @@ class AppointmentCancel(StrictInput):
         return self
 
 
-class AppointmentReschedule(StrictInput):
+class AppointmentReschedule(BookingLookup):
     phone: str | None = Field(default=None, pattern=r"^[24678][0-9]{7}$")
-    access_code: str | None = Field(default=None, min_length=16, max_length=40)
     date: date
     start_min: int = Field(ge=0, le=1439)
 
@@ -401,7 +403,8 @@ class ReminderRunOut(BaseModel):
     enabled: bool
     processed: int
     skipped: int
-    status: Literal["ok", "disabled"]
+    status: Literal["ok", "disabled", "busy", "quota_exhausted"]
+    uncertain: int = 0
     failed: int = 0
     daily_summaries: int = 0
     waitlist_notices: int = 0

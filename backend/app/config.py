@@ -51,6 +51,12 @@ def missing_security_env() -> tuple[str, ...]:
 
 
 class Config:
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
+    BUILD_SHA = os.getenv("RENDER_GIT_COMMIT") or os.getenv("BUILD_SHA", "local")
+    TRUSTED_PROXY_CIDRS = os.getenv("TRUSTED_PROXY_CIDRS", "127.0.0.1/32,::1/128")
+    EMAIL_MONTHLY_LIMIT = max(0, min(int(os.getenv("EMAIL_MONTHLY_LIMIT", "180")), 200))
+    DAILY_SUMMARIES_ENABLED = os.getenv("DAILY_SUMMARIES_ENABLED", "false").lower() == "true"
+    NOTIFICATION_POLL_SECONDS = max(60, int(os.getenv("NOTIFICATION_POLL_SECONDS", "300")))
     MISSING_SECURITY_ENV = missing_security_env()
 
     DATABASE_URL = normalize_database_url(

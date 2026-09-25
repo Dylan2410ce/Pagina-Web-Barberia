@@ -222,6 +222,7 @@ class ShopStatusService:
 
     @staticmethod
     def _next_open_label(value: datetime, today: date) -> str:
+        value = value.astimezone(TZ)
         if value.date() == today:
             return f"hoy a las {label_from_minutes(value.hour * 60 + value.minute)}"
         if value.date() == today + timedelta(days=1):

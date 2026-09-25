@@ -73,9 +73,13 @@ class NotificationStatus(str, enum.Enum):
     sent = "sent"
     failed = "failed"
     skipped = "skipped"
+    uncertain = "uncertain"
 
 
 class NotificationKind(str, enum.Enum):
+    appointment_created = "appointment_created"
+    appointment_cancelled = "appointment_cancelled"
+    appointment_rescheduled = "appointment_rescheduled"
     appointment_reminder = "appointment_reminder"
     waitlist_available = "waitlist_available"
     daily_summary = "daily_summary"
@@ -794,6 +798,7 @@ class NotificationDelivery(Base):
         unique=True,
     )
     recipient_email: Mapped[str] = mapped_column(String(160), nullable=False)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     template_id: Mapped[str] = mapped_column(String(120), nullable=False)
     payload: Mapped[dict] = mapped_column(JSON_TYPE, default=dict, nullable=False)
     scheduled_for: Mapped[datetime] = mapped_column(
@@ -813,3 +818,23 @@ class NotificationDelivery(Base):
     )
 
     barber: Mapped[Barber] = relationship(back_populates="notifications")
+
+
+class RateLimitBucket(Base):
+    __tablename__ = "rate_limit_buckets"
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class NotificationBudget(Base):
+    __tablename__ = "notification_budgets"
+    period: Mapped[str] = mapped_column(String(7), primary_key=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class DispatchLease(Base):
+    __tablename__ = "dispatch_leases"
+    name: Mapped[str] = mapped_column(String(50), primary_key=True)
+    owner: Mapped[str] = mapped_column(String(36), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

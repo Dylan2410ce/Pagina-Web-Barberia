@@ -475,19 +475,17 @@ class MultiBarberTests(unittest.IsolatedAsyncioTestCase):
         db.add = MagicMock()
         service = NotificationService(db)
 
-        with patch.object(config, "EMAILJS_TEMPLATE_CLIENTE", "template_cliente"):
+        with patch.object(config, "EMAILJS_TEMPLATE_CLIENTE", "template_cliente"), patch.object(config, "REMINDERS_ENABLED", True):
             created = await service.enqueue_reminder(appointment, barber)
 
         self.assertTrue(created)
         job = db.add.call_args.args[0]
         self.assertEqual(job.template_id, "template_cliente")
         self.assertEqual(job.payload["access_code"], code)
-        self.assertTrue(job.payload["has_qr"])
-        self.assertTrue(
-            job.payload["qr_code"].startswith("data:image/png;base64,")
-        )
+        self.assertFalse(job.payload["has_qr"])
+        self.assertEqual(job.payload["qr_code"], "")
         self.assertIn(
-            f"?reserva={code}#mis-citas",
+            f"#mis-citas?reserva={code}",
             job.payload["manage_url"],
         )
         expected = appointment.starts_at - timedelta(hours=24)

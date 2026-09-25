@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import config as app_config
-from app.database import Base
+from app.database import Base, database_connect_args
 from app import models
 
 alembic_config = context.config
@@ -48,6 +48,8 @@ async def run_async_migrations() -> None:
         alembic_config.get_section(alembic_config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=database_connect_args(),
+        hide_parameters=True,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

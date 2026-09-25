@@ -9,13 +9,15 @@ from urllib.request import Request, urlopen
 
 from app.config import config
 from app.services.date_service import TZ
-from app.services.qr_service import qr_png_data_url
 
 logger = logging.getLogger("sebas_barber.emailjs")
 
 
 class EmailJSError(RuntimeError):
-    pass
+    def __init__(self, message, *, retryable=False, uncertain=False):
+        super().__init__(message)
+        self.retryable = retryable
+        self.uncertain = uncertain
 
 
 class EmailJSService:
@@ -57,19 +59,20 @@ class EmailJSService:
                 method="POST",
             )
             try:
-                with urlopen(request, timeout=20) as response:
+                with urlopen(request, timeout=12) as response:
                     if response.status != 200:
                         raise EmailJSError(
                             f"EmailJS respondió con estado {response.status}"
                         )
-                self._last_send_at = time.monotonic()
+                type(self)._last_send_at = time.monotonic()
             except HTTPError as exc:
-                detail = exc.read().decode("utf-8", errors="replace")[:300]
                 raise EmailJSError(
-                    f"EmailJS rechazó el envío ({exc.code}): {detail}"
+                    f"EmailJS rechazó el envío (HTTP {exc.code})",
+                    retryable=exc.code == 429,
+                    uncertain=exc.code >= 500,
                 ) from exc
             except (URLError, TimeoutError, OSError) as exc:
-                raise EmailJSError("EmailJS no respondió a tiempo") from exc
+                raise EmailJSError("EmailJS no confirmó la entrega", uncertain=True) from exc
 
     @staticmethod
     def appointment_payload(
@@ -87,14 +90,15 @@ class EmailJSService:
         access_code = getattr(appointment, "access_code", "") or ""
         manage_url = (
             f"{config.FRONTEND_URL.rstrip('/')}/"
-            f"?reserva={quote(access_code, safe='')}#mis-citas"
+            f"#mis-citas?reserva={quote(access_code, safe='')}"
             if access_code
             else f"{config.FRONTEND_URL.rstrip('/')}/#mis-citas"
         )
-        qr_code = qr_png_data_url(manage_url) if access_code else ""
+        qr_code = ""
         extras = ", ".join(appointment.addons or []) or "Sin extras"
         payload = {
             "notification_type": notification_type,
+            "booking_start": appointment.starts_at.isoformat(),
             "to_email": to_email,
             "recipient_name": appointment.client_name,
             "reply_to": barber.email or config.OWNER_EMAIL,
@@ -134,7 +138,7 @@ class EmailJSService:
             "waze_url": config.WAZE_URL,
             "manage_url": manage_url,
             "manage_button_label": "Ver o administrar mi cita",
-            "notification_badge": "Recordatorio de cita",
+            "notification_badge": title,
             "has_booking_details": True,
             "has_access_code": bool(access_code),
             "has_manage_action": True,
