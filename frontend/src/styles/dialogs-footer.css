@@ -1,0 +1,352 @@
+.footer {
+  width: min(1160px, calc(100% - 28px));
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+  border-top: 1px solid var(--line);
+  padding: 40px 0 92px;
+  color: var(--muted);
+}
+
+.footer-main {
+  display: grid;
+  gap: 22px;
+}
+
+.footer-brand {
+  display: grid;
+  gap: 6px;
+}
+
+.footer-brand strong {
+  color: var(--text);
+  font-family: "Poppins", sans-serif;
+  font-size: 1.45rem;
+  text-transform: uppercase;
+}
+
+.footer-brand > span,
+.footer small {
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.footer nav a {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: color 0.2s ease;
+}
+
+.footer nav a:hover {
+  color: var(--gold-light);
+}
+
+.footer-legal {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.footer-credit {
+  display: block;
+}
+
+.footer-credit svg {
+  margin-right: 5px;
+  vertical-align: -3px;
+}
+
+.footer-credit svg,
+.footer-credit span {
+  color: var(--gold-light);
+}
+
+.scroll-top {
+  position: fixed;
+  right: 18px;
+  bottom: 84px;
+  z-index: 38;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(240, 207, 114, 0.44);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #17130a;
+  background: var(--primary-gradient);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity var(--motion), transform var(--motion), background var(--motion);
+}
+
+.scroll-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.scroll-top:hover {
+  background: #f7d985;
+  transform: translateY(-2px);
+}
+
+.pantalla-carga,
+.loader-global,
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 12, 13, 0.84);
+  backdrop-filter: blur(10px);
+}
+
+.pantalla-carga {
+  min-height: 100vh;
+  align-content: center;
+  gap: 12px;
+}
+
+.modal-backdrop {
+  animation: backdrop-in 220ms ease-out both;
+}
+
+.loader-global > div {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.loader-global p,
+.pantalla-carga p {
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-top-color: var(--gold-light);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.75s linear infinite;
+}
+
+.spinner.grande {
+  width: 38px;
+  height: 38px;
+  border-width: 3px;
+}
+
+.modal {
+  width: min(700px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  animation: modal-in var(--motion) both;
+}
+
+.modal > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(34, 39, 42, 0.96);
+}
+
+.modal > header strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-body {
+  padding: 16px;
+}
+
+.booking-success {
+  position: relative;
+  width: min(520px, 100%);
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  padding: 28px 22px 22px;
+  background:
+    linear-gradient(145deg, rgba(212, 175, 55, 0.08), transparent 42%),
+    var(--surface-raised);
+  animation: modal-in var(--motion) both;
+}
+
+.booking-success-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.booking-success-icon {
+  width: 62px;
+  height: 62px;
+  border: 1px solid rgba(114, 198, 155, 0.42);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #101713;
+  background: var(--green);
+  box-shadow: 0 12px 32px rgba(114, 198, 155, 0.16);
+}
+
+.booking-success h2 {
+  max-width: 390px;
+  font-size: 2rem;
+  line-height: 0.98;
+}
+
+.booking-success > p {
+  max-width: 430px;
+}
+
+.booking-success-summary {
+  width: 100%;
+  margin: 2px 0 4px;
+  padding: 16px 0;
+  border-block: 1px solid var(--line);
+}
+
+.booking-success-summary > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(92px, 0.42fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.booking-success-summary dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.booking-success-summary dd {
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.mapa-frame {
+  width: 100%;
+  min-height: 360px;
+  border: 0;
+  display: block;
+}
+
+.toast-stack {
+  position: fixed;
+  top: 78px;
+  right: 14px;
+  z-index: 100;
+  width: min(360px, calc(100vw - 28px));
+  display: grid;
+  gap: 9px;
+}
+
+.toast {
+  position: relative;
+  border: 1px solid var(--line-strong);
+  border-left: 4px solid var(--gold);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 4px;
+  column-gap: 10px;
+  padding: 14px;
+  color: var(--text);
+  background: rgba(30, 34, 36, 0.98);
+  box-shadow: var(--shadow);
+  animation: stage-in 0.22s ease;
+}
+
+.toast > div {
+  display: grid;
+  gap: 3px;
+}
+
+.toast span {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
+.toast button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toast-icon {
+  margin-top: 1px;
+  color: var(--gold-light);
+}
+
+.toast-ok .toast-icon {
+  color: var(--green);
+}
+
+.toast-error .toast-icon {
+  color: var(--red);
+}
+
+.toast-ok {
+  border-left-color: var(--green);
+}
+
+.toast-error {
+  border-left-color: var(--red);
+}
+
+.toast-warning {
+  border-left-color: var(--gold-light);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.48s ease, transform 0.48s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

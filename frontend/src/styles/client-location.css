@@ -1,0 +1,192 @@
+.client-area {
+  padding-bottom: 84px;
+}
+
+.client-search-layout {
+  border-block: 1px solid var(--line);
+  display: grid;
+  gap: 28px;
+  padding: 28px 0;
+}
+
+.client-search {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.client-search > div {
+  display: grid;
+  gap: 8px;
+}
+
+.client-search small {
+  color: var(--muted);
+}
+
+.lista-citas {
+  display: grid;
+  gap: 10px;
+}
+
+.empty-appointments {
+  min-height: 150px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  padding: 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-appointments strong {
+  color: var(--text);
+}
+
+.cita-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: var(--surface);
+}
+
+.cita-card h3 {
+  margin: 8px 0 4px;
+}
+
+.cita-card p {
+  font-size: 0.84rem;
+}
+
+.estado {
+  width: fit-content;
+  border-radius: 999px;
+  display: inline-flex;
+  padding: 5px 8px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.estado-booked {
+  color: #d6efff;
+  background: rgba(125, 183, 216, 0.18);
+}
+
+.estado-present {
+  color: #d8ffeb;
+  background: rgba(114, 198, 155, 0.18);
+}
+
+.estado-cancelled,
+.estado-noshow {
+  color: #ffd1d1;
+  background: rgba(230, 115, 115, 0.16);
+}
+
+.estado-blocked {
+  color: #ffe7a4;
+  background: rgba(212, 175, 55, 0.15);
+}
+
+.location-band {
+  border-block: 1px solid var(--line);
+  background: #181b1c;
+}
+
+.location-grid {
+  display: grid;
+  gap: 34px;
+}
+
+.location-copy {
+  display: grid;
+  align-content: center;
+  gap: 16px;
+}
+
+.location-actions .btn {
+  flex: 1 1 140px;
+}
+
+.hours-panel {
+  border-left: 3px solid var(--gold);
+  padding: 4px 0 4px 18px;
+}
+
+.hours-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hours-head svg {
+  color: var(--gold-light);
+}
+
+.hours-head div {
+  display: grid;
+  gap: 3px;
+}
+
+.hours-head span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.hours-list {
+  display: grid;
+}
+
+.hours-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding: 9px 0;
+  font-size: 0.78rem;
+}
+
+.hours-list span {
+  color: var(--muted);
+}
+
+.hours-list strong {
+  text-align: right;
+}
+
+.reviews-strip {
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding-top: 24px;
+}
+
+.reviews-strip > div {
+  display: grid;
+  gap: 5px;
+}
+
+.reviews-strip > div > span {
+  color: var(--gold-light);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.reviews-strip h3 {
+  font-size: 1.35rem;
+}
+
+.reviews-strip p {
+  font-size: 0.82rem;
+}

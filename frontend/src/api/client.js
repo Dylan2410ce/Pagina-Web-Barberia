@@ -35,7 +35,7 @@ async function ejecutarSolicitud(ruta, opciones = {}) {
   );
   const headers = {
     Accept: "application/json",
-    ...(esFormData ? {} : { "Content-Type": "application/json" }),
+    ...(esFormData || !opciones.body ? {} : { "Content-Type": "application/json" }),
     ...(opciones.headers || {}),
   };
 
@@ -91,7 +91,7 @@ export async function api(ruta, opciones = {}) {
       ultimoError = error;
       const recuperable = error.name === "AbortError"
         || error instanceof TypeError
-        || [502, 503, 504].includes(error.status);
+        || [408, 502, 503, 504].includes(error.status);
       if (!recuperable || intento === intentos - 1) throw error;
       await new Promise((resolve) => setTimeout(resolve, 900));
     }
@@ -147,10 +147,9 @@ export const publicoApi = {
     ),
   crearCita: (datos) => api("/api/public/appointments", { method: "POST", body: datos }),
   buscarPorCodigo: (codigo) =>
-    api(`/api/public/appointments/manage/${encodeURIComponent(codigo.trim())}`),
+    api("/api/public/appointments/lookup", { method: "POST", body: { access_code: codigo.trim() } }),
   historialPorCodigo: (codigo) =>
-    api(`/api/public/appointments/history/${encodeURIComponent(codigo.trim())}`),
-  buscarPorTelefono: (telefono) => api(`/api/public/appointments/by-phone${query({ phone: telefono })}`),
+    api("/api/public/appointments/history", { method: "POST", body: { access_code: codigo.trim() } }),
   cancelarCita: (id, datos) => api(`/api/public/appointments/${id}/cancel`, { method: "PATCH", body: datos }),
   reprogramarCita: (id, datos) => api(`/api/public/appointments/${id}/reschedule`, { method: "PATCH", body: datos }),
   estadoLocal: (barberId) => api(`/api/public/shop-status/${barberId}`),

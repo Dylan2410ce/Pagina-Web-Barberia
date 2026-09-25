@@ -1,0 +1,78 @@
+/* Pulido visual 2026 */
+
+::selection {
+  color: #17130a;
+  background: var(--gold-light);
+}
+
+.seccion {
+  padding-block: 84px;
+}
+
+.cabecera-seccion {
+  margin-bottom: 30px;
+}
+
+.btn {
+  letter-spacing: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.btn-linea {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.btn-linea:hover {
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.panel,
+.admin-panel,
+.team-card,
+.servicio-card,
+.client-appointment-card {
+  border-color: rgba(248, 243, 232, 0.13);
+}
+
+.team-card-body,
+.servicio-card {
+  padding: 20px;
+}
+
+.servicio-card {
+  border-top-color: rgba(215, 174, 85, 0.58);
+}
+
+.servicio-card:nth-child(3n + 2) {
+  border-top-color: rgba(114, 172, 184, 0.58);
+}
+
+.servicio-card:nth-child(3n + 3) {
+  border-top-color: rgba(114, 201, 154, 0.54);
+}
+
+.extra-option {
+  background: #1a1f1c;
+}
+
+.wizard-panel {
+  padding: 20px;
+}
+
+.admin-panel {
+  border-color: rgba(248, 243, 232, 0.13);
+  background: #1a1f1c;
+}
+
+.admin-metrics article {
+  border-top-color: rgba(215, 174, 85, 0.5);
+  background: #1a1f1c;
+}
+
+.admin-metrics article:nth-child(3n + 2) {
+  border-top-color: rgba(114, 172, 184, 0.52);
+}
+
+.admin-metrics article:nth-child(3n + 3) {
+  border-top-color: rgba(114, 201, 154, 0.5);
+}

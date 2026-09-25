@@ -1,0 +1,407 @@
+/* Modo mantenimiento */
+
+.maintenance-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: clip;
+  color: #f8f4ea;
+  background: #111411;
+  color-scheme: dark;
+}
+
+.maintenance-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(8, 10, 9, 0.68);
+  pointer-events: none;
+}
+
+.maintenance-visual {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  background: #111411;
+}
+
+.maintenance-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 62% center;
+  filter: saturate(0.72) contrast(1.08) brightness(0.66);
+  transform: scale(1.01);
+  animation: maintenance-visual-drift 18s ease-in-out infinite alternate;
+}
+
+.maintenance-header,
+.maintenance-footer,
+.maintenance-stage {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, calc(100% - 28px));
+  margin-inline: auto;
+}
+
+.maintenance-header,
+.maintenance-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.maintenance-header {
+  min-height: 82px;
+  border-bottom: 1px solid rgba(248, 244, 234, 0.16);
+}
+
+.maintenance-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 800;
+  color: #fffaf0;
+}
+
+.maintenance-brand > span {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 239, 195, 0.5);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: #17130a;
+  background: #e6bb60;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+}
+
+.maintenance-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d7d8d3;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.maintenance-status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e6ad50;
+  box-shadow: 0 0 0 5px rgba(230, 173, 80, 0.14);
+  animation: maintenance-pulse 2.2s ease-in-out infinite;
+}
+
+.maintenance-stage {
+  min-height: 540px;
+  display: flex;
+  align-items: center;
+  padding-block: 74px;
+}
+
+.maintenance-copy {
+  width: min(760px, 100%);
+  display: grid;
+  justify-items: start;
+  gap: 20px;
+  animation: maintenance-copy-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.maintenance-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 12px;
+  border-left: 3px solid #e6bb60;
+  color: #f0ce82;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.maintenance-copy h1 {
+  max-width: 760px;
+  color: #fffaf0;
+  font-size: 2.65rem;
+  line-height: 1.03;
+  text-wrap: balance;
+  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.maintenance-copy > p {
+  max-width: 640px;
+  color: #d7d8d2;
+  font-size: 1.02rem;
+}
+
+.maintenance-assurances {
+  width: min(670px, 100%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px 26px;
+  border-block: 1px solid rgba(248, 244, 234, 0.17);
+  padding-block: 16px;
+}
+
+.maintenance-assurances span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ece9e0;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.maintenance-assurances span:first-child svg {
+  color: #86d9aa;
+}
+
+.maintenance-assurances span:last-child svg {
+  color: #efc56f;
+}
+
+.maintenance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  padding-top: 2px;
+}
+
+.maintenance-actions .btn {
+  min-height: 50px;
+  border-radius: 7px;
+  padding-inline: 18px;
+}
+
+.maintenance-page .btn-principal {
+  min-width: 190px;
+  border-color: #efd28e;
+  color: #17130a;
+  background: #e6bb60;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+}
+
+.maintenance-page .btn-principal:hover {
+  border-color: #fff0c0;
+  color: #17130a;
+  background: #f0ca78;
+}
+
+.maintenance-page .btn-whatsapp {
+  border-color: rgba(134, 217, 170, 0.52);
+  color: #e8fff1;
+  background: rgba(35, 61, 47, 0.88);
+  backdrop-filter: blur(10px);
+}
+
+.maintenance-page .btn-whatsapp:hover {
+  border-color: #86d9aa;
+  color: #f2fff7;
+  background: #2f674b;
+}
+
+.maintenance-copy .maintenance-help {
+  color: #aeb2ac;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.maintenance-footer {
+  min-height: 84px;
+  border-top: 1px solid rgba(248, 244, 234, 0.16);
+  color: #aeb2ac;
+  font-size: 0.78rem;
+}
+
+.maintenance-legal {
+  display: grid;
+  gap: 5px;
+}
+
+.maintenance-legal small {
+  color: inherit;
+}
+
+.maintenance-legal strong {
+  color: #efca77;
+}
+
+.maintenance-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #e9e6dd;
+  font-weight: 700;
+  transition: color var(--motion), transform var(--motion);
+}
+
+.maintenance-footer a:hover {
+  color: #efca77;
+  transform: translateY(-1px);
+}
+
+.is-spinning {
+  animation: maintenance-spin 0.8s linear infinite;
+}
+
+@keyframes maintenance-pulse {
+  50% {
+    box-shadow: 0 0 0 9px rgba(230, 173, 80, 0.05);
+  }
+}
+
+@keyframes maintenance-visual-drift {
+  to {
+    transform: scale(1.045);
+  }
+}
+
+@keyframes maintenance-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes maintenance-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 760px) {
+  .seccion {
+    width: min(1180px, calc(100% - 48px));
+    padding-block: 104px;
+  }
+
+  .cabecera-seccion {
+    margin-bottom: 38px;
+  }
+
+  .team-grid,
+  .menu-grid {
+    gap: 20px;
+  }
+
+  .wizard-panel {
+    padding: 28px;
+  }
+
+  .admin-panel {
+    padding: 22px;
+  }
+}
+
+@media (min-width: 880px) {
+  .maintenance-stage {
+    min-height: 610px;
+    padding-block: 90px;
+  }
+
+  .maintenance-copy h1 {
+    font-size: 4.35rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .seccion {
+    width: calc(100% - 24px);
+    padding-block: 72px;
+  }
+
+  .cabecera-seccion h2,
+  .location-copy h2,
+  .admin-page-head h1 {
+    font-size: 1.82rem;
+  }
+
+  .team-card-body,
+  .servicio-card {
+    padding: 17px;
+  }
+
+  .maintenance-header,
+  .maintenance-footer,
+  .maintenance-stage {
+    width: calc(100% - 24px);
+  }
+
+  .maintenance-header {
+    min-height: 72px;
+  }
+
+  .maintenance-brand > span {
+    width: 40px;
+    height: 40px;
+  }
+
+  .maintenance-stage {
+    min-height: auto;
+    padding-block: 46px;
+  }
+
+  .maintenance-page::before {
+    background: rgba(8, 10, 9, 0.76);
+  }
+
+  .maintenance-visual img {
+    object-position: 66% center;
+  }
+
+  .maintenance-copy {
+    gap: 17px;
+  }
+
+  .maintenance-copy h1 {
+    font-size: 2.3rem;
+  }
+
+  .maintenance-copy > p {
+    font-size: 0.96rem;
+  }
+
+  .maintenance-assurances {
+    display: grid;
+    gap: 12px;
+  }
+
+  .maintenance-actions,
+  .maintenance-actions .btn {
+    width: 100%;
+  }
+
+  .maintenance-status {
+    display: none;
+  }
+
+  .maintenance-footer {
+    min-height: 112px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+    gap: 13px;
+    padding-block: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maintenance-status i,
+  .maintenance-visual img,
+  .maintenance-copy,
+  .is-spinning {
+    animation: none;
+  }
+}

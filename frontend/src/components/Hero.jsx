@@ -18,7 +18,7 @@ export default function Hero({
     <section id="inicio" className="hero">
       <div className="hero-overlay" />
       <div className="hero-inner seccion">
-        <div className="hero-copy reveal">
+        <div className="hero-copy">
           <span className={`hero-status ${estadoActivo?.is_open ? "is-open" : "is-closed"}`}>
             <span />
             {estadoTexto}

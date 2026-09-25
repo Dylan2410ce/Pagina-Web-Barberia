@@ -24,8 +24,7 @@ describe("gestión de citas del cliente", () => {
     render(<ClientAppointments {...baseProps} />);
 
     expect(screen.getByLabelText("Código de reserva")).toBeInTheDocument();
-    expect(screen.getByLabelText("Número de WhatsApp")).not.toBeVisible();
-    fireEvent.click(screen.getByText("Buscar una cita antigua por teléfono"));
-    expect(screen.getByLabelText("Número de WhatsApp")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Número de WhatsApp")).not.toBeInTheDocument();
+    expect(screen.queryByText("Buscar una cita antigua por teléfono")).not.toBeInTheDocument();
   });
 });

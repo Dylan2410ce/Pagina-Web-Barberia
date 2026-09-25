@@ -52,6 +52,8 @@ export default function BookingWizard({
   onRecordarContacto,
 }) {
   const [paso, setPaso] = useState(1);
+  const [editandoServicio, setEditandoServicio] = useState(false);
+  const servicioElegido = servicios.find((item) => item.id === reserva.service_id);
   const [listaEsperaAbierta, setListaEsperaAbierta] = useState(false);
   const panelRef = useRef(null);
 
@@ -63,6 +65,7 @@ export default function BookingWizard({
   useEffect(() => {
     if (!pasoSolicitado?.key || !puedeAbrir(pasoSolicitado.step)) return;
     setPaso(pasoSolicitado.step);
+    setEditandoServicio(false);
   }, [pasoSolicitado]);
 
   const actualizar = (campo, valor) => {
@@ -147,11 +150,11 @@ export default function BookingWizard({
               <div className="booking-config-block">
                 <div className="booking-config-heading">
                   <span>Servicio principal</span>
-                  <small>Elige uno</small>
+                  {servicioElegido && <button className="text-action" type="button" onClick={() => setEditandoServicio((actual) => !actual)}>{editandoServicio ? "Cerrar opciones" : "Cambiar"}</button>}
                 </div>
                 <div className="booking-service-picker">
                   <div className="booking-service-list">
-                    {servicios.map((servicio) => {
+                    {(servicioElegido && !editandoServicio ? [servicioElegido] : servicios).map((servicio) => {
                       const activo = reserva.service_id === servicio.id;
                       return (
                         <button
@@ -159,7 +162,7 @@ export default function BookingWizard({
                           key={servicio.id}
                           type="button"
                           aria-pressed={activo}
-                          onClick={() => onServicio(servicio.id)}
+                          onClick={() => { onServicio(servicio.id); setEditandoServicio(false); }}
                         >
                           <span className="booking-service-check">
                             {activo ? <Check size={15} /> : <Scissors size={15} />}

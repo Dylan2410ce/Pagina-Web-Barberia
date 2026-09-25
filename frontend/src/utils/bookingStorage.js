@@ -2,7 +2,8 @@ const STORAGE_KEY = "sebas_barber_reservas_v1";
 const MAX_RESERVAS = 8;
 
 function storageDisponible() {
-  return typeof window !== "undefined" && Boolean(window.localStorage);
+  try { return typeof window !== "undefined" && Boolean(window.localStorage); }
+  catch { return false; }
 }
 
 export function leerReservasGuardadas() {
@@ -32,10 +33,9 @@ export function guardarReservaLocal(cita) {
     starts_at: cita.starts_at,
     saved_at: new Date().toISOString(),
   };
-  window.localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify([registro, ...actual].slice(0, MAX_RESERVAS)),
-  );
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([registro, ...actual].slice(0, MAX_RESERVAS)));
+  } catch { /* La confirmacion sigue disponible en pantalla y por correo. */ }
 }
 
 export function eliminarReservaLocal(accessCode) {
@@ -43,7 +43,7 @@ export function eliminarReservaLocal(accessCode) {
   const actual = leerReservasGuardadas().filter(
     (item) => item.access_code !== accessCode,
   );
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(actual));
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(actual)); } catch { /* Almacenamiento no disponible. */ }
 }
 
 export function ultimaReservaGuardada() {

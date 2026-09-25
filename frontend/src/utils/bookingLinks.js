@@ -7,5 +7,5 @@ export function bookingManageUrl(accessCode = "", origin) {
   ).replace(/\/+$/, "");
   const code = String(accessCode || "").trim();
   if (!code) return `${baseOrigin}/#mis-citas`;
-  return `${baseOrigin}/?reserva=${encodeURIComponent(code)}#mis-citas`;
+  return `${baseOrigin}/#mis-citas?reserva=${encodeURIComponent(code)}`;
 }

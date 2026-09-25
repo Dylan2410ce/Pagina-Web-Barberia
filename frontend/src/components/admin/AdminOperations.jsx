@@ -1,3 +1,4 @@
+import { estadosCorreo, tiposCorreo } from "../../utils/notificationLabels";
 import { useEffect, useState } from "react";
 import {
   BellRing,
@@ -655,7 +656,7 @@ export default function AdminOperations({
                 <BellRing size={17} />
                 <div>
                   <strong>{item.recipient_email}</strong>
-                  <span>{item.kind.replaceAll("_", " ")} · {item.status}</span>
+                  <span>{tiposCorreo[item.kind] || "Aviso"} · {estadosCorreo[item.status] || item.status}</span>
                   {item.last_error && <small>{item.last_error}</small>}
                 </div>
               </article>

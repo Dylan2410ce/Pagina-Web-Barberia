@@ -21,7 +21,6 @@ import {
   claseEstado,
   dinero,
   fechaHumana,
-  limpiarTelefono,
   textoEstado,
 } from "../utils/format";
 import ReviewModal from "./ReviewModal";
@@ -47,13 +46,10 @@ function remainingTime(value, now) {
 export default function ClientAppointments({
   codigo,
   setCodigo,
-  telefono,
-  setTelefono,
   citas,
   barberos = [],
   reservasGuardadas = [],
   onBuscarCodigo,
-  onBuscarTelefono,
   onSeleccionarGuardada,
   onCancelar,
   onReprogramar,
@@ -61,7 +57,6 @@ export default function ClientAppointments({
   onReseña,
   onEncuesta,
 }) {
-  const [mostrarAnteriores, setMostrarAnteriores] = useState(false);
   const [citaReseña, setCitaReseña] = useState(null);
   const [citaEncuesta, setCitaEncuesta] = useState(null);
   const [now, setNow] = useState(Date.now());
@@ -132,27 +127,7 @@ export default function ClientAppointments({
             </div>
           )}
 
-          <details
-            className="legacy-lookup"
-            open={mostrarAnteriores}
-            onToggle={(event) => setMostrarAnteriores(event.currentTarget.open)}
-          >
-            <summary>Buscar una cita antigua por teléfono</summary>
-            <form onSubmit={onBuscarTelefono}>
-              <input
-                id="lookup-phone"
-                inputMode="numeric"
-                pattern="[24678][0-9]{7}"
-                maxLength={8}
-                value={telefono}
-                aria-label="Número de WhatsApp"
-                placeholder="88887777"
-                onChange={(event) => setTelefono(limpiarTelefono(event.target.value))}
-                required
-              />
-              <button className="btn btn-linea" type="submit">Buscar</button>
-            </form>
-          </details>
+          <p className="muted">¿No tienes tu código? Contacta a tu barbero para recuperar la reserva.</p>
         </div>
 
         <div className="lista-citas" aria-live="polite">

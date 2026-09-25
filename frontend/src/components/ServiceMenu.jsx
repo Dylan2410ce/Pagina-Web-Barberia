@@ -44,6 +44,7 @@ function descripcionServicio(servicio) {
 export default function ServiceMenu({
   servicios,
   extras,
+  onSeleccionar,
 }) {
   const [categoria, setCategoria] = useState("todos");
   const [mostrarPoster, setMostrarPoster] = useState(false);
@@ -57,8 +58,8 @@ export default function ServiceMenu({
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Servicios y precios</span>
-          <h2>El menú, claro desde el inicio.</h2>
-          <p>Precios claros, tiempos definidos y extras que no alargan la cita.</p>
+          <h2>Encuentra tu próximo corte.</h2>
+          <p>Cortes, barba y detalles que hacen la diferencia.</p>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>
           <Image size={18} />
@@ -67,7 +68,7 @@ export default function ServiceMenu({
       </div>
 
       <div className="filtros-servicios reveal" role="tablist" aria-label="Categorías de servicios">
-        {categorias.map((item) => (
+        {categorias.filter((item) => item.id === "todos" || servicios.some((servicio) => categoriaDe(servicio.name) === item.id)).map((item) => (
           <button
             className={categoria === item.id ? "activo" : ""}
             key={item.id}
@@ -106,6 +107,7 @@ export default function ServiceMenu({
               <Clock3 size={15} />
               {servicio.duration_min} min aprox.
             </span>
+            <button className="btn btn-linea" type="button" onClick={() => onSeleccionar?.(servicio.id)} aria-label={`Reservar ${servicio.name}`}>Reservar este servicio</button>
           </article>
         ))}
       </div>

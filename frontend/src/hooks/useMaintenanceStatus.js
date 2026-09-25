@@ -64,10 +64,13 @@ export default function useMaintenanceStatus(enabled = true) {
     }
 
     setStatus((current) => ({ ...current, checking: true }));
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 5000);
     try {
       const response = await fetch("/api/site-status", {
         headers: { Accept: "application/json" },
         cache: "no-store",
+        signal: controller.signal,
       });
       if (!response.ok) throw new Error("Estado no disponible");
       const next = normalizeStatus(await response.json());
@@ -84,6 +87,8 @@ export default function useMaintenanceStatus(enabled = true) {
         return next;
       });
       return null;
+    } finally {
+      window.clearTimeout(timeout);
     }
   }, [enabled, preview]);
 
@@ -91,6 +96,7 @@ export default function useMaintenanceStatus(enabled = true) {
     let active = true;
 
     const check = async () => {
+      if (document.hidden) return;
       const next = await refresh();
       if (!active) return;
       return next;

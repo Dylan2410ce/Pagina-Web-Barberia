@@ -6,9 +6,8 @@ export default function useFormSectionVisible() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const sections = FORM_SECTION_IDS
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
+    if (!("IntersectionObserver" in window)) return undefined;
+    let sections = [];
     const visibleSections = new Set();
     const observer = new IntersectionObserver(
       (entries) => {
@@ -21,8 +20,18 @@ export default function useFormSectionVisible() {
       { rootMargin: "-8% 0px -8% 0px", threshold: 0 },
     );
 
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
+    const observar = () => {
+      const siguientes = FORM_SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
+      if (siguientes.length === sections.length && siguientes.every((item, index) => item === sections[index])) return;
+      observer.disconnect();
+      visibleSections.clear();
+      sections = siguientes;
+      sections.forEach((section) => observer.observe(section));
+    };
+    observar();
+    const cambios = new MutationObserver(observar);
+    cambios.observe(document.getElementById("root") || document.body, { childList: true, subtree: true });
+    return () => { observer.disconnect(); cambios.disconnect(); };
   }, []);
 
   return visible;

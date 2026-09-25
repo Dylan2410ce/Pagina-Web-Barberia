@@ -1,0 +1,19 @@
+.agenda-loading { min-height: 28rem; }
+.agenda-loading h2 { margin: .7rem 0; font-size: 1.8rem; }
+.agenda-loading p { max-width: 36rem; margin-bottom: 1.5rem; }
+.agenda-skeleton { display: grid; gap: 1rem; margin-top: 2rem; }
+.agenda-skeleton > div { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--line); border-radius: 8px; }
+.agenda-skeleton span { height: 1rem; width: 75%; border-radius: 4px; background: var(--surface-raised); animation: skeleton-pulse 1.6s ease-in-out infinite alternate; }
+.agenda-skeleton span:first-child { height: 2rem; width: 50%; }
+.agenda-skeleton span:last-child { width: 100%; }
+.section-placeholder { min-height: 20rem; }
+.deferred-section .reveal { opacity: 1; transform: none; }
+.text-action { color: var(--gold-light); padding: .6rem; background: none; border: 0; text-decoration: underline; text-underline-offset: 4px; font-size: .85rem; }
+.servicio-card .btn { margin-top: auto; width: 100%; }
+.static-menu { list-style: none; padding: 0; display: grid; gap: 1.25rem; }
+.static-menu li { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 1rem 0; }
+.static-landing h2 { margin-bottom: 1rem; }
+.static-landing .hero { min-height: 75svh; }
+@keyframes skeleton-pulse { from { opacity: .4; } to { opacity: 1; } }
+@media (min-width: 760px) { .agenda-skeleton { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .agenda-skeleton span { animation: none; } }
