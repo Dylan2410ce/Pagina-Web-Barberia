@@ -1,5 +1,8 @@
 import ssl
+from functools import lru_cache
+from pathlib import Path
 
+from alembic.script import ScriptDirectory
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -38,6 +41,12 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
     autoflush=False,
 )
+
+
+@lru_cache(maxsize=1)
+def required_schema_revisions() -> frozenset[str]:
+    migrations = Path(__file__).resolve().parents[1] / "alembic"
+    return frozenset(ScriptDirectory(str(migrations)).get_heads())
 
 
 async def get_db():

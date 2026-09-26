@@ -22,7 +22,7 @@ from app.controllers import (
     public_controller,
     tasks_controller,
 )
-from app.database import AsyncSessionLocal, engine
+from app.database import AsyncSessionLocal, engine, required_schema_revisions
 from app.routers import bookings
 from app.services.calendar_service import CalendarService
 from app.services.seed_service import seed_data
@@ -239,20 +239,22 @@ async def readiness():
     try:
         async with asyncio.timeout(10):
             async with AsyncSessionLocal() as db:
-                await db.execute(text("SELECT 1"))
+                result = await db.execute(text("SELECT version_num FROM alembic_version"))
+                schema_current = frozenset(result.scalars().all()) == required_schema_revisions()
         latency_ms = round((perf_counter() - started_at) * 1000, 2)
-        return {
-            "status": "ok",
+        return JSONResponse(status_code=200 if schema_current else 503, content={
+            "status": "ok" if schema_current else "degraded",
             "service": "sebas-barber-api",
             "version": app.version,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "database": {
                 "status": "connected",
+                "schema": "current" if schema_current else "migration_required",
                 "latency_ms": latency_ms,
             },
-        }
+        })
     except (SQLAlchemyError, TimeoutError) as exc:
-        logger.warning("Healthcheck sin conexión: %s", type(exc).__name__)
+        logger.warning("Readiness de base de datos no disponible: %s", type(exc).__name__)
         return JSONResponse(
             status_code=503,
             content={
@@ -262,6 +264,7 @@ async def readiness():
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "database": {
                     "status": "unavailable",
+                    "schema": "unverified",
                     "latency_ms": None,
                 },
             },

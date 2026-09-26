@@ -107,6 +107,7 @@ Para ejecutar manualmente, con variables del proceso ya configuradas:
 ```powershell
 cd backend
 python -m pip install -r requirements.txt
+python scripts/backup_database.py
 python -m alembic current
 python -m alembic upgrade head
 python -m alembic current
@@ -114,6 +115,12 @@ python -m alembic current
 
 Render lo ejecuta automáticamente con el Start Command indicado. La revisión final
 debe ser `20260924_03`. Un segundo `upgrade head` no debe repetir la migración.
+El script de respaldo es manual: exporta datos y metadatos del esquema `public`
+con una transacción de solo lectura. Verifica las filas y publica únicamente ruta,
+conteos y SHA-256; el archivo queda en `.backups/`, excluido de Git. Contiene datos
+privados: no lo subas ni lo compartas. No sustituye un `pg_dump` completo ni una
+prueba de restauración; no incluye roles, permisos, vistas ni objetos grandes.
+No ejecutes este respaldo en cada arranque de Render.
 Se usa TLS con verificación de certificado, pool de 2 conexiones + 1 extra,
 `pool_pre_ping=True`, `pool_recycle=300` y timeouts acotados.
 
@@ -166,7 +173,10 @@ conserva temporalmente `SECRET_KEY_PREVIOUS`.
 - Liveness/versionado: **https://pagina-web-barberia.onrender.com/health**.
   Responde 200 con `status`, `commit` y `version`, sin consultar Neon.
 - Readiness: **https://pagina-web-barberia.onrender.com/health/ready**.
-  Comprueba Neon con timeout y responde 503 si no está disponible.
+  Comprueba Neon y la revisión de Alembic con timeout. Responde 503 si no puede
+  verificar el esquema o faltan migraciones, aunque PostgreSQL acepte conexiones.
+  Si `/health` funciona pero `/api/public/init` responde 503, revisa esta ruta y
+  confirma que el Start Command del servicio manual ejecuta `alembic upgrade head`.
 - Los logs de Calendar muestran operación, tipo de excepción y estado HTTP;
   no imprimen tokens, cuerpos de Google, nombres ni correos.
 

@@ -4,6 +4,7 @@
 !.env.example
 *.pem
 *.key
+.backups/
 **/credentials.json
 **/*credentials*.json
 **/*service-account*.json

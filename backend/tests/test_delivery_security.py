@@ -9,11 +9,11 @@ from uuid import uuid4
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from starlette.requests import Request
 
 from app.config import config
-from app.database import Base, get_db
+from app.database import Base, get_db, required_schema_revisions
 from app.main import app
 from app.models import Appointment, AppointmentStatus, Barber, DispatchLease, NotificationBudget, NotificationDelivery, NotificationKind, NotificationStatus
 from app.services.calendar_service import CalendarService, log_google_error
@@ -176,6 +176,32 @@ class SecurityTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual((await client.get("/docs")).status_code, 404)
                 self.assertEqual((await client.get("/openapi.json")).status_code, 404)
                 self.assertEqual((await client.get("/api/public/appointments/manage/secret")).status_code, 404)
+
+    async def test_readiness_requires_current_migrations(self):
+        for revisions, status, schema in (
+            (list(required_schema_revisions()), 200, "current"),
+            (["20260728_02"], 503, "migration_required"),
+            ([], 503, "migration_required"),
+        ):
+            result = MagicMock()
+            result.scalars.return_value.all.return_value = revisions
+            session = MagicMock()
+            session.__aenter__.return_value.execute = AsyncMock(return_value=result)
+            with patch("app.main.AsyncSessionLocal", return_value=session):
+                async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+                    response = await client.get("/health/ready")
+            self.assertEqual(response.status_code, status)
+            self.assertEqual(response.json()["database"]["schema"], schema)
+
+    async def test_missing_migration_table_is_not_ready_and_does_not_leak_errors(self):
+        session = MagicMock()
+        session.__aenter__.return_value.execute = AsyncMock(side_effect=SQLAlchemyError("private database details"))
+        with patch("app.main.AsyncSessionLocal", return_value=session):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+                response = await client.get("/health/ready")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["database"]["schema"], "unverified")
+        self.assertNotIn("private database details", response.text)
 
     async def test_lookup_requires_code_in_post_body_and_never_accepts_phone_only(self):
         async def fake_db():
