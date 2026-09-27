@@ -23,17 +23,18 @@ import {
 } from "../../utils/format";
 import { descargarCsv } from "../../utils/csv";
 import AdminPageHead from "./AdminPageHead";
+import { normalizarBusqueda } from "../../utils/validation";
 
 const PAGE_SIZE = 8;
 
 function coincide(cliente, query, status, desde) {
-  const term = query.trim().toLocaleLowerCase("es-CR");
-  const content = [
+  const term = normalizarBusqueda(query);
+  const content = normalizarBusqueda([
     cliente.name,
     cliente.phone,
     cliente.email,
     ...(cliente.history || []).map((item) => item.service),
-  ].join(" ").toLocaleLowerCase("es-CR");
+  ].join(" "));
   const history = cliente.history || [];
   const statusMatch = !status || history.some((item) => item.status === status);
   const dateMatch = !desde || history.some(
@@ -83,6 +84,7 @@ export default function AdminClients({
   useEffect(() => {
     if (pagina > totalPaginas) setPagina(totalPaginas);
   }, [pagina, totalPaginas]);
+  useEffect(() => { setSeleccionado(""); }, [pagina]);
 
   useEffect(() => {
     setProfileForm({
@@ -138,6 +140,7 @@ export default function AdminClients({
               <Search size={17} />
               <input
                 value={query}
+                aria-label="Buscar cliente"
                 placeholder="Nombre, teléfono o servicio"
                 onChange={(event) => setQuery(event.target.value)}
               />

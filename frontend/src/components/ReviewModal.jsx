@@ -6,7 +6,7 @@ export default function ReviewModal({ cita, onClose, onSubmit }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [website, setWebsite] = useState("");
-  const dialogRef = useDialogA11y(onClose);
+  const dialogRef = useDialogA11y(cita ? onClose : null);
 
   if (!cita) return null;
 

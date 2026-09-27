@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  CalendarCheck2,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock3,
-  Download,
-  MoveRight,
-  Search,
-  XCircle,
-} from "lucide-react";
+import { CalendarCheck2, CheckCircle2, ChevronLeft, ChevronRight, Download, MoveRight, XCircle } from "lucide-react";
 import {
   claseEstado,
   dinero,
@@ -19,6 +9,9 @@ import {
 } from "../../utils/format";
 import { descargarCsv } from "../../utils/csv";
 import AdminPageHead from "./AdminPageHead";
+import ActionMenu from "../ui/ActionMenu";
+import SearchToolbar from "../ui/SearchToolbar";
+import { coincideBusqueda } from "../../utils/validation";
 
 const PAGE_SIZE = 8;
 
@@ -49,7 +42,7 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
   const [pagina, setPagina] = useState(1);
 
   useEffect(() => {
-    setFiltros(admin.filtros);
+    setFiltros((actual) => ({ ...actual, date: admin.filtros.date }));
     setPagina(1);
   }, [admin.filtros]);
 
@@ -63,11 +56,14 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
       completadas: citas.filter((item) => item.status === "completed").length,
     };
   }, [admin.citas]);
-  const totalPaginas = Math.max(1, Math.ceil(admin.citas.length / PAGE_SIZE));
-  const citasVisibles = admin.citas.slice(
+  const filtradas = admin.citas.filter((item) => (!filtros.status || item.status === filtros.status)
+    && coincideBusqueda([item.client_name, item.client_phone, item.service_name, item.notes], filtros.q));
+  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE_SIZE));
+  const citasVisibles = filtradas.slice(
     (pagina - 1) * PAGE_SIZE,
     pagina * PAGE_SIZE,
   );
+  useEffect(() => { setPagina(1); }, [filtros.q, filtros.status]);
 
   useEffect(() => {
     if (pagina > totalPaginas) setPagina(totalPaginas);
@@ -75,23 +71,18 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
 
   const aplicar = (next) => {
     setFiltros(next);
-    onFiltrar(next);
+    onFiltrar({ ...next, q: "", status: "" });
   };
 
   const cambiarDia = (amount) => {
     aplicar({ ...filtros, date: moverFecha(filtros.date, amount) });
   };
 
-  const enviar = (event) => {
-    event.preventDefault();
-    aplicar(filtros);
-  };
-
   const tituloFecha = formatoDia.format(new Date(`${filtros.date || hoyISO()}T12:00:00`));
 
   const exportar = () => descargarCsv(
     `agenda-${filtros.date || hoyISO()}.csv`,
-    admin.citas,
+    filtradas,
     [
       { label: "Fecha", value: (item) => fechaHumana(item.starts_at) },
       { label: "Cliente", value: (item) => item.client_name },
@@ -114,7 +105,7 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
             className="btn btn-linea"
             type="button"
             onClick={exportar}
-            disabled={admin.citas.length === 0}
+            disabled={filtradas.length === 0 || admin.cargandoAgenda}
           >
             <Download size={17} />
             Exportar CSV
@@ -145,22 +136,13 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
           <span><strong>{resumen.completadas}</strong> completadas</span>
         </div>
 
-        <form className="admin-filters agenda-filters" onSubmit={enviar}>
-          <div className="filter-search">
-            <Search size={17} />
-            <input
-              name="q"
-              placeholder="Nombre, teléfono o servicio"
-              value={filtros.q || ""}
-              onChange={(event) => setFiltros((actual) => ({ ...actual, q: event.target.value }))}
-            />
-          </div>
+        <SearchToolbar value={filtros.q || ""} onChange={(q) => setFiltros((actual) => ({ ...actual, q }))} label="Buscar cliente o servicio" count={filtradas.length}>
           <input
             name="date"
             type="date"
             value={filtros.date || hoyISO()}
             aria-label="Fecha"
-            onChange={(event) => setFiltros((actual) => ({ ...actual, date: event.target.value }))}
+            onChange={(event) => { if (event.target.value) aplicar({ ...filtros, date: event.target.value }); }}
           />
           <select
             name="status"
@@ -173,18 +155,18 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
               <option value={status} key={status}>{textoEstado(status)}</option>
             ))}
           </select>
-          <button className="btn btn-principal" type="submit">Buscar</button>
-        </form>
+        </SearchToolbar>
 
-        <div className="agenda-timeline">
-          {admin.citas.length === 0 && (
+        <div className="agenda-timeline" aria-busy={Boolean(admin.cargandoAgenda)}>
+          {admin.cargandoAgenda && <div className="agenda-loading" role="status"><span className="spinner" />Cargando citas…</div>}
+          {!admin.cargandoAgenda && filtradas.length === 0 && (
             <div className="admin-empty">
               <CalendarCheck2 size={25} />
-              <strong>El día está libre.</strong>
+              <strong>No hay citas para mostrar.</strong>
               <span>No hay citas con estos filtros.</span>
             </div>
           )}
-          {citasVisibles.map((cita) => {
+          {!admin.cargandoAgenda && citasVisibles.map((cita) => {
             const esBloqueo = cita.status === "blocked";
             return (
               <article className={`agenda-event ${esBloqueo ? "agenda-event-blocked" : ""}`} key={cita.id}>
@@ -218,27 +200,21 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
                       <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "completed")}>
                         <CheckCircle2 size={16} />Completar
                       </button>
-                      <button className="btn btn-linea" type="button" onClick={() => onEstado(cita.id, "no_show")}>
-                        <XCircle size={16} />No asistió
-                      </button>
                     </>
                   )}
                   {["pending", "confirmed", "blocked"].includes(cita.status) && (
-                    <>
-                      <button className="icon-btn" type="button" onClick={() => onMover(cita)} title="Mover" aria-label="Mover cita o bloqueo">
-                        <MoveRight size={17} />
-                      </button>
-                      <button className="icon-btn danger" type="button" onClick={() => onEstado(cita.id, "cancelled")} title="Cancelar o liberar" aria-label="Cancelar cita o liberar bloqueo">
-                        <XCircle size={17} />
-                      </button>
-                    </>
+                    <ActionMenu label={`Acciones de ${esBloqueo ? "bloqueo" : cita.client_name}`} actions={[
+                      { label: "Reprogramar", icon: MoveRight, onClick: () => onMover(cita) },
+                      ...(cita.status === "confirmed" ? [{ label: "No asistió", icon: XCircle, onClick: () => onEstado(cita.id, "no_show") }] : []),
+                      { label: esBloqueo ? "Liberar horario" : "Cancelar cita", icon: XCircle, danger: true, onClick: () => onEstado(cita.id, "cancelled") },
+                    ]} />
                   )}
                 </div>
               </article>
             );
           })}
         </div>
-        {admin.citas.length > PAGE_SIZE && (
+        {filtradas.length > PAGE_SIZE && (
           <nav className="pagination" aria-label="Páginas de citas">
             <button
               className="icon-btn"

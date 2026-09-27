@@ -1,0 +1,100 @@
+/* Composición pública. La reserva es la única zona de selección. */
+.seccion { width: min(1200px, calc(100% - 32px)); padding-block: var(--space-16); }
+.cabecera-seccion { margin-bottom: var(--space-8); gap: var(--space-6); }
+.cabecera-seccion > div { gap: var(--space-3); }
+.cabecera-seccion h2, .location-copy h2 { font-size: 2rem; line-height: 1.2; font-weight: 700; max-width: 36rem; }
+.cabecera-seccion p { color: var(--muted); max-width: 36rem; font-size: 1rem; }
+.nav-contenido { width: min(1200px, calc(100% - 32px)); min-height: 4.5rem; gap: var(--space-4); }
+.marca strong { font-family: var(--font-heading); font-size: 1rem; }
+.marca span { width: 2.5rem; height: 2.5rem; }
+.nav-links a { font-size: .875rem; font-weight: 500; }
+.navbar-solida { background: rgb(20 22 23 / 95%); }
+.hero { min-height: min(42rem, 84svh); align-items: center; background-position: 65% center; }
+.hero-overlay { background: linear-gradient(90deg, rgb(13 16 16 / 88%), rgb(13 16 16 / 38%) 72%, rgb(13 16 16 / 18%)); }
+.hero-inner { padding-block: 8rem 3rem; }
+.hero-copy { max-width: 38rem; gap: var(--space-6); }
+.hero h1 { font-family: var(--font-heading); font-size: 3.25rem; font-weight: 800; line-height: 1.1; }
+.hero-kicker { color: var(--gold-light); font-size: .875rem; text-transform: none; font-weight: 500; }
+.hero-lead { max-width: 29rem; color: #e0e6e3; line-height: 1.75; }
+.hero-acciones { gap: var(--space-3); }
+.hero-facts { gap: 1rem; font-size: .8125rem; }
+.hero-status { font-weight: 500; color: var(--text-soft); }
+.hero-status.is-closed > span { background: var(--gold); box-shadow: none; }
+.team-grid { gap: var(--space-6); }
+.team-card { box-shadow: none; background: var(--surface); }
+.team-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px #0003; background: var(--surface); }
+.team-card-body { padding: var(--space-6); gap: var(--space-4); }
+.team-card-head h3 { font-family: var(--font-heading); font-size: 1.5rem; }
+.team-card-head > div > span { font-size: .75rem; color: var(--muted); font-weight: 500; text-transform: none; }
+.team-card-body > p { font-size: .9375rem; min-height: 0; }
+.team-visual { aspect-ratio: 4 / 3; min-height: 0; }
+.team-photo-accent { display: none; }
+.menu-grid { gap: var(--space-4); }
+.servicio-card { gap: var(--space-4); padding: var(--space-6); box-shadow: none; background: var(--surface); border-color: var(--line); }
+.servicio-card:hover { transform: translateY(-3px); background: var(--surface-raised); box-shadow: none; }
+.servicio-card h3 { font-size: 1.125rem; }
+.servicio-card p { font-size: .875rem; }
+.servicio-precio { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.servicio-card > .btn { justify-content: space-between; border-color: var(--line); }
+.filtros-servicios { gap: var(--space-2); margin-bottom: var(--space-6); flex-wrap: wrap; overflow: visible; }
+.filtros-servicios button { border-radius: .375rem; min-height: 2.75rem; padding-inline: 1rem; font-size: .875rem; font-weight: 500; }
+.filtros-servicios button.activo { box-shadow: none; }
+.extras-strip { padding-block: var(--space-6); margin-top: var(--space-8); }
+.extra-option { background: transparent; }
+.extras-strip h3 { font-size: 1.25rem; }
+.reserva-section { border-block: 1px solid var(--line); }
+.reserva-grid { gap: var(--space-8); }
+.wizard-panel { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; scroll-margin-top: 6rem; }
+.wizard-steps { gap: var(--space-2); padding-bottom: var(--space-4); }
+.wizard-steps button { font-size: .8125rem; padding: .5rem .25rem; min-height: 3rem; }
+.wizard-steps button:disabled { opacity: .65; }
+.wizard-steps button.activo > span { box-shadow: none; }
+.wizard-stage { padding-top: var(--space-8); gap: var(--space-6); }
+.stage-heading h3 { font-size: 1.5rem; }
+.stage-heading > span { display: none; }
+.booking-config-block { gap: var(--space-3); padding-top: var(--space-6); }
+.booking-service-list > button, .booking-barber-option, .booking-extras button { background: var(--surface); border-color: var(--line-strong); }
+.booking-service-list > button.activo, .booking-barber-option.activo { background: #263330; border-color: var(--focus); box-shadow: inset 3px 0 var(--focus); }
+.booking-service-list > button > strong:last-child { font-size: .9375rem; }
+.booking-service-list:has(> button:only-child) { grid-template-columns: minmax(0, 1fr); }
+.booking-service-list small, .booking-barber-option small { font-size: .8125rem; }
+.booking-choice-summary { padding: 1rem 0; border-inline: 0; border-radius: 0; border-color: var(--line); background: none; }
+.booking-choice-summary > span:first-child { background: none; border: 0; color: var(--focus); }
+.booking-choice-summary small, .booking-choice-summary > div > span { font-size: .8125rem; }
+.wizard-actions { gap: var(--space-3); padding-top: var(--space-4); }
+.resumen-card { gap: var(--space-6); padding: var(--space-6); border: 0; border-radius: 0; border-left: 2px solid var(--gold); background: var(--bg-soft); box-shadow: none; }
+.resumen-card h3 { font-size: 1.25rem; }
+.resumen-card li, .resumen-extras { font-size: .875rem; }
+.resumen-total strong { font-family: var(--font-heading); font-size: 2rem; }
+.resumen-card .chip { border: 0; background: transparent; padding: 0; }
+.location-grid { gap: var(--space-8); }
+.footer { width: min(1200px, calc(100% - 32px)); padding-top: var(--space-8); }
+@media (min-width: 768px) {
+  .seccion { width: min(1200px, calc(100% - 64px)); padding-block: 5rem; }
+  .hero-inner { padding-block: 8rem 4rem; }
+  .hero h1 { font-size: 4.5rem; }
+  .cabecera-seccion h2, .location-copy h2 { font-size: 2.5rem; }
+  .team-card { grid-template-columns: 1fr; }
+  .team-visual { aspect-ratio: 4 / 3; }
+  .reserva-grid { grid-template-columns: minmax(0, 1fr); }
+  .resumen-card { position: static; }
+}
+@media (min-width: 1040px) {
+  .team-card { grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); }
+  .team-visual { aspect-ratio: auto; min-height: 19rem; }
+  .team-grid { gap: var(--space-8); }
+  .reserva-grid { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--space-12); }
+  .resumen-card { position: sticky; top: 6rem; }
+  .hero { min-height: min(40rem, 74svh); }
+  .hero h1 { font-size: 5rem; }
+}
+@media (max-width: 479px) {
+  .hero h1 { font-size: 2.75rem; }
+  .hero { min-height: auto; }
+  .hero-copy { gap: var(--space-4); }
+  .hero-inner { padding-block: 7rem 3rem; }
+  .hero-facts { flex-direction: column; }
+  .booking-service-check { display: none; }
+  .booking-service-list > button { grid-template-columns: minmax(0, 1fr) auto; }
+  .form-doble { grid-template-columns: minmax(0, 1fr); }
+}

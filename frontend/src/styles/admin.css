@@ -165,7 +165,7 @@
 
 .admin-metrics strong {
   color: var(--text);
-  font-family: "Poppins", sans-serif;
+  font-family: var(--font-heading);
   font-size: 1.55rem;
 }
 

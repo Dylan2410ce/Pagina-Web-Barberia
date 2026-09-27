@@ -1,15 +1,6 @@
+import BookingDetails from "./booking/BookingDetails";
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BellRing,
-  Check,
-  CircleCheckBig,
-  Clock3,
-  Scissors,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, BellRing, Check, CircleCheckBig, Clock3, Scissors, UserRound } from "lucide-react";
 import { dinero, limpiarTelefono } from "../utils/format";
 import BarberPhoto from "./BarberPhoto";
 import WaitlistModal from "./WaitlistModal";
@@ -106,8 +97,8 @@ export default function BookingWizard({
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Reserva online</span>
-          <h2>Reserva tu espacio sin complicarte.</h2>
-          <p>Elige el servicio, tu barbero y la hora que mejor te funcione.</p>
+          <h2>Tu próxima cita.</h2>
+          <p>Tu corte, tu barbero, tu hora.</p>
         </div>
       </div>
 
@@ -143,8 +134,7 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>1 de 3</span>
-                <h3>Arma tu cita.</h3>
-                <p>Elige el servicio, los extras y quién te atenderá, todo aquí.</p>
+                <h3>¿Qué te hacemos hoy?</h3>
               </div>
 
               <div className="booking-config-block">
@@ -209,7 +199,6 @@ export default function BookingWizard({
               <div className="booking-config-block booking-barber-picker">
                 <div className="booking-config-heading">
                   <span>Barbero</span>
-                  <small>Elige una agenda</small>
                 </div>
                 <div className="booking-barber-grid">
                   {barberos.map((item) => {
@@ -289,9 +278,7 @@ export default function BookingWizard({
               <div className="campo">
                 <label>Horas disponibles</label>
                 <div className="slots">
-                  {cargandoSlots && (
-                    <div className="slots-vacio"><span className="spinner" /> Consultando agenda...</div>
-                  )}
+                  {cargandoSlots && <div className="slot-skeletons" role="status"><span className="sr-only">Consultando agenda…</span>{Array.from({ length: 6 }, (_, indice) => <span key={indice} className="skeleton" />)}</div>}
                   {!cargandoSlots && slots.map((slot) => (
                     <button
                       key={slot.start_min}
@@ -343,102 +330,8 @@ export default function BookingWizard({
             </div>
           )}
 
-          {paso === 3 && (
-            <form className="wizard-stage formulario" onSubmit={onSubmit}>
-              <div className="honeypot" aria-hidden="true">
-                <label htmlFor="booking-website">Sitio web</label>
-                <input
-                  id="booking-website"
-                  name="website"
-                  tabIndex="-1"
-                  autoComplete="off"
-                  value={reserva.website || ""}
-                  onChange={(event) => actualizar("website", event.target.value)}
-                />
-              </div>
-              <div className="stage-heading">
-                <span>3 de 3</span>
-                <h3>¿A nombre de quién?</h3>
-                <p>Déjanos tus datos y revisa el resumen antes de confirmar.</p>
-              </div>
-              <div className="campo">
-                <label htmlFor="client-name">Nombre completo</label>
-                <input
-                  id="client-name"
-                  value={reserva.client_name}
-                  minLength={3}
-                  maxLength={80}
-                  autoComplete="name"
-                  required
-                  placeholder="Tu nombre"
-                  onChange={(event) => actualizar("client_name", event.target.value)}
-                />
-              </div>
-              <div className="form-doble">
-                <div className="campo">
-                  <label htmlFor="client-phone">WhatsApp</label>
-                  <input
-                    id="client-phone"
-                    inputMode="numeric"
-                    pattern="[24678][0-9]{7}"
-                    maxLength={8}
-                    value={reserva.client_phone}
-                    autoComplete="tel"
-                    required
-                    placeholder="88887777"
-                    onChange={(event) => actualizar("client_phone", event.target.value)}
-                  />
-                </div>
-                <div className="campo">
-                  <label htmlFor="client-email">Correo (opcional)</label>
-                  <input
-                    id="client-email"
-                    type="email"
-                    maxLength={160}
-                    value={reserva.client_email}
-                    autoComplete="email"
-                  placeholder="correo@ejemplo.com"
-                  onChange={(event) => actualizar("client_email", event.target.value)}
-                />
-                  <small className="campo-ayuda">
-                    Recibirás el QR y la clave privada de tu reserva.
-                  </small>
-                </div>
-              </div>
-              <div className="campo">
-                <label htmlFor="client-notes">Detalle del corte (opcional)</label>
-                <input
-                  id="client-notes"
-                  maxLength={240}
-                  value={reserva.notes}
-                  placeholder="Ej.: bajo en los lados y textura arriba"
-                  onChange={(event) => actualizar("notes", event.target.value)}
-                />
-              </div>
-              <div className="privacy-note">
-                <ShieldCheck size={17} />
-                Tus datos se usan únicamente para gestionar esta cita.
-              </div>
-              <label className="remember-contact">
-                <input
-                  type="checkbox"
-                  checked={recordarContacto}
-                  onChange={(event) => onRecordarContacto(event.target.checked)}
-                />
-                Recordar mis datos en este dispositivo
-              </label>
-              <div className="wizard-actions">
-                <button className="btn btn-linea" type="button" onClick={() => cambiarPaso(2)}>
-                  <ArrowLeft size={18} />
-                  Volver
-                </button>
-                <button className="btn btn-principal" type="submit">
-                  <CircleCheckBig size={18} />
-                  Confirmar cita
-                </button>
-              </div>
-            </form>
-          )}
+          {paso === 3 && <BookingDetails reserva={reserva} actualizar={actualizar} onSubmit={onSubmit} onBack={() => cambiarPaso(2)} recordarContacto={recordarContacto} onRecordarContacto={onRecordarContacto} />}
+
         </div>
 
         <aside className="panel resumen-card reveal">

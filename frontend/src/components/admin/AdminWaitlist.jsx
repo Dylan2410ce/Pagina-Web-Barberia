@@ -49,6 +49,7 @@ export default function AdminWaitlist({ items = [], onStatus }) {
             <Search size={17} />
             <input
               value={query}
+              aria-label="Buscar solicitud en espera"
               placeholder="Nombre, teléfono o servicio"
               onChange={(event) => setQuery(event.target.value)}
             />

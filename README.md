@@ -24,6 +24,7 @@ aislamiento en el servidor.
 | Documento | Contenido |
 | --- | --- |
 | [Arquitectura](docs/ARCHITECTURE.md) | Capas, módulos, flujos y decisiones técnicas |
+| [Interfaz y pruebas visuales](docs/FRONTEND_UI.md) | Componentes, estilos, accesibilidad y revisión responsive |
 | [API](docs/API.md) | Endpoints, autenticación, errores y contratos |
 | [Operación](docs/OPERATIONS.md) | Variables, despliegues, migraciones y runbooks |
 | [EmailJS](docs/EMAILJS.md) | Templates, variables y diagnóstico de correos |

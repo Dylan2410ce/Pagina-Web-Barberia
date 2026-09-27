@@ -11,10 +11,13 @@ const FOCUSABLE = [
 
 export default function useDialogA11y(onClose) {
   const dialogRef = useRef(null);
+  const cerrarRef = useRef(onClose);
+  const abierto = Boolean(onClose);
+  useEffect(() => { cerrarRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) return undefined;
+    if (!abierto || !dialog) return undefined;
     const previous = document.activeElement;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -22,7 +25,7 @@ export default function useDialogA11y(onClose) {
 
     const handleKeydown = (event) => {
       if (event.key === "Escape") {
-        onClose?.();
+        cerrarRef.current?.();
         return;
       }
       if (event.key !== "Tab") return;
@@ -45,7 +48,7 @@ export default function useDialogA11y(onClose) {
       document.body.style.overflow = originalOverflow;
       previous?.focus?.();
     };
-  }, [onClose]);
+  }, [abierto]);
 
   return dialogRef;
 }

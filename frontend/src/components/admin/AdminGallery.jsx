@@ -8,6 +8,8 @@ import {
   Upload,
 } from "lucide-react";
 import AdminPageHead from "./AdminPageHead";
+import SearchToolbar from "../ui/SearchToolbar";
+import { coincideBusqueda } from "../../utils/validation";
 
 const initial = {
   image_url: "",
@@ -28,6 +30,9 @@ export default function AdminGallery({
   const [mode, setMode] = useState("file");
   const [form, setForm] = useState(initial);
   const [file, setFile] = useState(null);
+  const [consulta, setConsulta] = useState("");
+  const [estado, setEstado] = useState("");
+  const visibles = items.filter((item) => coincideBusqueda([item.title, item.category], consulta) && (!estado || item.is_active === (estado === "publicadas")));
 
   const update = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -150,11 +155,12 @@ export default function AdminGallery({
           <div className="admin-panel-head">
             <div><span>Publicaciones</span><h2>{items.length} imágenes</h2></div>
           </div>
+          <SearchToolbar value={consulta} onChange={setConsulta} label="Buscar imagen" count={visibles.length}><select value={estado} onChange={(event) => setEstado(event.target.value)} aria-label="Visibilidad de imágenes"><option value="">Todas</option><option value="publicadas">Publicadas</option><option value="ocultas">Ocultas</option></select></SearchToolbar>
           <div className="gallery-admin-grid">
-            {items.length === 0 && (
-              <div className="admin-empty"><ImagePlus size={24} /><strong>Aún no hay imágenes.</strong></div>
+            {visibles.length === 0 && (
+              <div className="admin-empty"><ImagePlus size={24} /><strong>No hay imágenes con estos filtros.</strong></div>
             )}
-            {items.map((item) => (
+            {visibles.map((item) => (
               <article key={item.id}>
                 <img src={item.image_url} alt={item.alt_text} loading="lazy" />
                 <div>

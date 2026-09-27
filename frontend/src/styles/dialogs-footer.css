@@ -20,7 +20,7 @@
 
 .footer-brand strong {
   color: var(--text);
-  font-family: "Poppins", sans-serif;
+  font-family: var(--font-heading);
   font-size: 1.45rem;
   text-transform: uppercase;
 }

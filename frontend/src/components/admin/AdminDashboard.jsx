@@ -31,13 +31,13 @@ export default function AdminDashboard({
     <>
       <AdminPageHead
         eyebrow={`Agenda de ${perfil?.name || "barbero"}`}
-        title="Todo bajo control."
-        text="Tu día, tus próximas citas y los números que importan."
+        title={`Hola, ${perfil?.name || "barbero"}.`}
+        text="Este es el movimiento de tu barbería."
         action={(
           <div className="admin-head-actions">
             <button className="btn btn-linea" type="button" onClick={() => onTab("bloqueos")}>
               <CalendarOff size={17} />
-              Elegir horario
+              Bloquear horario
             </button>
             <button className="btn btn-principal" type="button" onClick={onBloqueoRapido}>
               <CalendarClock size={17} />
@@ -59,9 +59,9 @@ export default function AdminDashboard({
           <small>{safe.completed_week || 0} completadas</small>
         </article>
         <article data-accent="gold">
-          <span><WalletCards size={16} />Generado esta semana</span>
-          <strong>{dinero(safe.income_week || 0)}</strong>
-          <small>{dinero(safe.projected_week || 0)} proyectado</small>
+          <span><WalletCards size={16} />Ingresos del mes</span>
+          <strong>{dinero(monthly.income || 0)}</strong>
+          <small>{dinero(safe.income_week || 0)} esta semana</small>
         </article>
         <article data-accent="copper">
           <span><Scissors size={16} />Más solicitado</span>

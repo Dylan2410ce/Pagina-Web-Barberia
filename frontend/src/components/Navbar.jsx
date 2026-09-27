@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, Scissors, X } from "lucide-react";
 
 const enlaces = [
@@ -11,6 +11,16 @@ const enlaces = [
 
 export default function Navbar({ abierto, solida, onToggle }) {
   const [seccionActiva, setSeccionActiva] = useState("inicio");
+  const botonMenu = useRef(null);
+
+  useEffect(() => {
+    if (!abierto) return undefined;
+    const cerrarEscape = (event) => {
+      if (event.key === "Escape") { onToggle(); botonMenu.current?.focus(); }
+    };
+    document.addEventListener("keydown", cerrarEscape);
+    return () => document.removeEventListener("keydown", cerrarEscape);
+  }, [abierto, onToggle]);
 
   useEffect(() => {
     const secciones = ["inicio", ...enlaces.map((item) => item.id)]
@@ -63,14 +73,16 @@ export default function Navbar({ abierto, solida, onToggle }) {
         </a>
         <button
           className="hamburguesa"
+          ref={botonMenu}
           type="button"
           onClick={onToggle}
           aria-label={abierto ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={abierto}
+          aria-controls="menu-principal"
         >
           {abierto ? <X size={22} /> : <Menu size={22} />}
         </button>
-        <div className={`nav-links ${abierto ? "abierto" : ""}`}>
+        <div id="menu-principal" className={`nav-links ${abierto ? "abierto" : ""}`}>
           {enlaces.map((item) => (
             <a
               className={[

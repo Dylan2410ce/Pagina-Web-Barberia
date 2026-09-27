@@ -90,11 +90,10 @@ export default function App() {
 
   const avisar = useCallback((tipo, titulo, mensaje = "") => {
     const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-    setToastList((items) => [...items, { id, tipo, titulo, mensaje }]);
-    setTimeout(() => setToastList((items) => items.filter((item) => item.id !== id)), tipo === "error" ? 6500 : 4200);
+    setToastList((items) => [...items.slice(-2), { id, tipo, titulo, mensaje }]);
   }, []);
 
-  const cerrarToast = (id) => setToastList((items) => items.filter((item) => item.id !== id));
+  const cerrarToast = useCallback((id) => setToastList((items) => items.filter((item) => item.id !== id)), []);
 
   const confirmarAccion = () => {
     const accion = confirmacion?.onConfirm;
@@ -262,6 +261,7 @@ export default function App() {
 
   const adminProps = {
     admin,
+    onRefresh: cargarAdmin,
     onLogin: loginAdmin,
     onResetPassword: resetPassword,
     onSalir: cerrarAdmin,

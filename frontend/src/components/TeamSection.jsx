@@ -1,10 +1,4 @@
-import {
-  CalendarCheck2,
-  Instagram,
-  MessageCircle,
-  Phone,
-  Scissors,
-} from "lucide-react";
+import { Instagram, MessageCircle, Phone, Scissors } from "lucide-react";
 import BarberPhoto from "./BarberPhoto";
 
 function whatsappUrl(phone) {
@@ -29,8 +23,8 @@ export default function TeamSection({
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Nuestro equipo</span>
-          <h2>Tu estilo, en buenas manos.</h2>
-          <p>Conoce su trabajo y elige tu barbero cuando armes la cita.</p>
+          <h2>Conoce a tu barbero.</h2>
+          <p>Sebastián y Gabriel. Dos estilos, el mismo cuidado.</p>
         </div>
       </div>
 
@@ -103,15 +97,6 @@ export default function TeamSection({
             </article>
           );
         })}
-      </div>
-      <div className="team-section-cta reveal">
-        <div>
-          <CalendarCheck2 size={20} />
-          <span>Servicio y barbero se eligen juntos al reservar.</span>
-        </div>
-        <a className="btn btn-principal" href="#reserva">
-          Reservar cita
-        </a>
       </div>
     </section>
   );

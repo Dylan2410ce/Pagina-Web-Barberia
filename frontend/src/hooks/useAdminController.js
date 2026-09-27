@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { adminApi, publicoApi, borrarToken, guardarToken, obtenerToken } from "../api/client";
 import { hoyISO, mesActual, fechaHumana, horaAMinutos } from "../utils/format";
 import { normalizarBarberos } from "../utils/barbers";
@@ -35,8 +35,13 @@ const adminBase = {
 
 export default function useAdminController({ avisar, setProcesando, setConfirmacion, setDatos, cargarSlots }) {
   const [admin, setAdmin] = useState(() => ({ ...adminBase, token: obtenerToken() }));
+  const consultaAgenda = useRef(0);
+  const cargaPanel = useRef(0);
   const cargarAdmin = useCallback(async (tokenActual = admin.token, filtrosActuales = admin.filtros) => {
     if (!tokenActual) return;
+    const solicitud = ++cargaPanel.current;
+    consultaAgenda.current += 1;
+    setAdmin((actual) => ({ ...actual, cargando: true, errorCarga: "" }));
     const { year, month } = mesActual();
     const limpiar = Object.fromEntries(Object.entries(filtrosActuales).filter(([, valor]) => valor !== ""));
     try {
@@ -58,6 +63,7 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
       ]);
 
       const valor = (index, fallback) => resultados[index].status === "fulfilled" ? resultados[index].value : fallback;
+      if (solicitud !== cargaPanel.current) return;
       const cargaParcial = resultados.some((resultado) => resultado.status === "rejected");
 
       setAdmin((actual) => ({
@@ -83,13 +89,17 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
         avisar("warning", "Panel cargado", "Algunos datos tardaron, pero la agenda sigue disponible.");
       }
     } catch (error) {
+      if (solicitud !== cargaPanel.current) return;
       if ([401, 403].includes(error.status)) {
         borrarToken();
         setAdmin(adminBase);
         avisar("error", "Sesión vencida", error.message);
       } else {
+        setAdmin((actual) => ({ ...actual, errorCarga: error.message }));
         avisar("error", "El panel está tardando", error.message);
       }
+    } finally {
+      if (solicitud === cargaPanel.current) setAdmin((actual) => ({ ...actual, cargando: false, cargandoAgenda: false }));
     }
   }, [admin.filtros, admin.token, avisar]);
 
@@ -141,6 +151,8 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
   };
 
   const cerrarAdmin = () => {
+    consultaAgenda.current += 1;
+    cargaPanel.current += 1;
     borrarToken();
     setAdmin(adminBase);
     avisar("ok", "Sesión cerrada");
@@ -151,15 +163,21 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
   };
 
   const filtrarAdmin = async (filtros) => {
+    const consulta = ++consultaAgenda.current;
     const limpiar = Object.fromEntries(
       Object.entries(filtros).filter(([, valor]) => valor !== ""),
     );
-    setAdmin((actual) => ({ ...actual, filtros }));
+    setAdmin((actual) => ({ ...actual, filtros, cargandoAgenda: true }));
     try {
       const citas = await adminApi.citas(admin.token, limpiar);
+      if (consulta !== consultaAgenda.current) return;
       setAdmin((actual) => ({ ...actual, citas }));
     } catch (error) {
+      if (consulta !== consultaAgenda.current) return;
+      setAdmin((actual) => ({ ...actual, citas: [] }));
       avisar("error", "No pudimos filtrar la agenda", error.message);
+    } finally {
+      if (consulta === consultaAgenda.current) setAdmin((actual) => ({ ...actual, cargandoAgenda: false }));
     }
   };
 
@@ -287,8 +305,10 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
       setDatos((actual) => ({ ...actual, services: bootstrap.services || [], addons: bootstrap.addons || [] }));
       await cargarAdmin();
       avisar("ok", id ? "Servicio actualizado" : "Servicio creado");
+      return true;
     } catch (error) {
       avisar("error", "No se pudo guardar", error.message);
+      return false;
     } finally {
       setProcesando("");
     }

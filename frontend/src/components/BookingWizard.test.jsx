@@ -65,6 +65,19 @@ function BookingHarness({ onSubmit }) {
 }
 
 describe("flujo principal de reserva", () => {
+  it("impide confirmar con datos incompletos y muestra errores junto a los campos", () => {
+    const onSubmit = vi.fn();
+    render(<BookingHarness onSubmit={onSubmit} />);
+    fireEvent.click(screen.getByRole("button", { name: /Corte Premium/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Sebastián/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Ver horarios/i }));
+    fireEvent.click(screen.getByRole("button", { name: "8:00 a. m." }));
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar cita/i }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Nombre completo")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("WhatsApp")).toHaveAttribute("aria-invalid", "true");
+  });
   it("permite completar servicio, barbero, hora y datos del cliente", () => {
     const onSubmit = vi.fn((event) => event.preventDefault());
     render(<BookingHarness onSubmit={onSubmit} />);

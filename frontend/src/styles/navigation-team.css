@@ -45,7 +45,7 @@
 
 .marca strong {
   white-space: nowrap;
-  font-family: "Poppins", sans-serif;
+  font-family: var(--font-heading);
 }
 
 .hamburguesa {
@@ -316,7 +316,7 @@
 
 .barber-photo-fallback {
   color: rgba(255, 250, 242, 0.92);
-  font-family: "Poppins", sans-serif;
+  font-family: var(--font-heading);
   font-size: 6rem;
   font-weight: 700;
   line-height: 1;

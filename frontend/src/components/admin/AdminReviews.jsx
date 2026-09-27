@@ -1,5 +1,8 @@
 import { Check, MessageSquareQuote, Star, X } from "lucide-react";
 import AdminPageHead from "./AdminPageHead";
+import { useState } from "react";
+import SearchToolbar from "../ui/SearchToolbar";
+import { coincideBusqueda } from "../../utils/validation";
 
 function Stars({ value }) {
   return (
@@ -13,6 +16,9 @@ function Stars({ value }) {
 
 export default function AdminReviews({ items = [], onStatus }) {
   const pending = items.filter((item) => item.status === "pending").length;
+  const [consulta, setConsulta] = useState("");
+  const [estado, setEstado] = useState("");
+  const visibles = items.filter((item) => (!estado || item.status === estado) && coincideBusqueda([item.client_name, item.comment], consulta));
   return (
     <>
       <AdminPageHead
@@ -26,13 +32,14 @@ export default function AdminReviews({ items = [], onStatus }) {
           <strong>{items.length}</strong>
         </div>
         <div className="admin-review-list">
-          {items.length === 0 && (
+          <SearchToolbar value={consulta} onChange={setConsulta} label="Buscar reseña" count={visibles.length}><select value={estado} onChange={(event) => setEstado(event.target.value)} aria-label="Estado de reseñas"><option value="">Todos los estados</option><option value="pending">Pendientes</option><option value="approved">Publicadas</option><option value="rejected">Archivadas</option></select></SearchToolbar>
+          {visibles.length === 0 && (
             <div className="admin-empty">
               <MessageSquareQuote size={25} />
-              <strong>Aún no hay reseñas.</strong>
+              <strong>No hay reseñas con estos filtros.</strong>
             </div>
           )}
-          {items.map((item) => (
+          {visibles.map((item) => (
             <article key={item.id}>
               <header>
                 <div>

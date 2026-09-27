@@ -281,30 +281,6 @@
   }
 }
 
-@media (min-width: 760px) {
-  .seccion {
-    width: min(1180px, calc(100% - 48px));
-    padding-block: 104px;
-  }
-
-  .cabecera-seccion {
-    margin-bottom: 38px;
-  }
-
-  .team-grid,
-  .menu-grid {
-    gap: 20px;
-  }
-
-  .wizard-panel {
-    padding: 28px;
-  }
-
-  .admin-panel {
-    padding: 22px;
-  }
-}
-
 @media (min-width: 880px) {
   .maintenance-stage {
     min-height: 610px;
@@ -317,22 +293,6 @@
 }
 
 @media (max-width: 479px) {
-  .seccion {
-    width: calc(100% - 24px);
-    padding-block: 72px;
-  }
-
-  .cabecera-seccion h2,
-  .location-copy h2,
-  .admin-page-head h1 {
-    font-size: 1.82rem;
-  }
-
-  .team-card-body,
-  .servicio-card {
-    padding: 17px;
-  }
-
   .maintenance-header,
   .maintenance-footer,
   .maintenance-stage {

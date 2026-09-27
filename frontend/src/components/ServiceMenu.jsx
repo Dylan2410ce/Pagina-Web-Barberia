@@ -1,11 +1,7 @@
 import { useMemo, useState } from "react";
-import {
-  Clock3,
-  Image,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { Clock3, Image, Sparkles } from "lucide-react";
 import { dinero } from "../utils/format";
+import Dialog from "./ui/Dialog";
 
 const categorias = [
   { id: "todos", label: "Todos" },
@@ -58,7 +54,7 @@ export default function ServiceMenu({
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">Servicios y precios</span>
-          <h2>Encuentra tu próximo corte.</h2>
+          <h2>Elige tu estilo.</h2>
           <p>Cortes, barba y detalles que hacen la diferencia.</p>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>
@@ -134,17 +130,9 @@ export default function ServiceMenu({
       )}
 
       {mostrarPoster && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setMostrarPoster(false)}>
-          <section className="modal modal-poster" role="dialog" aria-modal="true" aria-label="Menú oficial" onMouseDown={(event) => event.stopPropagation()}>
-            <header>
-              <strong>Menú oficial de precios</strong>
-              <button className="icon-btn" type="button" onClick={() => setMostrarPoster(false)} aria-label="Cerrar">
-                <X size={19} />
-              </button>
-            </header>
+        <Dialog title="Menú oficial de precios" onClose={() => setMostrarPoster(false)}>
             <img src="/menu-oficial.jpeg" alt="Lista oficial de precios de Sebas Barber" />
-          </section>
-        </div>
+        </Dialog>
       )}
     </section>
   );

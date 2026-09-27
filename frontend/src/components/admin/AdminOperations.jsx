@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { diasSemana, dinero, hoyISO, minutosAHora } from "../../utils/format";
 import AdminPageHead from "./AdminPageHead";
+import SearchToolbar from "../ui/SearchToolbar";
+import { coincideBusqueda } from "../../utils/validation";
 
 const views = [
   { id: "config", label: "Configuración", icon: Settings2 },
@@ -44,6 +46,13 @@ export default function AdminOperations({
   onDownloadBackup,
 }) {
   const [view, setView] = useState("config");
+  const [consulta, setConsulta] = useState("");
+  const filtrar = (items = []) => items.filter((item) => coincideBusqueda([
+    item.name, item.label, item.description, item.category, item.expense_date,
+    item.business_date, item.start_date, item.end_date, item.private_comment,
+    item.recipient_email, estadosCorreo[item.status], tiposCorreo[item.kind],
+    item.weekday !== undefined ? diasSemana[item.weekday] : "",
+  ], consulta));
   const [settings, setSettings] = useState(data.settings || {});
   const [breakForm, setBreakForm] = useState({
     weekday: 1,
@@ -131,7 +140,7 @@ export default function AdminOperations({
               className={view === item.id ? "activo" : ""}
               key={item.id}
               type="button"
-              onClick={() => setView(item.id)}
+              onClick={() => { setView(item.id); setConsulta(""); }}
             >
               <Icon size={17} />
               {item.label}
@@ -139,6 +148,7 @@ export default function AdminOperations({
           );
         })}
       </nav>
+      {view !== "config" && <SearchToolbar value={consulta} onChange={setConsulta} label="Buscar en esta sección" />}
 
       {view === "config" && (
         <section className="admin-panel operations-form">
@@ -342,7 +352,7 @@ export default function AdminOperations({
           </section>
           <section className="admin-panel operations-list">
             <header><div><span>Semana habitual</span><h2>Pausas activas</h2></div></header>
-            {(data.breaks || []).map((item) => (
+            {filtrar(data.breaks).map((item) => (
               <article key={item.id}>
                 <div>
                   <strong>{diasSemana[item.weekday]} · {item.label}</strong>
@@ -463,7 +473,7 @@ export default function AdminOperations({
           </section>
           <section className="admin-panel operations-list">
             <header><div><span>Precios especiales</span><h2>Promociones</h2></div></header>
-            {(data.promotions || []).map((item) => (
+            {filtrar(data.promotions).map((item) => (
               <article key={item.id}>
                 <div>
                   <strong>{item.name}</strong>
@@ -603,7 +613,7 @@ export default function AdminOperations({
             </section>
             <section className="admin-panel operations-list">
               <header><div><span>Movimientos recientes</span><h2>Gastos</h2></div></header>
-              {(data.expenses || []).slice(0, 20).map((item) => (
+              {filtrar(data.expenses).map((item) => (
                 <article key={item.id}>
                   <div>
                     <strong>{item.description}</strong>
@@ -621,7 +631,7 @@ export default function AdminOperations({
                 </article>
               ))}
               <header className="secondary-head"><div><span>Últimos cierres</span><h2>Caja</h2></div></header>
-              {(data.cash_closes || []).slice(0, 10).map((item) => (
+              {filtrar(data.cash_closes).map((item) => (
                 <article key={item.id}>
                   <div><strong>{item.business_date}</strong><span>Neto del día</span></div>
                   <strong>{dinero(item.net_income)}</strong>
@@ -640,7 +650,7 @@ export default function AdminOperations({
               <span>Satisfacción <strong>{data.metrics?.average_satisfaction || 0}/5</strong></span>
               <span>Facilidad de reserva <strong>{data.metrics?.average_booking_ease || 0}/5</strong></span>
             </div>
-            {(data.feedback || []).map((item) => (
+            {filtrar(data.feedback).map((item) => (
               <article key={item.id}>
                 <div>
                   <strong>Satisfacción {item.satisfaction}/5 · Reserva {item.booking_ease}/5</strong>
@@ -651,7 +661,7 @@ export default function AdminOperations({
           </section>
           <section className="admin-panel operations-list">
             <header><div><span>Correo automático</span><h2>Últimos envíos</h2></div></header>
-            {(data.notifications || []).map((item) => (
+            {filtrar(data.notifications).map((item) => (
               <article key={item.id}>
                 <BellRing size={17} />
                 <div>

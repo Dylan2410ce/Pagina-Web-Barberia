@@ -494,7 +494,7 @@
 
 .resumen-total strong {
   color: var(--gold-light);
-  font-family: "Poppins", sans-serif;
+  font-family: var(--font-heading);
   font-size: 1.8rem;
 }
 
