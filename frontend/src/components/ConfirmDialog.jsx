@@ -16,8 +16,8 @@ export default function ConfirmDialog({ config, onCancel, onConfirm }) {
         aria-describedby="confirm-description"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button className="icon-btn confirm-close" type="button" onClick={onCancel} aria-label="Cerrar">
-          <X size={18} />
+        <button className="icon-btn labeled-action confirm-close" type="button" onClick={onCancel} aria-label="Cerrar">
+          <X size={18} /><span>Cerrar</span>
         </button>
         <span className={`confirm-icon ${config.danger ? "danger" : ""}`}>
           <AlertCircle size={25} />

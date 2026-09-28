@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck2, CheckCircle2, ChevronLeft, ChevronRight, Download, MoveRight, XCircle } from "lucide-react";
+import { CalendarCheck2, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import {
   claseEstado,
   dinero,
@@ -9,7 +9,7 @@ import {
 } from "../../utils/format";
 import { descargarCsv } from "../../utils/csv";
 import AdminPageHead from "./AdminPageHead";
-import ActionMenu from "../ui/ActionMenu";
+import AppointmentActions from "./AppointmentActions";
 import SearchToolbar from "../ui/SearchToolbar";
 import { coincideBusqueda } from "../../utils/validation";
 
@@ -98,8 +98,8 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
     <>
       <AdminPageHead
         eyebrow="Agenda"
-        title="Citas y asistencia"
-        text="Revisa el día, encuentra una reserva y registra cada visita."
+        title="Agenda del día"
+        text="Cada cita, a su tiempo."
         action={(
           <button
             className="btn btn-linea"
@@ -115,8 +115,8 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
 
       <section className="admin-panel agenda-panel">
         <div className="agenda-date-bar">
-          <button className="icon-btn" type="button" onClick={() => cambiarDia(-1)} aria-label="Día anterior">
-            <ChevronLeft size={18} />
+          <button className="icon-btn labeled-action" type="button" onClick={() => cambiarDia(-1)} aria-label="Día anterior">
+            <ChevronLeft size={18} /><span>Anterior</span>
           </button>
           <div>
             <span>Fecha seleccionada</span>
@@ -125,8 +125,8 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
           <button className="btn btn-linea" type="button" onClick={() => aplicar({ ...filtros, date: hoyISO() })}>
             Hoy
           </button>
-          <button className="icon-btn" type="button" onClick={() => cambiarDia(1)} aria-label="Día siguiente">
-            <ChevronRight size={18} />
+          <button className="icon-btn labeled-action" type="button" onClick={() => cambiarDia(1)} aria-label="Día siguiente">
+            <span>Siguiente</span><ChevronRight size={18} />
           </button>
         </div>
 
@@ -189,27 +189,7 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
                     </div>
                   )}
                 </div>
-                <div className="appointment-actions">
-                  {cita.status === "pending" && (
-                    <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "confirmed")}>
-                      <CheckCircle2 size={16} />Confirmar
-                    </button>
-                  )}
-                  {cita.status === "confirmed" && (
-                    <>
-                      <button className="btn btn-success" type="button" onClick={() => onEstado(cita.id, "completed")}>
-                        <CheckCircle2 size={16} />Completar
-                      </button>
-                    </>
-                  )}
-                  {["pending", "confirmed", "blocked"].includes(cita.status) && (
-                    <ActionMenu label={`Acciones de ${esBloqueo ? "bloqueo" : cita.client_name}`} actions={[
-                      { label: "Reprogramar", icon: MoveRight, onClick: () => onMover(cita) },
-                      ...(cita.status === "confirmed" ? [{ label: "No asistió", icon: XCircle, onClick: () => onEstado(cita.id, "no_show") }] : []),
-                      { label: esBloqueo ? "Liberar horario" : "Cancelar cita", icon: XCircle, danger: true, onClick: () => onEstado(cita.id, "cancelled") },
-                    ]} />
-                  )}
-                </div>
+                <AppointmentActions cita={cita} onEstado={onEstado} onMover={onMover} />
               </article>
             );
           })}
@@ -217,23 +197,23 @@ export default function AdminAgenda({ admin, onFiltrar, onEstado, onMover }) {
         {filtradas.length > PAGE_SIZE && (
           <nav className="pagination" aria-label="Páginas de citas">
             <button
-              className="icon-btn"
+              className="icon-btn labeled-action"
               type="button"
               onClick={() => setPagina((actual) => Math.max(1, actual - 1))}
               disabled={pagina === 1}
               aria-label="Página anterior"
             >
-              <ChevronLeft size={17} />
+              <ChevronLeft size={17} /><span>Anterior</span>
             </button>
             <span>Página {pagina} de {totalPaginas}</span>
             <button
-              className="icon-btn"
+              className="icon-btn labeled-action"
               type="button"
               onClick={() => setPagina((actual) => Math.min(totalPaginas, actual + 1))}
               disabled={pagina === totalPaginas}
               aria-label="Página siguiente"
             >
-              <ChevronRight size={17} />
+              <span>Siguiente</span><ChevronRight size={17} />
             </button>
           </nav>
         )}

@@ -15,7 +15,7 @@ describe("portada independiente de Render", () => {
       : new Promise(() => {})));
     render(<App />);
     expect(screen.getByRole("heading", { level: 1, name: "Sebas Barber" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Reservar cita online/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Reservar cita/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("Estamos abriendo la agenda.")).toBeVisible());
   });
 });

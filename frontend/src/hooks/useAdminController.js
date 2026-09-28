@@ -160,6 +160,9 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
 
   const cambiarTabAdmin = (tab) => {
     setAdmin((actual) => ({ ...actual, tab }));
+    if (tab === "resumen" && admin.filtros.date !== hoyISO()) {
+      filtrarAdmin({ date: hoyISO(), status: "", q: "" });
+    }
   };
 
   const filtrarAdmin = async (filtros) => {
@@ -196,29 +199,35 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
   };
 
   const solicitarEstadoAdmin = (id, status) => {
-    if (!["cancelled", "no_show"].includes(status)) {
+    if (!["cancelled", "no_show", "completed"].includes(status)) {
       cambiarEstadoAdmin(id, status);
       return;
     }
-    const cita = [...admin.citas, ...admin.bloqueos].find((item) => item.id === id);
+    const cita = [...admin.citas, ...admin.bloqueos, ...(admin.dashboard?.upcoming || [])].find((item) => item.id === id);
     const esBloqueo = cita?.status === "blocked";
     setConfirmacion({
       title: esBloqueo
         ? "¿Liberar este horario?"
+        : status === "completed"
+          ? "¿Cliente atendido?"
         : status === "no_show"
-          ? "¿Marcar como ausencia?"
+          ? "¿El cliente no llegó?"
           : "¿Cancelar esta cita?",
       message: esBloqueo
         ? "El espacio volverá a aparecer disponible en la agenda."
+        : status === "completed"
+          ? `${cita?.client_name || "El cliente"}: la cita quedará completada y el importe se sumará a tus ingresos.`
         : status === "no_show"
-          ? "La cita quedará registrada como no asistida."
+          ? "La cita quedará registrada como no asistida. No se sumará a tus ingresos."
           : "La reserva se cancelará y el horario quedará libre.",
       confirmLabel: esBloqueo
         ? "Liberar horario"
+        : status === "completed"
+          ? "Sí, atendido"
         : status === "no_show"
-          ? "Marcar ausencia"
+          ? "No llegó"
           : "Cancelar cita",
-      danger: true,
+      danger: status !== "completed",
       onConfirm: () => cambiarEstadoAdmin(id, status),
     });
   };

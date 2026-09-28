@@ -22,6 +22,7 @@ export default function ScrollToTop() {
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
     >
       <ArrowUp size={20} />
+      <span>Subir</span>
     </button>
   );
 }

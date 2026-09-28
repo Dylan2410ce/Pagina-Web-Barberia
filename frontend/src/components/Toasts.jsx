@@ -21,7 +21,7 @@ function ToastItem({ item, onClose }) {
       onFocus={() => setPausado(true)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPausado(false); }}>
       <Icon className="toast-icon" size={20} aria-hidden="true" />
       <div><strong>{item.titulo}</strong>{item.mensaje && <span>{item.mensaje}</span>}</div>
-      <button type="button" onClick={() => onClose(item.id)} aria-label={`Cerrar: ${item.titulo}`} title="Cerrar notificación"><X size={18} /></button>
+      <button type="button" onClick={() => onClose(item.id)} aria-label={`Cerrar: ${item.titulo}`} title="Cerrar notificación"><X size={18} /><span>Cerrar</span></button>
     </article>
   );
 }

@@ -16,7 +16,7 @@ export default function MapModal({ location, onClose }) {
         <header>
           <strong id="map-title">Ubicación</strong>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Cerrar">
-            <X size={20} />
+            <X size={20} /><span>Cerrar</span>
           </button>
         </header>
         <div className="modal-body">

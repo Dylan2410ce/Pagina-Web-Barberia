@@ -159,13 +159,13 @@ export default function Bloqueos({
                     <span>{bloqueo.notes || bloqueo.service_name}</span>
                   </div>
                   <button
-                    className="icon-btn danger"
+                    className="icon-btn labeled-action danger"
                     type="button"
                     onClick={() => onLiberar(bloqueo.id)}
                     aria-label="Liberar horario"
                     title="Liberar horario"
                   >
-                    <XCircle size={17} />
+                    <XCircle size={17} /><span>Liberar</span>
                   </button>
                 </article>
               ))}
@@ -281,13 +281,13 @@ export default function Bloqueos({
                   {item.notes && <small>{item.notes}</small>}
                 </div>
                 <button
-                  className="icon-btn danger"
+                  className="icon-btn labeled-action danger"
                   type="button"
                   onClick={() => onEliminarAusencia(item.id)}
                   title="Eliminar ausencia"
                   aria-label={`Eliminar ${item.title}`}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} /><span>Eliminar</span>
                 </button>
               </article>
             ))}

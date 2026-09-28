@@ -2,9 +2,26 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import AdminServices from "./AdminServices";
 import AdminAgenda from "./AdminAgenda";
+import AdminDashboard from "./AdminDashboard";
+import AppointmentActions from "./AppointmentActions";
 
 const servicios = [{ id: "s1", name: "Corte clásico", price: 5000, duration_min: 45, is_active: true }, { id: "s2", name: "Barba", price: 3000, duration_min: 45, is_active: false }];
 describe("gestión del panel", () => {
+  it("ofrece asistencia y ausencia como acciones visibles", () => {
+    const cambiar = vi.fn();
+    render(<AppointmentActions cita={{ id: "a1", status: "confirmed", client_name: "Andrés" }} onEstado={cambiar} onMover={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Atendido", exact: true }));
+    expect(cambiar).toHaveBeenCalledWith("a1", "completed");
+    fireEvent.click(screen.getByRole("button", { name: "No llegó", exact: true }));
+    expect(cambiar).toHaveBeenCalledWith("a1", "no_show");
+  });
+  it("separa las citas de hoy de las reservas de otros días", () => {
+    const cita = { id: "a1", starts_at: "2026-09-29T08:00:00-06:00", status: "confirmed", client_name: "Andrés", service_name: "Corte Premium", total_price: 6000 };
+    render(<AdminDashboard data={{ today: "2026-09-29", upcoming: [cita] }} fechaAgenda="2026-09-29" citas={[cita, { ...cita, id: "a2", starts_at: "2026-09-30T08:00:00-06:00", client_name: "Otro día" }]} onTab={vi.fn()} onEstado={vi.fn()} onMover={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "Andrés" })).toBeInTheDocument();
+    expect(screen.queryByText("Otro día")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Atendido", exact: true })).toBeVisible();
+  });
   it("filtra el catálogo sin tildes y abre la edición en la misma vista", () => {
     render(<AdminServices servicios={servicios} onGuardar={vi.fn()} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "clasico" } });

@@ -16,7 +16,9 @@ La API sigue siendo la autoridad para precios, autorización, validación de res
 
 Los estilos de mantenimiento deben limitarse a sus clases `maintenance-*`. No agregar allí reglas generales de formularios, secciones o tipografía, pues afectarían el sitio operativo.
 
-Se utiliza Inter para lectura y Manrope para títulos, con fuentes de sistema como alternativa. Los controles tienen foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`.
+Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa. La paleta combina blanco, gris claro y texto carbón; las acciones principales usan negro sólido. Azul indica selección o foco, verde confirma una acción y rojo señala errores o acciones destructivas. `light-surfaces.css` unifica los módulos secundarios y diálogos que comparten la misma paleta.
+
+Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`. La navegación cambia a menú desplegable por debajo de 960 px; el administrador usa un selector de vistas por debajo de 1040 px.
 
 ## Contratos de interacción
 
@@ -26,6 +28,7 @@ Se utiliza Inter para lectura y Manrope para títulos, con fuentes de sistema co
 - Los avisos de `Toasts` pausan su cierre automático mientras reciben foco o el cursor está encima.
 - La agenda consulta al servidor cuando cambia la fecha. Búsqueda y estado filtran localmente sin generar una petición por cada tecla. Exportar CSV utiliza el conjunto filtrado.
 - La edición de servicios ocurre en un diálogo y se cierra únicamente cuando el controlador confirma que el guardado fue exitoso.
+- `AdminDashboard` presenta tres indicadores y la agenda del día como una lista, sin tablas. `AppointmentActions` comparte las acciones entre el resumen y la agenda completa. «Atendido» y «No llegó» abren una confirmación; solo aceptarla invoca la API. La zona horaria de fechas y horas sigue siendo `America/Costa_Rica`.
 
 ## Verificación local
 

@@ -31,7 +31,7 @@ export default function ActionMenu({ label = "Más acciones", actions }) {
   if (!actions.length) return null;
   return (
     <div className="action-menu" ref={contenedor} onKeyDown={teclado} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setAbierto(false); }}>
-      <button ref={boton} className="icon-btn" type="button" title={label} aria-label={label} aria-haspopup="menu" aria-expanded={abierto} aria-controls={abierto ? id : undefined} onClick={() => setAbierto(!abierto)}><MoreHorizontal size={20} /></button>
+      <button ref={boton} className="icon-btn labeled-action" type="button" title={label} aria-label={label} aria-haspopup="menu" aria-expanded={abierto} aria-controls={abierto ? id : undefined} onClick={() => setAbierto(!abierto)}><MoreHorizontal size={20} /><span>Más</span></button>
       {abierto && <div className={`action-menu-list ${arriba ? "opens-up" : ""}`} id={id} role="menu" aria-label={label}>
         {actions.map(({ label: texto, icon: Icon, onClick, danger }) => (
           <button key={texto} type="button" role="menuitem" className={danger ? "action-danger" : ""} onClick={() => { setAbierto(false); boton.current?.focus(); onClick(); }}>

@@ -25,7 +25,7 @@ export default function RescheduleModal({
         <header>
           <strong id="reschedule-title"><CalendarClock size={18} />Elige una nueva hora</strong>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Cerrar">
-            <X size={18} />
+            <X size={18} /><span>Cerrar</span>
           </button>
         </header>
         <div className="modal-body formulario">

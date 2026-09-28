@@ -97,18 +97,18 @@ export default function AdminWaitlist({ items = [], onStatus }) {
                   Escribir
                 </a>
                 {item.status === "waiting" && (
-                  <button className="icon-btn" type="button" onClick={() => onStatus(item.id, "contacted")} title="Marcar contactado" aria-label="Marcar como contactado">
-                    <Check size={17} />
+                  <button className="icon-btn labeled-action" type="button" onClick={() => onStatus(item.id, "contacted")} title="Marcar contactado" aria-label="Marcar como contactado">
+                    <Check size={17} /><span>Contactado</span>
                   </button>
                 )}
                 {["waiting", "contacted"].includes(item.status) && (
-                  <button className="icon-btn success" type="button" onClick={() => onStatus(item.id, "booked")} title="Marcar reserva creada" aria-label="Marcar como reserva creada">
-                    <CalendarCheck2 size={17} />
+                  <button className="icon-btn labeled-action success" type="button" onClick={() => onStatus(item.id, "booked")} title="Marcar reserva creada" aria-label="Marcar como reserva creada">
+                    <CalendarCheck2 size={17} /><span>Reservado</span>
                   </button>
                 )}
                 {!["booked", "cancelled"].includes(item.status) && (
-                  <button className="icon-btn danger" type="button" onClick={() => onStatus(item.id, "cancelled")} title="Descartar" aria-label="Descartar solicitud">
-                    <X size={17} />
+                  <button className="icon-btn labeled-action danger" type="button" onClick={() => onStatus(item.id, "cancelled")} title="Descartar" aria-label="Descartar solicitud">
+                    <X size={17} /><span>Descartar</span>
                   </button>
                 )}
               </div>

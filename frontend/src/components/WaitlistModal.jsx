@@ -70,7 +70,7 @@ export default function WaitlistModal({
             <strong id="waitlist-title">Te avisamos si se libera un espacio.</strong>
           </div>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Cerrar">
-            <X size={18} />
+            <X size={18} /><span>Cerrar</span>
           </button>
         </header>
         <form className="modal-body formulario waitlist-form" onSubmit={submit}>

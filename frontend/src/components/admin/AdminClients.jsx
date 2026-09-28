@@ -199,23 +199,23 @@ export default function AdminClients({
           {visibles.length > PAGE_SIZE && (
             <nav className="pagination" aria-label="Páginas de clientes">
               <button
-                className="icon-btn"
+                className="icon-btn labeled-action"
                 type="button"
                 onClick={() => setPagina((actual) => Math.max(1, actual - 1))}
                 disabled={pagina === 1}
                 aria-label="Página anterior"
               >
-                <ChevronLeft size={17} />
+                <ChevronLeft size={17} /><span>Anterior</span>
               </button>
               <span>Página {pagina} de {totalPaginas}</span>
               <button
-                className="icon-btn"
+                className="icon-btn labeled-action"
                 type="button"
                 onClick={() => setPagina((actual) => Math.min(totalPaginas, actual + 1))}
                 disabled={pagina === totalPaginas}
                 aria-label="Página siguiente"
               >
-                <ChevronRight size={17} />
+                <ChevronRight size={17} /><span>Siguiente</span>
               </button>
             </nav>
           )}
@@ -238,12 +238,12 @@ export default function AdminClients({
                   <p>{clienteActivo.completed_appointments || 0} visitas · {dinero(clienteActivo.spent)} generado</p>
                 </div>
                 <div className="client-contact-actions">
-                  <a className="icon-btn" href={`tel:+506${clienteActivo.phone}`} aria-label={`Llamar a ${clienteActivo.name}`} title="Llamar">
-                    <Phone size={17} />
+                  <a className="icon-btn labeled-action" href={`tel:+506${clienteActivo.phone}`} aria-label={`Llamar a ${clienteActivo.name}`} title="Llamar">
+                    <Phone size={17} /><span>Llamar</span>
                   </a>
                   {clienteActivo.email && (
-                    <a className="icon-btn" href={`mailto:${clienteActivo.email}`} aria-label={`Enviar correo a ${clienteActivo.name}`} title="Correo">
-                      <Mail size={17} />
+                    <a className="icon-btn labeled-action" href={`mailto:${clienteActivo.email}`} aria-label={`Enviar correo a ${clienteActivo.name}`} title="Correo">
+                      <Mail size={17} /><span>Correo</span>
                     </a>
                   )}
                 </div>

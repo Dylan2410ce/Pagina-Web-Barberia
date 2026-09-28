@@ -1,7 +1,6 @@
-import { CalendarCheck, Clock3, MapPinned, Scissors } from "lucide-react";
+import { ArrowRight, MapPinned } from "lucide-react";
 
 export default function Hero({
-  barberos = [],
   barbero,
   primerSlot,
   estados = {},
@@ -19,29 +18,22 @@ export default function Hero({
       <div className="hero-overlay" />
       <div className="hero-inner seccion">
         <div className="hero-copy">
-          <span className={`hero-status ${estadoActivo?.is_open ? "is-open" : "is-closed"}`}>
-            <span />
-            {estadoTexto}
-          </span>
-          <p className="hero-kicker">Barbería en Esparza</p>
+          <p className="hero-kicker">Barbería en Esparza · Costa Rica</p>
           <h1>Sebas Barber</h1>
           <p className="hero-lead">
-            Cortes precisos, barba bien definida y tu espacio reservado desde el celular.
+            Tu estilo. Sin complicaciones.
           </p>
+          <p className="hero-description">Un buen corte empieza con un espacio para ti.</p>
           <div className="hero-acciones">
             <a className="btn btn-principal btn-grande" href="#reserva">
-              <CalendarCheck size={19} />
-              Reservar cita online
+              Reservar cita <ArrowRight size={21} aria-hidden="true" />
             </a>
             <button className="btn btn-cristal" type="button" onClick={onMapa}>
               <MapPinned size={19} />
               Cómo llegar
             </button>
           </div>
-          <div className="hero-facts" aria-label="Información de la barbería">
-            <span><Scissors size={16} />{barbero?.name || barberos.map((item) => item.name).join(" y ") || "Sebastián y Gabriel"}</span>
-            <span><Clock3 size={16} />Citas desde las 8:00 a. m.</span>
-          </div>
+          <span className={`hero-status ${estadoActivo?.is_open ? "is-open" : "is-closed"}`}><span />{estadoTexto}</span>
         </div>
       </div>
     </section>

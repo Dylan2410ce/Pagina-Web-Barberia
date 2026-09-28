@@ -61,7 +61,7 @@ export default function Login({ onLogin, onResetPassword }) {
                 required
                 onChange={(event) => setLoginForm((actual) => ({ ...actual, password: event.target.value }))}
               />
-              <button className="password-toggle icon-btn" type="button" onClick={() => setVisible(!visible)} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} title={visible ? "Ocultar contraseña" : "Mostrar contraseña"}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+              <button className="password-toggle icon-btn labeled-action" type="button" onClick={() => setVisible(!visible)} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} title={visible ? "Ocultar contraseña" : "Mostrar contraseña"}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}<span>{visible ? "Ocultar" : "Mostrar"}</span></button>
             </div>
             <button className="btn btn-principal btn-ancho" type="submit">Entrar al panel</button>
           </form>

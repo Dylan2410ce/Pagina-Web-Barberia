@@ -70,6 +70,7 @@ export default function TeamSection({
                       title="Instagram"
                     >
                       <Instagram size={18} />
+                      <span>Instagram</span>
                     </a>
                   )}
                   {telefonoDisponible(barbero.phone) && (
@@ -82,6 +83,7 @@ export default function TeamSection({
                         title="WhatsApp"
                       >
                         <MessageCircle size={18} />
+                        <span>WhatsApp</span>
                       </a>
                       <a
                         href={phoneUrl(barbero.phone)}
@@ -89,6 +91,7 @@ export default function TeamSection({
                         title="Llamar"
                       >
                         <Phone size={18} />
+                        <span>Llamar</span>
                       </a>
                     </>
                   )}

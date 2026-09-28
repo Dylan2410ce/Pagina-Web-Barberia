@@ -170,16 +170,17 @@ export default function AdminGallery({
                 </div>
                 <div>
                   <button
-                    className="icon-btn"
+                    className="icon-btn labeled-action"
                     type="button"
                     onClick={() => onEdit(item.id, { is_active: !item.is_active })}
                     title={item.is_active ? "Ocultar" : "Publicar"}
                     aria-label={item.is_active ? "Ocultar imagen" : "Publicar imagen"}
                   >
                     {item.is_active ? <Eye size={17} /> : <EyeOff size={17} />}
+                    <span>{item.is_active ? "Ocultar" : "Publicar"}</span>
                   </button>
-                  <button className="icon-btn danger" type="button" onClick={() => onDelete(item)} title="Eliminar" aria-label="Eliminar imagen">
-                    <Trash2 size={17} />
+                  <button className="icon-btn labeled-action danger" type="button" onClick={() => onDelete(item)} title="Eliminar" aria-label="Eliminar imagen">
+                    <Trash2 size={17} /><span>Eliminar</span>
                   </button>
                 </div>
               </article>

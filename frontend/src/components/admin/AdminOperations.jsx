@@ -359,12 +359,12 @@ export default function AdminOperations({
                   <span>{minutosAHora(item.start_min)} a {minutosAHora(item.end_min)}</span>
                 </div>
                 <button
-                  className="icon-btn danger"
+                  className="icon-btn labeled-action danger"
                   type="button"
                   onClick={() => onDeleteBreak(item)}
                   aria-label={`Eliminar ${item.label}`}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} /><span>Eliminar</span>
                 </button>
               </article>
             ))}
@@ -495,12 +495,12 @@ export default function AdminOperations({
                     {item.is_active ? "Activa" : "Pausada"}
                   </button>
                   <button
-                    className="icon-btn danger"
+                    className="icon-btn labeled-action danger"
                     type="button"
                     onClick={() => onDeletePromotion(item)}
                     aria-label={`Eliminar ${item.name}`}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={16} /><span>Eliminar</span>
                   </button>
                 </div>
               </article>
@@ -621,12 +621,12 @@ export default function AdminOperations({
                   </div>
                   <strong>{dinero(item.amount)}</strong>
                   <button
-                    className="icon-btn danger"
+                    className="icon-btn labeled-action danger"
                     type="button"
                     onClick={() => onDeleteExpense(item)}
                     aria-label={`Eliminar ${item.description}`}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={16} /><span>Eliminar</span>
                   </button>
                 </article>
               ))}

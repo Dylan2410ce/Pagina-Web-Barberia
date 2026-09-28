@@ -73,11 +73,11 @@ export default function Gallery({ items = [], onElegirEstilo }) {
           <p>Explora acabados reales y guarda el que más se parece a lo que buscas.</p>
         </div>
         <div className="lookbook-nav" aria-label="Cambiar estilo">
-          <button className="icon-btn" type="button" onClick={() => mover(-1)} aria-label="Estilo anterior">
-            <ArrowLeft size={18} />
+          <button className="icon-btn labeled-action" type="button" onClick={() => mover(-1)} aria-label="Estilo anterior">
+            <ArrowLeft size={18} /><span>Anterior</span>
           </button>
-          <button className="icon-btn" type="button" onClick={() => mover(1)} aria-label="Siguiente estilo">
-            <ArrowRight size={18} />
+          <button className="icon-btn labeled-action" type="button" onClick={() => mover(1)} aria-label="Siguiente estilo">
+            <ArrowRight size={18} /><span>Siguiente</span>
           </button>
         </div>
       </div>
@@ -144,8 +144,8 @@ export default function Gallery({ items = [], onElegirEstilo }) {
             aria-labelledby="lookbook-modal-title"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <button className="icon-btn lookbook-modal-close" type="button" onClick={() => setAmpliado(false)} aria-label="Cerrar">
-              <X size={18} />
+            <button className="icon-btn labeled-action lookbook-modal-close" type="button" onClick={() => setAmpliado(false)} aria-label="Cerrar">
+              <X size={18} /><span>Cerrar</span>
             </button>
             <img src={estilo.image_url} alt={estilo.alt_text} />
             <div>

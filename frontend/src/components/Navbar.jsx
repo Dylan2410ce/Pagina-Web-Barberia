@@ -81,6 +81,7 @@ export default function Navbar({ abierto, solida, onToggle }) {
           aria-controls="menu-principal"
         >
           {abierto ? <X size={22} /> : <Menu size={22} />}
+          <span>{abierto ? "Cerrar" : "Menú"}</span>
         </button>
         <div id="menu-principal" className={`nav-links ${abierto ? "abierto" : ""}`}>
           {enlaces.map((item) => (

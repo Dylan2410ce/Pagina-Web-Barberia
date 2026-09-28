@@ -59,7 +59,7 @@ export default function BookingSuccessModal({ cita, barbero, onClose }) {
           onClick={onClose}
           aria-label="Cerrar"
         >
-          <X size={18} />
+          <X size={18} /><span>Cerrar</span>
         </button>
         <div className="booking-success-head">
           <span className="booking-success-icon"><Check size={28} strokeWidth={3} /></span>

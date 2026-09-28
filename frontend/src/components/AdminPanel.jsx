@@ -89,8 +89,8 @@ export default function AdminPanel({
         </a>
         <div className="admin-user">
           <div><strong>{admin.perfil?.name || "Sebastián"}</strong><small>{admin.perfil?.role || "Administrador"}</small></div>
-          <button className="icon-btn" type="button" onClick={onSalir} aria-label="Cerrar sesión" title="Cerrar sesión">
-            <LogOut size={18} />
+          <button className="icon-btn labeled-action" type="button" onClick={onSalir} aria-label="Cerrar sesión" title="Cerrar sesión">
+            <LogOut size={18} /><span>Salir</span>
           </button>
         </div>
       </header>
@@ -134,6 +134,11 @@ export default function AdminPanel({
               perfil={admin.perfil}
               onTab={onTab}
               onBloqueoRapido={onBloqueoRapido}
+              onEstado={onEstado}
+              onMover={onMover}
+              citas={admin.citas}
+              fechaAgenda={admin.filtros.date}
+              cargando={admin.cargandoAgenda}
             />
           )}
           {admin.tab === "agenda" && (

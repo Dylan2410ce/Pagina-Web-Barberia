@@ -51,7 +51,7 @@ export default function Servicios({ servicios = [], onGuardar }) {
           <span className="service-directory-icon"><Scissors size={20} /></span>
           <div><h2>{servicio.name}</h2><span>{servicio.is_addon ? "Extra opcional" : `${servicio.duration_min} min`} · {servicio.is_active ? "Disponible" : "Oculto"}</span></div>
           <strong>{dinero(servicio.price)}</strong>
-          <button className="icon-btn" type="button" title={`Editar ${servicio.name}`} aria-label={`Editar ${servicio.name}`} onClick={() => setEditor(servicio)}><Pencil size={17} /></button>
+          <button className="icon-btn labeled-action" type="button" title={`Editar ${servicio.name}`} aria-label={`Editar ${servicio.name}`} onClick={() => setEditor(servicio)}><Pencil size={17} /><span>Editar</span></button>
         </article>)}
         {!visibles.length && <EmptyState />}
       </div>

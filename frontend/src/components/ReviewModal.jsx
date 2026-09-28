@@ -37,7 +37,7 @@ export default function ReviewModal({ cita, onClose, onSubmit }) {
             <strong id="review-title">¿Cómo quedó tu corte?</strong>
           </div>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Cerrar">
-            <X size={18} />
+            <X size={18} /><span>Cerrar</span>
           </button>
         </header>
         <form className="modal-body formulario" onSubmit={submit}>

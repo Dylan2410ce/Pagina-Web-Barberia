@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Clock3, Image, Sparkles } from "lucide-react";
+import { ArrowRight, Clock3, Image, Sparkles } from "lucide-react";
 import { dinero } from "../utils/format";
 import Dialog from "./ui/Dialog";
 
@@ -53,9 +53,9 @@ export default function ServiceMenu({
     <section id="servicios" className="seccion bloque">
       <div className="cabecera-seccion reveal">
         <div>
-          <span className="eyebrow">Servicios y precios</span>
-          <h2>Elige tu estilo.</h2>
-          <p>Cortes, barba y detalles que hacen la diferencia.</p>
+          <span className="eyebrow">El menú</span>
+          <h2>Un corte. Muy tú.</h2>
+          <p>Elige tu servicio. Nosotros cuidamos los detalles.</p>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>
           <Image size={18} />
@@ -89,21 +89,17 @@ export default function ServiceMenu({
         )}
         {visibles.map((servicio) => (
           <article className="servicio-card" key={servicio.id}>
-            <div className="servicio-top">
-              <span className="servicio-icono">
-                <Sparkles size={18} />
-              </span>
-              <span className="servicio-precio">{dinero(servicio.price)}</span>
-            </div>
+            <span className="service-category">{categorias.find((item) => item.id === categoriaDe(servicio.name))?.label}</span>
             <div>
               <h3>{servicio.name}</h3>
               <p>{descripcionServicio(servicio)}</p>
             </div>
+            <span className="servicio-precio">{dinero(servicio.price)}</span>
             <span className="servicio-tiempo">
               <Clock3 size={15} />
               {servicio.duration_min} min aprox.
             </span>
-            <button className="btn btn-linea" type="button" onClick={() => onSeleccionar?.(servicio.id)} aria-label={`Reservar ${servicio.name}`}>Reservar este servicio</button>
+            <button className="btn btn-principal" type="button" onClick={() => onSeleccionar?.(servicio.id)} aria-label={`Reservar ${servicio.name}`}>Elegir servicio <ArrowRight size={17} aria-hidden="true" /></button>
           </article>
         ))}
       </div>

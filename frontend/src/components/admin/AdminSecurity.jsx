@@ -44,7 +44,7 @@ export default function Seguridad({ onChangePassword }) {
         text="Actualiza el acceso desde una sesión abierta. Al guardar, deberás iniciar sesión otra vez."
       />
       <section className="admin-panel max-w-xl">
-        <div className="security-intro flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-950/30 p-4">
+        <div className="security-intro">
           <span className="security-icon"><ShieldCheck size={20} /></span>
           <div>
             <strong>Acceso del administrador</strong>
