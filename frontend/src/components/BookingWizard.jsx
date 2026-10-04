@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowRight, BellRing, Check, CircleCheckBig, Clock3, Scissor
 import { dinero, limpiarTelefono } from "../utils/format";
 import BarberPhoto from "./BarberPhoto";
 import WaitlistModal from "./WaitlistModal";
+import BookingReview from "./booking/BookingReview";
+import { horarioDelDia, siguienteDiaAbierto } from "../utils/availability";
 
 const pasos = [
   { id: 1, label: "Tu cita" },
@@ -18,7 +20,7 @@ function fechaReserva(value) {
     day: "numeric",
     month: "short",
     timeZone: "America/Costa_Rica",
-  }).format(new Date(`${value}T12:00:00`));
+  }).format(new Date(`${value}T12:00:00-06:00`));
 }
 
 export default function BookingWizard({
@@ -41,12 +43,30 @@ export default function BookingWizard({
   pasoSolicitado,
   recordarContacto,
   onRecordarContacto,
+  recordarReserva,
+  onRecordarReserva,
+  horarios = [],
+  errorSlots = "",
+  errorReserva,
+  reservaPendiente = false,
+  onReintentar,
 }) {
   const [paso, setPaso] = useState(1);
   const [editandoServicio, setEditandoServicio] = useState(false);
   const servicioElegido = servicios.find((item) => item.id === reserva.service_id);
   const [listaEsperaAbierta, setListaEsperaAbierta] = useState(false);
   const panelRef = useRef(null);
+  const pasoAnterior = useRef(paso);
+  const cerrado = horarioDelDia(horarios, reserva.date)?.is_open === false;
+  const proximaFecha = reserva.date ? siguienteDiaAbierto(horarios, reserva.date) : null;
+
+  useEffect(() => {
+    if (pasoAnterior.current === paso) return;
+    pasoAnterior.current = paso;
+    const titulo = panelRef.current?.querySelector(".stage-heading h3");
+    titulo?.focus({ preventScroll: true });
+    panelRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }, [paso]);
 
   useEffect(() => {
     if ((!reserva.service_id || !reserva.barber_id) && paso > 1) setPaso(1);
@@ -83,13 +103,6 @@ export default function BookingWizard({
   const cambiarPaso = (numero) => {
     if (!puedeAbrir(numero)) return;
     setPaso(numero);
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    requestAnimationFrame(() => {
-      panelRef.current?.scrollIntoView({
-        behavior: reduceMotion ? "auto" : "smooth",
-        block: "start",
-      });
-    });
   };
 
   return (
@@ -102,8 +115,11 @@ export default function BookingWizard({
         </div>
       </div>
 
-      <div className="reserva-grid">
+      <div className={`reserva-grid ${paso === 3 ? "reserva-grid-final" : ""}`}>
         <div className="panel wizard-panel reveal" ref={panelRef}>
+          {errorReserva && <div className="booking-notice" role="alert"><strong>{errorReserva.tipo === "incierto" ? "Comprobemos tu reserva" : "No pudimos confirmar ese horario"}</strong><p>{errorReserva.mensaje}</p>{errorReserva.tipo === "incierto" && <button className="btn btn-principal" type="button" onClick={() => onSubmit()}>Comprobar reserva</button>}</div>}
+          <fieldset className="wizard-fields" disabled={reservaPendiente}>
+          <legend className="sr-only">Reserva de cita</legend>
           <nav className="wizard-steps" aria-label="Pasos de reserva">
             {pasos.map((item) => (
               <button
@@ -134,7 +150,7 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>1 de 3</span>
-                <h3>¿Qué te hacemos hoy?</h3>
+                <h3 tabIndex="-1">¿Qué te hacemos hoy?</h3>
               </div>
 
               <div className="booking-config-block">
@@ -170,11 +186,8 @@ export default function BookingWizard({
               </div>
 
               {extras.length > 0 && (
-                <div className="booking-extras booking-config-block">
-                  <div className="booking-config-heading">
-                    <span>Extras opcionales</span>
-                    <small>No suman tiempo</small>
-                  </div>
+                <details className="booking-extras booking-config-block">
+                  <summary>Extras opcionales {reserva.addon_ids.length > 0 ? `(${reserva.addon_ids.length} elegidos)` : ""}</summary>
                   <div>
                     {extras.map((extra) => {
                       const activo = reserva.addon_ids.includes(extra.id);
@@ -193,7 +206,7 @@ export default function BookingWizard({
                       );
                     })}
                   </div>
-                </div>
+                </details>
               )}
 
               <div className="booking-config-block booking-barber-picker">
@@ -253,7 +266,7 @@ export default function BookingWizard({
             <div className="wizard-stage">
               <div className="stage-heading">
                 <span>2 de 3</span>
-                <h3>Elige tu hora.</h3>
+                <h3 tabIndex="-1">Elige tu hora.</h3>
                 <p>Estos son los espacios libres con {barbero?.name}.</p>
               </div>
               <div className="booking-choice-summary" aria-live="polite">
@@ -271,6 +284,7 @@ export default function BookingWizard({
                   id="booking-date"
                   type="date"
                   min={minFecha}
+                  required
                   value={reserva.date}
                   onChange={(event) => onFecha(event.target.value)}
                 />
@@ -295,11 +309,14 @@ export default function BookingWizard({
                       {slot.label}
                     </button>
                   ))}
-                  {!cargandoSlots && slots.length === 0 && (
+                  {!cargandoSlots && errorSlots && <div className="booking-notice" role="alert"><strong>No pudimos consultar la agenda</strong><p>{errorSlots}</p><button className="btn btn-linea" type="button" onClick={onReintentar}>Volver a intentar</button></div>}
+                  {!cargandoSlots && !errorSlots && slots.length === 0 && (
                     <div className="slots-vacio slots-waitlist">
                       <BellRing size={22} />
-                      <strong>Ese día está completo.</strong>
-                      <span>Prueba otra fecha o deja tus datos por si se libera una hora.</span>
+                      <strong>{!reserva.date ? "Elige una fecha" : cerrado ? "Ese día no atendemos." : "No quedan horas disponibles para esta fecha."}</strong>
+                      <span>{cerrado ? "Consulta el próximo día de atención." : "Puedes consultar otra fecha."}</span>
+                      {proximaFecha && <button className="btn btn-principal" type="button" onClick={() => onFecha(proximaFecha)}>Consultar {fechaReserva(proximaFecha)}</button>}
+                      {!cerrado && reserva.date && <>
                       <button
                         className="btn btn-linea"
                         type="button"
@@ -308,6 +325,7 @@ export default function BookingWizard({
                         <BellRing size={16} />
                         Entrar a la lista de espera
                       </button>
+                      </>}
                     </div>
                   )}
                 </div>
@@ -321,7 +339,7 @@ export default function BookingWizard({
                   className="btn btn-principal"
                   type="button"
                   onClick={() => cambiarPaso(3)}
-                  disabled={reserva.start_min === null}
+                  disabled={reserva.start_min === null || cargandoSlots || Boolean(errorSlots)}
                 >
                   Continuar
                   <ArrowRight size={18} />
@@ -330,11 +348,12 @@ export default function BookingWizard({
             </div>
           )}
 
-          {paso === 3 && <BookingDetails reserva={reserva} actualizar={actualizar} onSubmit={onSubmit} onBack={() => cambiarPaso(2)} recordarContacto={recordarContacto} onRecordarContacto={onRecordarContacto} />}
+          {paso === 3 && <BookingDetails reserva={reserva} actualizar={actualizar} onSubmit={onSubmit} onBack={() => cambiarPaso(2)} recordarContacto={recordarContacto} onRecordarContacto={onRecordarContacto} recordarReserva={recordarReserva} onRecordarReserva={onRecordarReserva}><BookingReview reserva={reserva} resumen={resumen} barbero={barbero} onEditar={cambiarPaso} /></BookingDetails>}
+          </fieldset>
 
         </div>
 
-        <aside className="panel resumen-card reveal">
+        <aside className={`panel resumen-card reveal ${paso === 3 ? "resumen-card-final" : ""}`}>
           <span className="chip"><Clock3 size={14} />Tu reserva</span>
           <h3>{resumen.servicio?.name || "Escoge un servicio"}</h3>
           <ul>

@@ -54,11 +54,12 @@ export default function RescheduleModal({
                 {slot.label}
               </button>
             ))}
-            {!data.cargando && data.slots.length === 0 && (
+            {!data.cargando && data.error && <div className="booking-notice" role="alert"><p>{data.error}</p><button className="btn btn-linea" type="button" onClick={() => onDate(data.date)}>Consultar de nuevo</button></div>}
+            {!data.cargando && !data.error && data.slots.length === 0 && (
               <div className="slots-vacio">No hay horas libres ese día.</div>
             )}
           </div>
-          <button className="btn btn-principal btn-ancho" type="button" onClick={onConfirm} disabled={data.start_min === null}>
+          <button className="btn btn-principal btn-ancho" type="button" onClick={onConfirm} disabled={data.start_min === null || data.cargando}>
             Guardar nueva hora
           </button>
         </div>

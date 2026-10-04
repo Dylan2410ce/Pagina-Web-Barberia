@@ -1,25 +1,36 @@
+import { useRef, useState } from "react";
 import { adminApi, publicoApi } from "../api/client";
 import { limpiarTelefono, validarTelefono, hoyISO } from "../utils/format";
 import { CONTACT_KEY, nuevaReserva, nuevoRequestId } from "../utils/bookingDraft";
-import { guardarReservaLocal, leerReservasGuardadas } from "../utils/bookingStorage";
+import { eliminarReservaLocal, guardarReservaLocal, leerReservasGuardadas } from "../utils/bookingStorage";
 
-export default function useClientBookings({ reserva, recordarContacto, barberoActivo, servicioActivo, datos, admin, codigoBusqueda, citaConfirmada, modalReprogramar, avisar, setProcesando, setReserva, setReservasGuardadas, setCodigoBusqueda, setCitasCliente, setCitaConfirmada, setConfirmacion, setModalReprogramar, setPasoSolicitado, cargarSlots, cargarAdmin, irAReserva }) {
+export default function useClientBookings({ reserva, recordarContacto, recordarReserva, barberoActivo, servicioActivo, datos, admin, codigoBusqueda, citaConfirmada, modalReprogramar, avisar, setProcesando, setReserva, setReservasGuardadas, setCodigoBusqueda, setCitasCliente, setCitaConfirmada, setConfirmacion, setModalReprogramar, setPasoSolicitado, cargarSlots, cargarAdmin, irAReserva }) {
+  const [errorReserva, setErrorReserva] = useState(null);
+  const pendiente = useRef(null);
+  const enviando = useRef(false);
   const crearCita = async (event) => {
-    event.preventDefault();
+    event?.preventDefault();
+    if (enviando.current) return;
     const telefono = limpiarTelefono(reserva.client_phone);
-    if (!barberoActivo) return avisar("warning", "Escoge un barbero");
-    if (!servicioActivo) return avisar("warning", "Escoge un servicio");
-    if (reserva.start_min === null) return avisar("warning", "Escoge una hora");
-    if (!validarTelefono(telefono)) return avisar("warning", "Revisa el teléfono", "Usa 8 dígitos de Costa Rica.");
+    if (!pendiente.current) {
+      if (!barberoActivo) return avisar("warning", "Escoge un barbero");
+      if (!servicioActivo) return avisar("warning", "Escoge un servicio");
+      if (reserva.start_min === null) return avisar("warning", "Escoge una hora");
+      if (!validarTelefono(telefono)) return avisar("warning", "Revisa el teléfono", "Usa 8 dígitos de Costa Rica.");
+    }
 
-    setProcesando("Reservando tu espacio...");
+    const payload = pendiente.current || {
+      ...reserva,
+      client_phone: telefono,
+      client_email: reserva.client_email.trim() || null,
+      notes: reserva.notes.trim() || null,
+    };
+    enviando.current = true;
+    setProcesando(pendiente.current ? "Comprobando tu reserva..." : "Reservando tu espacio...");
+    setErrorReserva(null);
     try {
-      const citaCreada = await publicoApi.crearCita({
-        ...reserva,
-        client_phone: telefono,
-        client_email: reserva.client_email.trim() || null,
-        notes: reserva.notes.trim() || null,
-      });
+      const citaCreada = await publicoApi.crearCita(payload);
+      pendiente.current = null;
       try {
         if (recordarContacto) {
           localStorage.setItem(CONTACT_KEY, JSON.stringify({
@@ -31,7 +42,7 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
           localStorage.removeItem(CONTACT_KEY);
         }
       } catch { /* El almacenamiento local no condiciona una reserva confirmada. */ }
-      guardarReservaLocal(citaCreada);
+      if (recordarReserva) guardarReservaLocal(citaCreada);
       setReservasGuardadas(leerReservasGuardadas());
       setCodigoBusqueda(citaCreada.access_code);
       setCitasCliente([{ ...citaCreada, _access_code: citaCreada.access_code }]);
@@ -53,8 +64,21 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
       setReserva(limpia);
       void cargarSlots(limpia);
     } catch (error) {
-      avisar("error", "No se pudo reservar", error.message);
+      const incierto = error instanceof TypeError || [408, 500, 502, 503, 504].includes(error.status);
+      if (incierto) {
+        pendiente.current = payload;
+        setErrorReserva({ tipo: "incierto", mensaje: "No recibimos la confirmación. Tu cita podría haberse guardado. Comprueba esta misma reserva antes de hacer otra." });
+      } else {
+        pendiente.current = null;
+        setErrorReserva({ tipo: "error", mensaje: error.message });
+        if (error.status === 409) {
+          setReserva((actual) => ({ ...actual, start_min: null, request_id: nuevoRequestId() }));
+          setPasoSolicitado({ step: 2, key: Date.now() });
+          await cargarSlots({ start_min: null });
+        }
+      }
     } finally {
+      enviando.current = false;
       setProcesando("");
     }
   };
@@ -107,6 +131,8 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
       });
       if (accessCode) {
         setCitasCliente([{ ...actualizada, _access_code: accessCode }]);
+        eliminarReservaLocal(accessCode);
+        setReservasGuardadas(leerReservasGuardadas());
       }
       void cargarSlots();
       avisar("ok", "Cita cancelada");
@@ -145,14 +171,15 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
       avisar("error", "No identificamos la agenda de esta cita");
       return;
     }
-    const serviciosModal = modo === "admin"
-      ? admin.servicios.filter((item) => !item.is_addon && item.is_active)
-      : datos.services;
+    let serviciosModal = datos?.services || [];
+    if (modo === "admin") {
+      try { serviciosModal = (admin.servicios.length ? admin.servicios : await adminApi.servicios(admin.token)).filter((item) => !item.is_addon && item.is_active); }
+      catch (error) { avisar("error", "No pudimos cargar los servicios", error.message); return; }
+    }
     const servicio = serviciosModal.find((item) => item.id === cita.service_id)
-      || serviciosModal.find((item) => item.name === cita.service_name)
-      || serviciosModal[0];
+      || serviciosModal.find((item) => item.name === cita.service_name);
     if (!servicio) {
-      avisar("error", "No encontramos el servicio de esta cita");
+      avisar("warning", "Este servicio ya no admite reservas online", "Contacta a tu barbero para cambiar la fecha sin modificar el servicio.");
       return;
     }
     setModalReprogramar({
@@ -175,13 +202,14 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
       setModalReprogramar((actual) => actual && actual.cita.id === cita.id && actual.date === hoyISO() ? { ...actual, slots: disponibles, cargando: false } : actual);
     } catch (error) {
       avisar("error", "No pudimos leer horas libres", error.message);
-      setModalReprogramar((actual) => actual ? { ...actual, cargando: false } : actual);
+      setModalReprogramar((actual) => actual?.cita.id === cita.id ? { ...actual, cargando: false, error: error.message } : actual);
     }
   };
 
   const cambiarFechaModal = async (date) => {
     if (!modalReprogramar) return;
-    setModalReprogramar((actual) => ({ ...actual, date, start_min: null, cargando: true }));
+    if (!date) return;
+    setModalReprogramar((actual) => ({ ...actual, date, start_min: null, cargando: true, error: "" }));
     try {
       const disponibles = await publicoApi.disponibilidad({
         barberId: modalReprogramar.barber_id,
@@ -196,12 +224,12 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
       ));
     } catch (error) {
       avisar("error", "No pudimos leer horas libres", error.message);
-      setModalReprogramar((actual) => actual && actual.date === date ? { ...actual, slots: [], cargando: false } : actual);
+      setModalReprogramar((actual) => actual?.cita.id === modalReprogramar.cita.id && actual.date === date ? { ...actual, slots: [], cargando: false, error: error.message } : actual);
     }
   };
 
   const confirmarReprogramacion = async () => {
-    if (!modalReprogramar?.start_min) return avisar("warning", "Escoge una hora");
+    if (modalReprogramar?.start_min == null) return avisar("warning", "Escoge una hora");
     setProcesando("Moviendo la cita...");
     try {
       if (modalReprogramar.modo === "cliente") {
@@ -215,7 +243,7 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
         if (accessCode) {
           const citaSegura = { ...actualizada, _access_code: accessCode };
           setCitasCliente([citaSegura]);
-          guardarReservaLocal({ ...actualizada, access_code: accessCode });
+          if (leerReservasGuardadas().some((item) => item.access_code === accessCode)) guardarReservaLocal({ ...actualizada, access_code: accessCode });
           setReservasGuardadas(leerReservasGuardadas());
         }
       } else {
@@ -230,6 +258,8 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
       avisar("ok", "Cita reprogramada");
     } catch (error) {
       avisar("error", "No se pudo reprogramar", error.message);
+      if (error.status === 409) await cambiarFechaModal(modalReprogramar.date);
+      setModalReprogramar((actual) => actual ? { ...actual, error: error.message } : actual);
     } finally {
       setProcesando("");
     }
@@ -330,5 +360,12 @@ export default function useClientBookings({ reserva, recordarContacto, barberoAc
   };
 
 
-  return { crearCita, cargarCitaPorCodigo, buscarCitaCodigo, ejecutarCancelacionCliente, cancelarCliente, cerrarConfirmacionCita, abrirReprogramar, cambiarFechaModal, confirmarReprogramacion, crearListaEspera, repetirCita, crearReseña, crearEncuesta, elegirEstilo };
+  const olvidarReserva = (codigo) => {
+    eliminarReservaLocal(codigo);
+    setReservasGuardadas(leerReservasGuardadas());
+    if (codigo === codigoBusqueda) { setCodigoBusqueda(""); setCitasCliente([]); }
+    avisar("ok", "Reserva eliminada de este dispositivo", "Esto no modifica tu cita. Conserva el código de tu comprobante.");
+  };
+
+  return { crearCita, errorReserva, reservaPendiente: Boolean(pendiente.current), olvidarReserva, cargarCitaPorCodigo, buscarCitaCodigo, ejecutarCancelacionCliente, cancelarCliente, cerrarConfirmacionCita, abrirReprogramar, cambiarFechaModal, confirmarReprogramacion, crearListaEspera, repetirCita, crearReseña, crearEncuesta, elegirEstilo };
 }

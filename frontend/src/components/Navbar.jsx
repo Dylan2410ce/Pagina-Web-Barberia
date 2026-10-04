@@ -9,7 +9,7 @@ const enlaces = [
   { id: "mis-citas", label: "Mis citas" },
 ];
 
-export default function Navbar({ abierto, solida, onToggle }) {
+export default function Navbar({ abierto, solida, onToggle, contenidoListo }) {
   const [seccionActiva, setSeccionActiva] = useState("inicio");
   const botonMenu = useRef(null);
 
@@ -39,7 +39,7 @@ export default function Navbar({ abierto, solida, onToggle }) {
 
     secciones.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, []);
+  }, [contenidoListo]);
 
   const cerrar = () => {
     if (abierto) onToggle();
@@ -51,7 +51,10 @@ export default function Navbar({ abierto, solida, onToggle }) {
     setSeccionActiva(id);
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({
+      const seccion = document.getElementById(id);
+      const titulo = seccion?.querySelector("h1, h2");
+      if (titulo) { titulo.setAttribute("tabindex", "-1"); titulo.focus({ preventScroll: true }); }
+      seccion?.scrollIntoView({
         behavior: reduceMotion ? "auto" : "smooth",
         block: "start",
       });

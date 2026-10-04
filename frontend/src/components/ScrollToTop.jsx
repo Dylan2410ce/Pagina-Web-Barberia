@@ -19,7 +19,7 @@ export default function ScrollToTop() {
       type="button"
       aria-label="Volver arriba"
       title="Volver arriba"
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}
     >
       <ArrowUp size={20} />
       <span>Subir</span>

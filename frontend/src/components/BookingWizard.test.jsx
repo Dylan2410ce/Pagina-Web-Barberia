@@ -71,8 +71,10 @@ describe("flujo principal de reserva", () => {
     fireEvent.click(screen.getByRole("button", { name: /Corte Premium/i }));
     fireEvent.click(screen.getByRole("button", { name: /Sebastián/i }));
     fireEvent.click(screen.getByRole("button", { name: /Ver horarios/i }));
+    expect(screen.getByRole("heading", { name: "Elige tu hora." })).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "8:00 a. m." }));
     fireEvent.click(screen.getByRole("button", { name: /Continuar/i }));
+    expect(screen.getByRole("heading", { name: "Revisa tu cita" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Confirmar cita/i }));
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Nombre completo")).toHaveAttribute("aria-invalid", "true");

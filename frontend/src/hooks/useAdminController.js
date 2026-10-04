@@ -1,107 +1,10 @@
-import { useCallback, useRef, useState } from "react";
-import { adminApi, publicoApi, borrarToken, guardarToken, obtenerToken } from "../api/client";
-import { hoyISO, mesActual, fechaHumana, horaAMinutos } from "../utils/format";
+import { adminApi, publicoApi, borrarToken, guardarToken } from "../api/client";
+import { hoyISO, fechaHumana, horaAMinutos } from "../utils/format";
 import { normalizarBarberos } from "../utils/barbers";
+import useAdminData, { adminBase } from "./useAdminData";
 
-const adminBase = {
-  token: "",
-  perfil: null,
-  dashboard: null,
-  citas: [],
-  bloqueos: [],
-  servicios: [],
-  horarios: [],
-  ausencias: [],
-  clientes: [],
-  actividad: [],
-  listaEspera: [],
-  reseñas: [],
-  galeria: [],
-  operaciones: {
-    settings: null,
-    breaks: [],
-    promotions: [],
-    expenses: [],
-    cash_closes: [],
-    notifications: [],
-    feedback: [],
-    metrics: null,
-  },
-  stats: null,
-  tab: "resumen",
-  filtros: { date: hoyISO(), status: "", q: "" },
-};
-
-
-export default function useAdminController({ avisar, setProcesando, setConfirmacion, setDatos, cargarSlots }) {
-  const [admin, setAdmin] = useState(() => ({ ...adminBase, token: obtenerToken() }));
-  const consultaAgenda = useRef(0);
-  const cargaPanel = useRef(0);
-  const cargarAdmin = useCallback(async (tokenActual = admin.token, filtrosActuales = admin.filtros) => {
-    if (!tokenActual) return;
-    const solicitud = ++cargaPanel.current;
-    consultaAgenda.current += 1;
-    setAdmin((actual) => ({ ...actual, cargando: true, errorCarga: "" }));
-    const { year, month } = mesActual();
-    const limpiar = Object.fromEntries(Object.entries(filtrosActuales).filter(([, valor]) => valor !== ""));
-    try {
-      const perfil = await adminApi.perfil(tokenActual);
-      const resultados = await Promise.allSettled([
-        adminApi.dashboard(tokenActual),
-        adminApi.citas(tokenActual, limpiar),
-        adminApi.bloqueos(tokenActual),
-        adminApi.servicios(tokenActual),
-        adminApi.horarios(tokenActual),
-        adminApi.ausencias(tokenActual),
-        adminApi.clientes(tokenActual),
-        adminApi.stats(tokenActual, year, month),
-        adminApi.actividad(tokenActual),
-        adminApi.listaEspera(tokenActual),
-        adminApi.reseñas(tokenActual),
-        adminApi.galeria(tokenActual),
-        adminApi.operaciones(tokenActual),
-      ]);
-
-      const valor = (index, fallback) => resultados[index].status === "fulfilled" ? resultados[index].value : fallback;
-      if (solicitud !== cargaPanel.current) return;
-      const cargaParcial = resultados.some((resultado) => resultado.status === "rejected");
-
-      setAdmin((actual) => ({
-        ...actual,
-        token: tokenActual,
-        perfil,
-        dashboard: valor(0, actual.dashboard || {}),
-        citas: valor(1, actual.citas || []),
-        bloqueos: valor(2, actual.bloqueos || []),
-        servicios: valor(3, actual.servicios || []),
-        horarios: valor(4, actual.horarios || []),
-        ausencias: valor(5, actual.ausencias || []),
-        clientes: valor(6, actual.clientes || []),
-        stats: valor(7, actual.stats || {}),
-        actividad: valor(8, actual.actividad || []),
-        listaEspera: valor(9, actual.listaEspera || []),
-        reseñas: valor(10, actual.reseñas || []),
-        galeria: valor(11, actual.galeria || []),
-        operaciones: valor(12, actual.operaciones || adminBase.operaciones),
-      }));
-
-      if (cargaParcial) {
-        avisar("warning", "Panel cargado", "Algunos datos tardaron, pero la agenda sigue disponible.");
-      }
-    } catch (error) {
-      if (solicitud !== cargaPanel.current) return;
-      if ([401, 403].includes(error.status)) {
-        borrarToken();
-        setAdmin(adminBase);
-        avisar("error", "Sesión vencida", error.message);
-      } else {
-        setAdmin((actual) => ({ ...actual, errorCarga: error.message }));
-        avisar("error", "El panel está tardando", error.message);
-      }
-    } finally {
-      if (solicitud === cargaPanel.current) setAdmin((actual) => ({ ...actual, cargando: false, cargandoAgenda: false }));
-    }
-  }, [admin.filtros, admin.token, avisar]);
+export default function useAdminController({ avisar, setProcesando, setConfirmacion, setDatos = () => {}, cargarSlots = () => {} }) {
+  const { admin, setAdmin, cargarAdmin, cargarRecursos, consultaAgenda, cargaPanel } = useAdminData(avisar);
 
   const loginAdmin = async (data) => {
     setProcesando("Entrando al panel...");
@@ -109,7 +12,8 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
       const respuesta = await adminApi.login(data);
       guardarToken(respuesta.token);
       setAdmin((actual) => ({ ...actual, token: respuesta.token }));
-      await cargarAdmin(respuesta.token, admin.filtros);
+      const abierto = await cargarAdmin(respuesta.token, admin.filtros);
+      if (!abierto) return false;
       avisar("ok", "Panel abierto");
       return true;
     } catch (error) {
@@ -166,28 +70,14 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
   };
 
   const filtrarAdmin = async (filtros) => {
-    const consulta = ++consultaAgenda.current;
-    const limpiar = Object.fromEntries(
-      Object.entries(filtros).filter(([, valor]) => valor !== ""),
-    );
-    setAdmin((actual) => ({ ...actual, filtros, cargandoAgenda: true }));
-    try {
-      const citas = await adminApi.citas(admin.token, limpiar);
-      if (consulta !== consultaAgenda.current) return;
-      setAdmin((actual) => ({ ...actual, citas }));
-    } catch (error) {
-      if (consulta !== consultaAgenda.current) return;
-      setAdmin((actual) => ({ ...actual, citas: [] }));
-      avisar("error", "No pudimos filtrar la agenda", error.message);
-    } finally {
-      if (consulta === consultaAgenda.current) setAdmin((actual) => ({ ...actual, cargandoAgenda: false }));
-    }
+    setAdmin((actual) => ({ ...actual, filtros }));
+    await cargarRecursos(["citas"], admin.token, filtros, true);
   };
 
   const cambiarEstadoAdmin = async (id, status) => {
     setProcesando("Actualizando agenda...");
     try {
-      const actualizada = await adminApi.estadoCita(admin.token, id, status);
+      await adminApi.estadoCita(admin.token, id, status);
       await cargarAdmin();
       await cargarSlots();
       avisar("ok", "Agenda actualizada");

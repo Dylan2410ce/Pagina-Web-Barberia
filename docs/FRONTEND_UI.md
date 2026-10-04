@@ -2,10 +2,10 @@
 
 ## Responsabilidades
 
-- `src/App.jsx` coordina rutas y controladores; no contiene reglas de disponibilidad.
+- `src/App.jsx` selecciona las rutas. `PublicApp.jsx` coordina la experiencia pública y `admin/AdminWorkspace.jsx` carga el panel bajo demanda, con sus propios controladores.
 - `components/BookingWizard.jsx` presenta los pasos de reserva. `booking/BookingDetails.jsx` valida los datos de contacto y evita envíos simultáneos desde el formulario.
 - `components/AdminPanel.jsx` selecciona la vista administrativa. Cada módulo de `components/admin/` presenta una responsabilidad: agenda, servicios, clientes, bloqueos, horarios, reportes o seguridad.
-- `hooks/useAdminController.js` conserva las operaciones HTTP. Las respuestas de consultas reemplazadas o de sesiones cerradas no actualizan la interfaz.
+- `hooks/useAdminController.js` conserva las operaciones de escritura. `useAdminData.js` consulta únicamente los recursos de la vista activa, registra errores y fechas de actualización por recurso e invalida los datos tras una modificación. Las respuestas de consultas reemplazadas o de sesiones cerradas no actualizan la interfaz.
 - `components/ui/` contiene campos, diálogos, búsquedas, menús de acciones y estados vacíos reutilizables.
 
 La API sigue siendo la autoridad para precios, autorización, validación de reservas y aislamiento por barbero. Los filtros locales solo operan sobre los registros que el servidor ya autorizó. EmailJS continúa exclusivamente en el backend.
@@ -18,7 +18,7 @@ Los estilos de mantenimiento deben limitarse a sus clases `maintenance-*`. No ag
 
 Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa. La paleta combina blanco, gris claro y texto carbón; las acciones principales usan negro sólido. Azul indica selección o foco, verde confirma una acción y rojo señala errores o acciones destructivas. `light-surfaces.css` unifica los módulos secundarios y diálogos que comparten la misma paleta.
 
-Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`. La navegación cambia a menú desplegable por debajo de 960 px; el administrador usa un selector de vistas por debajo de 1040 px.
+Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`. La navegación cambia a menú desplegable por debajo de 960 px; el administrador muestra accesos a Hoy, Bloquear y Clientes, más un selector para las vistas secundarias, por debajo de 1040 px.
 
 ## Contratos de interacción
 
@@ -29,6 +29,12 @@ Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, f
 - La agenda consulta al servidor cuando cambia la fecha. Búsqueda y estado filtran localmente sin generar una petición por cada tecla. Exportar CSV utiliza el conjunto filtrado.
 - La edición de servicios ocurre en un diálogo y se cierra únicamente cuando el controlador confirma que el guardado fue exitoso.
 - `AdminDashboard` presenta tres indicadores y la agenda del día como una lista, sin tablas. `AppointmentActions` comparte las acciones entre el resumen y la agenda completa. «Atendido» y «No llegó» abren una confirmación; solo aceptarla invoca la API. La zona horaria de fechas y horas sigue siendo `America/Costa_Rica`.
+- `BookingReview` muestra servicio, barbero, fecha, total y condiciones antes de confirmar. La navegación entre pasos mueve el foco al título; editar una selección conserva los datos de contacto.
+- Un fallo al consultar horarios no se representa como agenda llena. Hay un aviso persistente y un reintento. Si falla la respuesta al crear una reserva, el controlador conserva en memoria el mismo payload y `request_id`; «Comprobar reserva» reutiliza la idempotencia del servidor. No recargar la página mientras se comprueba: esta recuperación pendiente no persiste tras recargar.
+- Guardar datos de contacto y guardar el código de acceso son consentimientos separados. «Olvidar» elimina solo el acceso almacenado en ese navegador; no cancela la cita.
+- `ManualAppointment` crea citas desde la agenda autenticada. No permite elegir otro barbero y reutiliza la validación transaccional del servidor. Los errores inciertos conservan la misma solicitud para reintentar sin duplicar.
+- `AdminBlocks` exige una consulta de impacto y una confirmación posterior. Si cambian las fechas u horas, invalida la revisión. La vista previa consulta citas locales activas; la creación definitiva vuelve a comprobar las reglas de disponibilidad, incluido Calendar. No cancela ni mueve citas automáticamente.
+- Los precios del menú ampliado se generan con el catálogo de la API; no dependen de una imagen que pueda quedar desactualizada.
 
 ## Verificación local
 
@@ -40,7 +46,7 @@ npm run build
 npm run dev -- --host 127.0.0.1
 ```
 
-`/qa/` está disponible solo en el servidor de desarrollo. Es una vista de prueba con datos sintéticos y sin conexión a la API para revisar el administrador. No representa un inicio de sesión ni se incluye como entrada del build de producción. Los cambios allí no persisten.
+`/qa/` está disponible solo en el servidor de desarrollo. Es una vista de prueba con datos sintéticos y sin conexión a la API para revisar el administrador. `/qa/booking.html` permite probar selección, validación y errores de horarios sin crear reservas. No representan un inicio de sesión ni se incluyen como entradas del build de producción. Los cambios allí no persisten.
 
 Revisar 320, 375, 768 y 1280 px: ausencia de desbordamiento horizontal, navegación móvil, selección de servicio, campos inválidos, apertura/cierre de diálogos, búsqueda de citas, menús junto al borde inferior y estados vacíos. Verificar también navegación con teclado y movimiento reducido.
 
@@ -48,4 +54,4 @@ Las pruebas automatizadas cubren reserva, validación, selección, búsquedas, e
 
 ## Despliegue
 
-Este refactor no requiere migraciones ni nuevas variables de entorno. Vercel compila `frontend`; Render conserva el backend existente. Tras publicar, comprobar el estado del deployment de Vercel y comparar el SHA de `/health` en Render con el commit esperado. `/health/ready` verifica la conexión y las migraciones.
+Esta actualización no requiere migraciones ni nuevas variables de entorno. Vercel compila `frontend`; Render debe publicar también las rutas administrativas de creación y revisión de bloqueos. Tras publicar, comprobar el estado del deployment de Vercel y comparar el SHA de `/health` en Render con el commit esperado. `/health/ready` verifica la conexión y las migraciones.

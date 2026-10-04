@@ -66,7 +66,7 @@ select option { color: var(--text); background: var(--surface); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--blue); }
 label { display: block; margin-bottom: .5rem; color: var(--text); font-size: .9375rem; font-weight: 500; text-transform: none; }
 .app { min-height: 100vh; }
-.seccion { width: min(1200px, calc(100% - 40px)); margin: 0 auto; padding-block: 4.5rem; scroll-margin-top: 5rem; }
+.seccion { width: min(1200px, calc(100% - 40px)); margin: 0 auto; padding-block: var(--space-12); scroll-margin-top: 0; }
 .eyebrow, .chip { display: inline-flex; align-items: center; width: fit-content; gap: .5rem; color: var(--muted); font-size: .875rem; font-weight: 500; text-transform: none; }
 .btn {
   min-height: 3.25rem; display: inline-flex; align-items: center; justify-content: center;

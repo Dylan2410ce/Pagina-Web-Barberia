@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, Clock3, Image, Sparkles } from "lucide-react";
+import { ArrowRight, Clock3, List, Sparkles } from "lucide-react";
 import { dinero } from "../utils/format";
 import Dialog from "./ui/Dialog";
 
@@ -28,6 +28,7 @@ function categoriaDe(nombre = "") {
 
 function descripcionServicio(servicio) {
   const nombre = servicio.name.toLocaleLowerCase("es-CR");
+  if (nombre.includes("premium")) return "Atención preferente, ágil y cuidada.";
   if (nombre.includes("mantenimiento de barba")) return "Contorno, largo y forma puestos al día.";
   if (nombre.includes("barba")) return "Perfilado completo con líneas bien definidas.";
   if (nombre.includes("ceja")) return "Limpieza sutil para equilibrar el rostro.";
@@ -58,19 +59,18 @@ export default function ServiceMenu({
           <p>Elige tu servicio. Nosotros cuidamos los detalles.</p>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>
-          <Image size={18} />
-          Ver menú impreso
+          <List size={18} />
+          Lista de precios
         </button>
       </div>
 
-      <div className="filtros-servicios reveal" role="tablist" aria-label="Categorías de servicios">
+      <div className="filtros-servicios reveal" role="group" aria-label="Categorías de servicios">
         {categorias.filter((item) => item.id === "todos" || servicios.some((servicio) => categoriaDe(servicio.name) === item.id)).map((item) => (
           <button
             className={categoria === item.id ? "activo" : ""}
             key={item.id}
             type="button"
-            role="tab"
-            aria-selected={categoria === item.id}
+            aria-pressed={categoria === item.id}
             onClick={() => setCategoria(item.id)}
           >
             {item.label}
@@ -99,7 +99,7 @@ export default function ServiceMenu({
               <Clock3 size={15} />
               {servicio.duration_min} min aprox.
             </span>
-            <button className="btn btn-principal" type="button" onClick={() => onSeleccionar?.(servicio.id)} aria-label={`Reservar ${servicio.name}`}>Elegir servicio <ArrowRight size={17} aria-hidden="true" /></button>
+            <button className="btn btn-linea" type="button" onClick={() => onSeleccionar?.(servicio.id)} aria-label={`Reservar ${servicio.name}`}>Elegir servicio <ArrowRight size={17} aria-hidden="true" /></button>
           </article>
         ))}
       </div>
@@ -127,7 +127,7 @@ export default function ServiceMenu({
 
       {mostrarPoster && (
         <Dialog title="Menú oficial de precios" onClose={() => setMostrarPoster(false)}>
-            <img src="/menu-oficial.jpeg" alt="Lista oficial de precios de Sebas Barber" />
+          <div className="live-price-menu"><h3>Sebas Barber</h3><dl>{[...servicios, ...extras].map((item) => <div key={item.id}><dt>{item.name}{item.is_addon ? " (extra)" : ""}</dt><dd>{dinero(item.price)}</dd></div>)}</dl></div>
         </Dialog>
       )}
     </section>

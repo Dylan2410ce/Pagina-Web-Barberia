@@ -10,6 +10,7 @@ export default function useBookingState(datos, avisar) {
   );
   const [slots, setSlots] = useState([]);
   const [cargandoSlots, setCargandoSlots] = useState(false);
+  const [errorSlots, setErrorSlots] = useState("");
 
   const servicioActivo = useMemo(
     () => datos.services.find((servicio) => servicio.id === reserva.service_id),
@@ -77,6 +78,8 @@ export default function useBookingState(datos, avisar) {
   const cargarSlots = useCallback(async (override = {}) => {
     const solicitud = ++ultimaSolicitud.current;
     const siguiente = { ...reserva, ...override };
+    setErrorSlots("");
+    setSlots([]);
     if (!siguiente.barber_id || !siguiente.service_id || !siguiente.date) {
       setSlots([]);
       setCargandoSlots(false);
@@ -94,7 +97,7 @@ export default function useBookingState(datos, avisar) {
     } catch (error) {
       if (solicitud !== ultimaSolicitud.current) return;
       setSlots([]);
-      avisar("error", "No pudimos leer la agenda", error.message);
+      setErrorSlots(error.message || "No pudimos conectar con la agenda.");
     } finally {
       if (solicitud === ultimaSolicitud.current) setCargandoSlots(false);
     }
@@ -142,5 +145,5 @@ export default function useBookingState(datos, avisar) {
   };
 
 
-  return { reserva, setReserva, recordarContacto, setRecordarContacto, slots, cargandoSlots, cargarSlots, servicioActivo, extrasActivos, barberoActivo, horariosActivos, resumen, seleccionarBarbero, seleccionarServicio, toggleExtra, cambiarFecha };
+  return { reserva, setReserva, recordarContacto, setRecordarContacto, slots, cargandoSlots, errorSlots, cargarSlots, servicioActivo, extrasActivos, barberoActivo, horariosActivos, resumen, seleccionarBarbero, seleccionarServicio, toggleExtra, cambiarFecha };
 }

@@ -21,7 +21,7 @@ textarea, textarea:focus { background: #fff; }
 .field-control { position: relative; }
 .field-control input { min-height: 3.25rem; padding-right: 2.75rem; }
 .field-icon { position: absolute; inset: 0 .875rem 0 auto; display: flex; align-items: center; pointer-events: none; }
-.field-message { display: block; min-height: 1.125rem; margin-top: .375rem; color: var(--muted); font-size: .8125rem; line-height: 1.5; }
+.field-message { display: block; min-height: 1.125rem; margin-top: .375rem; color: var(--muted); font-size: .875rem; line-height: 1.5; }
 .field-valid input { border-color: var(--green); }
 .field-valid .field-icon { color: var(--green); }
 .field-invalid input { border-color: var(--red); }
@@ -56,6 +56,9 @@ textarea, textarea:focus { background: #fff; }
 .skeleton { display: block; background: #e5e6ea; animation: skeleton-pulse 1.6s ease-in-out infinite alternate; }
 .agenda-timeline > .agenda-loading { min-height: 12rem; }
 .agenda-loading { min-height: 12rem; display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--muted); }
+.booking-notice { display: grid; gap: .75rem; grid-column: 1 / -1; padding: 1.25rem; margin-bottom: 1rem; border-left: 3px solid var(--amber); border-radius: .5rem; background: #fff8e7; color: var(--text); }
+.booking-notice p { color: var(--text-soft); font-size: 1rem; }
+.booking-notice .btn { justify-self: start; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }

@@ -1,20 +1,22 @@
 import Login from "./admin/AdminLogin";
-import Bloqueos from "./admin/AdminBlocks";
-import Servicios from "./admin/AdminServices";
-import Horarios from "./admin/AdminHours";
-import Seguridad from "./admin/AdminSecurity";
-import Reportes from "./admin/AdminReports";
-import Actividad from "./admin/AdminActivity";
+import { lazy, Suspense, useState } from "react";
+import { recursosDeSeccion } from "../hooks/useAdminData";
+const Bloqueos = lazy(() => import("./admin/AdminBlocks"));
+const Servicios = lazy(() => import("./admin/AdminServices"));
+const Horarios = lazy(() => import("./admin/AdminHours"));
+const Seguridad = lazy(() => import("./admin/AdminSecurity"));
+const Reportes = lazy(() => import("./admin/AdminReports"));
+const Actividad = lazy(() => import("./admin/AdminActivity"));
 
-import { BarChart3, BellRing, BriefcaseBusiness, CalendarCheck2, CalendarOff, Clock3, Home, History, Images, LayoutDashboard, LockKeyhole, LogOut, MessageSquareQuote, Scissors, Users } from "lucide-react";
+import { BarChart3, BellRing, BriefcaseBusiness, CalendarCheck2, CalendarOff, Clock3, Home, History, Images, LayoutDashboard, LockKeyhole, LogOut, MessageSquareQuote, Scissors, Users, MoreHorizontal, RefreshCw, Plus } from "lucide-react";
 
 import AdminAgenda from "./admin/AdminAgenda";
-import AdminClients from "./admin/AdminClients";
+const AdminClients = lazy(() => import("./admin/AdminClients"));
 import AdminDashboard from "./admin/AdminDashboard";
-import AdminGallery from "./admin/AdminGallery";
-import AdminReviews from "./admin/AdminReviews";
-import AdminWaitlist from "./admin/AdminWaitlist";
-import AdminOperations from "./admin/AdminOperations";
+const AdminGallery = lazy(() => import("./admin/AdminGallery"));
+const AdminReviews = lazy(() => import("./admin/AdminReviews"));
+const AdminWaitlist = lazy(() => import("./admin/AdminWaitlist"));
+const AdminOperations = lazy(() => import("./admin/AdminOperations"));
 
 
 const secciones = [
@@ -68,7 +70,14 @@ export default function AdminPanel({
   onDescargarRespaldo,
   onActualizarCliente,
   onAnonimizarCliente,
+  onNuevaCita,
+  onPreviewBloqueo,
 }) {
+  const [mas, setMas] = useState(false);
+  const necesarios = recursosDeSeccion(admin.tab);
+  const errores = necesarios.filter((clave) => admin.errores?.[clave]);
+  const cargando = necesarios.some((clave) => admin.actualizados && !admin.actualizados[clave] && !admin.errores?.[clave]);
+  const actualizacion = Math.min(...necesarios.map((clave) => admin.actualizados?.[clave] || 0));
   if (!admin.token) {
     return <Login onLogin={onLogin} onResetPassword={onResetPassword} />;
   }
@@ -96,12 +105,17 @@ export default function AdminPanel({
       </header>
 
       <div className="admin-layout">
-        <label className="admin-mobile-navigation">
-          <span>Sección</span>
+        <nav className="admin-mobile-navigation" aria-label="Accesos del panel">
+          <div className="admin-mobile-tabs">
+            {[{ id: "resumen", label: "Hoy", icon: CalendarCheck2 }, { id: "bloqueos", label: "Bloquear", icon: CalendarOff }, { id: "clientes", label: "Clientes", icon: Users }].map(({ id, label, icon: Icon }) => <button type="button" key={id} aria-current={admin.tab === id ? "page" : undefined} onClick={() => { onTab(id); setMas(false); }}><Icon size={19} /><span>{label}</span></button>)}
+            <button type="button" aria-expanded={mas} aria-controls="admin-more-sections" onClick={() => setMas((valor) => !valor)}><MoreHorizontal size={19} /><span>Más</span></button>
+          </div>
+          {mas && <label id="admin-more-sections"><span>Ir a una sección</span>
           <select value={admin.tab} onChange={(event) => onTab(event.target.value)} aria-label="Sección del panel">
             {secciones.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
           </select>
-        </label>
+          </label>}
+        </nav>
         <aside className="admin-sidebar">
           <nav aria-label="Secciones del panel">
             {secciones.map((item) => {
@@ -126,6 +140,10 @@ export default function AdminPanel({
         </aside>
 
         <main className="admin-content">
+          <div className="admin-sync-bar"><span>{actualizacion > 0 && Number.isFinite(actualizacion) ? `Actualizado a las ${new Date(actualizacion).toLocaleTimeString("es-CR", { hour: "numeric", minute: "2-digit" })}` : "Consultando tu agenda"}</span><button className="text-action" type="button" onClick={() => onRefresh?.()} disabled={admin.cargando || cargando}><RefreshCw size={16} />Actualizar</button>{onNuevaCita && <button className="btn btn-principal" type="button" onClick={onNuevaCita}><Plus size={18} />Nueva cita</button>}</div>
+          {errores.length > 0 && <div className="booking-notice" role="alert"><strong>No pudimos actualizar esta sección</strong><p>{errores.map((clave) => admin.errores[clave]).join(" ")}</p><p>Los datos anteriores no se muestran para evitar confusiones.</p><button className="btn btn-linea" type="button" onClick={() => onRefresh?.()}>Volver a intentar</button></div>}
+          {cargando && <div className="admin-section-loading" role="status"><span className="spinner" />Actualizando información…</div>}
+          {!errores.length && !cargando && <Suspense fallback={<div className="admin-section-loading" role="status">Abriendo sección…</div>}>
           {admin.tab === "resumen" && (
             <AdminDashboard
               data={admin.dashboard}
@@ -159,6 +177,7 @@ export default function AdminPanel({
               onAusencia={onAusencia}
               onEliminarAusencia={onEliminarAusencia}
               onLiberar={(id) => onEstado(id, "cancelled")}
+              onPreview={onPreviewBloqueo}
             />
           )}
           {admin.tab === "servicios" && <Servicios servicios={admin.servicios} onGuardar={onGuardarServicio} />}
@@ -201,6 +220,7 @@ export default function AdminPanel({
           )}
           {admin.tab === "actividad" && <Actividad items={admin.actividad} />}
           {admin.tab === "seguridad" && <Seguridad onChangePassword={onChangePassword} />}
+          </Suspense>}
         </main>
       </div>
     </section>

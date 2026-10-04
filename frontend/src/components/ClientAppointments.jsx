@@ -51,6 +51,7 @@ export default function ClientAppointments({
   reservasGuardadas = [],
   onBuscarCodigo,
   onSeleccionarGuardada,
+  onOlvidar,
   onCancelar,
   onReprogramar,
   onRepetir,
@@ -112,8 +113,8 @@ export default function ClientAppointments({
             <div className="saved-bookings">
               <span>Guardadas en este dispositivo</span>
               {reservasGuardadas.slice(0, 3).map((item) => (
+                <div className="saved-booking-row" key={item.access_code}>
                 <button
-                  key={item.access_code}
                   type="button"
                   onClick={() => onSeleccionarGuardada(item.access_code)}
                 >
@@ -123,6 +124,8 @@ export default function ClientAppointments({
                     <small>{fechaHumana(item.starts_at)}</small>
                   </span>
                 </button>
+                <button className="text-action" type="button" onClick={() => onOlvidar?.(item.access_code)} aria-label={`Olvidar ${item.service_name} en este dispositivo`}><Trash2 size={16} />Olvidar</button>
+                </div>
               ))}
             </div>
           )}
@@ -151,6 +154,9 @@ export default function ClientAppointments({
           {citas.map((cita) => {
             const barbero = barberos.find((item) => item.id === cita.barber_id);
             const activa = ["pending", "confirmed", "booked"].includes(cita.status);
+            const horasRestantes = (new Date(cita.starts_at).getTime() - now) / 3600000;
+            const permiteCancelar = horasRestantes >= (barbero?.cancellation_notice_hours ?? 2);
+            const permiteMover = horasRestantes >= (barbero?.reschedule_notice_hours ?? 2);
             return (
               <article className="cita-card client-appointment-card" key={cita.id}>
                 <header>
@@ -163,7 +169,7 @@ export default function ClientAppointments({
                   <small>Extras: {cita.addons.join(", ")}</small>
                 )}
 
-                <div className="appointment-calendar">
+                {activa && <div className="appointment-calendar">
                   <a
                     className="text-action"
                     href={googleCalendarUrl(cita, barbero)}
@@ -190,7 +196,7 @@ export default function ClientAppointments({
                     <CalendarPlus size={15} />
                     Outlook
                   </a>
-                </div>
+                </div>}
 
                 <div className="acciones-card">
                   <button className="btn btn-linea" type="button" onClick={() => onRepetir(cita)}>
@@ -199,11 +205,11 @@ export default function ClientAppointments({
                   </button>
                   {activa && cita._access_code && (
                     <>
-                      <button className="btn btn-linea" type="button" onClick={() => onReprogramar(cita)}>
+                      <button className="btn btn-linea" type="button" onClick={() => onReprogramar(cita)} disabled={!permiteMover}>
                         <CalendarClock size={16} />
                         Reprogramar
                       </button>
-                      <button className="btn btn-peligro" type="button" onClick={() => onCancelar(cita)}>
+                      <button className="btn btn-peligro" type="button" onClick={() => onCancelar(cita)} disabled={!permiteCancelar}>
                         <Trash2 size={16} />
                         Cancelar
                       </button>
@@ -222,6 +228,7 @@ export default function ClientAppointments({
                     </>
                   )}
                 </div>
+                {activa && (!permiteCancelar || !permiteMover) && <p className="appointment-policy">El plazo de cambios online está por terminar o ya terminó. Contacta a tu barbero para revisar tu cita.</p>}
                 {activa && cita._access_code && barbero && (
                   <span className="appointment-policy">
                     Puedes cancelar hasta {barbero.cancellation_notice_hours} h antes

@@ -78,7 +78,7 @@ export async function api(ruta, opciones = {}) {
   const metodo = opciones.method || "GET";
   const esReservaIdempotente = (
     metodo === "POST"
-    && ruta === "/api/public/appointments"
+    && ["/api/public/appointments", "/api/admin/appointments"].includes(ruta)
     && opciones.body?.request_id
   );
   const intentos = metodo === "GET" || esReservaIdempotente ? 2 : 1;
@@ -164,6 +164,8 @@ export const adminApi = {
   perfil: (token) => api("/api/admin/me", { token }),
   dashboard: (token) => api("/api/admin/dashboard", { token }),
   citas: (token, filtros = {}) => api(`/api/admin/appointments${query(filtros)}`, { token }),
+  crearCita: (token, datos) => api("/api/admin/appointments", { method: "POST", token, body: datos }),
+  previsualizarBloqueo: (token, datos) => api("/api/admin/blocks/preview", { method: "POST", token, body: datos }),
   estadoCita: (token, id, estado) =>
     api(`/api/admin/appointments/${id}/status${query({ status: estado })}`, { method: "PATCH", token }),
   moverCita: (token, id, datos) => api(`/api/admin/appointments/${id}/reschedule`, { method: "PATCH", token, body: datos }),

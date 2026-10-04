@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CalendarDays, Clock3, Plus, Database, XCircle, CalendarOff, Trash2 } from "lucide-react";
-import { fechaHumana, fechaCorta, horaAMinutos, hoyISO } from "../../utils/format";
+import { fechaHumana, fechaCorta, horaAMinutos, minutosAHora, hoyISO } from "../../utils/format";
 import PageHead from "./AdminPageHead";
 import EmptyState from "../ui/EmptyState";
+import ScheduleImpact from "./ScheduleImpact";
 
 export default function Bloqueos({
   perfil,
@@ -12,6 +13,7 @@ export default function Bloqueos({
   onAusencia,
   onEliminarAusencia,
   onLiberar,
+  onPreview,
 }) {
   const [modo, setModo] = useState("horas");
   const [fecha, setFecha] = useState(hoyISO());
@@ -20,6 +22,10 @@ export default function Bloqueos({
   const [motivo, setMotivo] = useState("");
   const [blockError, setBlockError] = useState("");
   const [absenceError, setAbsenceError] = useState("");
+  const [revision, setRevision] = useState({});
+  const [revisionAusencia, setRevisionAusencia] = useState({});
+  const [guardando, setGuardando] = useState(false);
+  const bloqueoEnvio = useRef(false);
   const [ausencia, setAusencia] = useState({
     start_date: hoyISO(),
     end_date: hoyISO(),
@@ -27,6 +33,25 @@ export default function Bloqueos({
     title: "",
     notes: "",
   });
+
+  const datosRevision = { start_date: fecha, end_date: fecha, all_day: modo === "dia", start_min: horaAMinutos(inicio), end_min: horaAMinutos(fin) };
+  const claveRevision = JSON.stringify(datosRevision);
+  const datosAusencia = { start_date: ausencia.start_date, end_date: ausencia.end_date, all_day: true };
+  const claveAusencia = JSON.stringify(datosAusencia);
+  const revisar = async (datos, previo, guardar) => {
+    const clave = JSON.stringify(datos);
+    if (previo.clave === clave && previo.resultado) return previo.resultado.total === 0;
+    guardar({ clave, cargando: true });
+    try { guardar({ clave, resultado: await onPreview(datos), cargando: false }); }
+    catch (error) { guardar({ clave, error: error.message, cargando: false }); }
+    return false;
+  };
+  const descanso = (duracion) => {
+    const ahora = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Costa_Rica", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
+    const minuto = Math.ceil(horaAMinutos(ahora) / 5) * 5;
+    setFecha(hoyISO());
+    usarRango(minutosAHora(Math.min(minuto, 1438)), minutosAHora(Math.min(minuto + duracion, 1439)));
+  };
 
   const usarRango = (desde, hasta) => {
     setModo("horas");
@@ -46,6 +71,10 @@ export default function Bloqueos({
     }
 
     setBlockError("");
+    if (bloqueoEnvio.current) return;
+    bloqueoEnvio.current = true; setGuardando(true);
+    try {
+    if (!await revisar(datosRevision, revision, setRevision)) return;
     const guardado = await onBloqueo({
       date: fecha,
       all_day: modo === "dia",
@@ -53,7 +82,8 @@ export default function Bloqueos({
       end_min: modo === "dia" ? null : endMin,
       notes: motivo.trim() || null,
     });
-    if (guardado) setMotivo("");
+    if (guardado) { setMotivo(""); setRevision({}); }
+    } finally { bloqueoEnvio.current = false; setGuardando(false); }
   };
 
   const guardarAusencia = async (event) => {
@@ -62,6 +92,10 @@ export default function Bloqueos({
       setAbsenceError("La fecha final debe ser igual o posterior a la inicial.");
       return;
     }
+    if (bloqueoEnvio.current) return;
+    bloqueoEnvio.current = true; setGuardando(true);
+    try {
+    if (!await revisar(datosAusencia, revisionAusencia, setRevisionAusencia)) return;
     const guardado = await onAusencia({
       ...ausencia,
       all_day: true,
@@ -72,12 +106,14 @@ export default function Bloqueos({
     if (guardado) {
       setAusencia((actual) => ({ ...actual, title: "", notes: "" }));
       setAbsenceError("");
+      setRevisionAusencia({});
     }
+    } finally { bloqueoEnvio.current = false; setGuardando(false); }
   };
 
   return (
     <>
-      <PageHead eyebrow="Disponibilidad" title="Bloquea un día o unas horas" text="Usa un cierre completo para descanso y un rango para diligencias o citas tomadas por fuera." />
+      <PageHead eyebrow="Disponibilidad" title="Tu tiempo, organizado." text="Reserva un descanso o cierra la agenda por unos días." />
       <div className="block-admin-grid">
         <section className="admin-panel">
           <div className="segmented-control" aria-label="Tipo de bloqueo">
@@ -100,6 +136,8 @@ export default function Bloqueos({
             {modo === "horas" && (
               <>
                 <div className="quick-ranges">
+                  <button type="button" onClick={() => descanso(45)}>Descansar 45 min</button>
+                  <button type="button" onClick={() => descanso(90)}>Descansar 90 min</button>
                   <button type="button" onClick={() => usarRango("08:00", "12:00")}>Mañana</button>
                   <button type="button" onClick={() => usarRango("12:00", "13:00")}>Almuerzo</button>
                   <button type="button" onClick={() => usarRango("13:00", "17:00")}>Tarde</button>
@@ -119,11 +157,12 @@ export default function Bloqueos({
                 maxLength={240}
                 value={motivo}
                 onChange={(event) => setMotivo(event.target.value)}
-                placeholder={modo === "dia" ? "Ej.: descanso o vacaciones" : "Ej.: cita manual o diligencia"}
+                placeholder={modo === "dia" ? "Ej.: descanso o vacaciones" : "Ej.: descanso o diligencia"}
               />
             </div>
             {blockError && <p className="form-error" role="alert">{blockError}</p>}
-            <button className="btn btn-principal btn-ancho" type="submit"><Plus size={17} />Guardar bloqueo</button>
+            <ScheduleImpact revision={revision} vigente={revision.clave === claveRevision} />
+            <button className="btn btn-principal btn-ancho" type="submit" disabled={guardando || (revision.clave === claveRevision && revision.resultado?.total > 0)}><Plus size={17} />{revision.clave === claveRevision && revision.resultado?.total === 0 ? "Confirmar bloqueo" : "Revisar bloqueo"}</button>
           </form>
         </section>
         <section className="admin-panel calendar-panel">
@@ -134,6 +173,7 @@ export default function Bloqueos({
                 className="admin-calendar-frame"
                 title={`Calendario de ${perfil?.name || "barbero"}`}
                 src={perfil.calendar_embed_url}
+                loading="lazy"
               />
             </>
           ) : (
@@ -261,9 +301,10 @@ export default function Bloqueos({
               />
             </div>
             {absenceError && <p className="form-error" role="alert">{absenceError}</p>}
-            <button className="btn btn-principal" type="submit">
+            <ScheduleImpact revision={revisionAusencia} vigente={revisionAusencia.clave === claveAusencia} />
+            <button className="btn btn-principal" type="submit" disabled={guardando || (revisionAusencia.clave === claveAusencia && revisionAusencia.resultado?.total > 0)}>
               <CalendarOff size={17} />
-              Guardar ausencia
+              {revisionAusencia.clave === claveAusencia && revisionAusencia.resultado?.total === 0 ? "Confirmar ausencia" : "Revisar fechas"}
             </button>
           </form>
           <div className="availability-list">
