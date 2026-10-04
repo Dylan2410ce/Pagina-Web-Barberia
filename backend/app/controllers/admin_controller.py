@@ -41,11 +41,15 @@ from app.repositories.barber_repository import BarberRepository
 from app.repositories.service_repository import ServiceRepository
 from app.schemas import (
     AdminAppointmentReschedule,
+    AppointmentCreate,
+    AppointmentCreatedOut,
     AppointmentOut,
     AuditLogOut,
     AvailabilityExceptionCreate,
     AvailabilityExceptionOut,
     BlockCreate,
+    BlockPreview,
+    BlockPreviewOut,
     BusinessHourOut,
     BusinessHourUpdate,
     ClientOut,
@@ -294,6 +298,39 @@ async def appointments(
         status=status,
         query=q,
     )
+
+
+@router.post("/appointments", response_model=AppointmentCreatedOut, status_code=201)
+async def create_manual_appointment(
+    data: AppointmentCreate,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.barber_id != barber.id:
+        raise HTTPException(status_code=403, detail="Solo puedes reservar en tu propia agenda")
+    return await AppointmentService(db).create(data, actor="barber")
+
+
+@router.post("/blocks/preview", response_model=BlockPreviewOut)
+async def preview_block(
+    data: BlockPreview,
+    barber: Barber = Depends(current_barber),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.all_day:
+        start, _ = day_range(data.start_date)
+        _, end = day_range(data.end_date)
+    else:
+        start, end = range_from_minutes(data.start_date, data.start_min, data.end_min - data.start_min)
+    conditions = (
+        Appointment.barber_id == barber.id,
+        Appointment.status.in_([AppointmentStatus.pending, AppointmentStatus.confirmed]),
+        Appointment.starts_at < end,
+        Appointment.ends_at > start,
+    )
+    total = await db.scalar(select(func.count(Appointment.id)).where(*conditions))
+    result = await db.execute(select(Appointment).where(*conditions).order_by(Appointment.starts_at).limit(50))
+    return {"total": total or 0, "appointments": list(result.scalars().all())}
 
 
 @router.patch("/appointments/{appointment_id}/status", response_model=AppointmentOut)

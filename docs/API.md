@@ -96,14 +96,22 @@ Authorization: Bearer <token>
 | `GET` | `/api/admin/dashboard` | Resumen operativo del día |
 | `GET` | `/api/admin/stats` | Métricas y reportes agregados |
 | `GET` | `/api/admin/appointments` | Agenda filtrada por barbero |
+| `POST` | `/api/admin/appointments` | Cita manual; mismo esquema e idempotencia que la reserva pública, exige `barber_id` del JWT (403 si difiere) |
 | `PATCH` | `/api/admin/appointments/{id}/status` | Actualiza estado |
 | `PATCH` | `/api/admin/appointments/{id}/reschedule` | Reprograma desde el panel |
 | `POST` | `/api/admin/blocks` | Bloquea fecha u horario |
+| `POST` | `/api/admin/blocks/preview` | Revisa citas activas propias que se solapan con un bloqueo; no modifica datos |
 | `GET` | `/api/admin/blocks` | Lista bloqueos propios |
 | `GET` | `/api/admin/business-hours` | Consulta horarios por día |
 | `PUT` | `/api/admin/business-hours/{weekday}` | Actualiza horario |
 | `GET` | `/api/admin/clients` | CRM e historial propios |
 | `GET` | `/api/admin/audit-logs` | Bitácora de operaciones propias |
+
+La revisión de bloqueos recibe `start_date`, `end_date`, `all_day`, y para un
+intervalo horario `start_min` y `end_min`. Devuelve `total` y hasta 50 elementos
+en `appointments`. Admite como máximo 366 días entre las fechas extremas; los
+intervalos de horas se limitan a un mismo día. Es una vista previa, no una
+reserva del intervalo: la operación de creación realiza la validación final.
 
 ## Administración de contenido y operación
 

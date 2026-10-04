@@ -347,7 +347,7 @@ class AppointmentService:
                 detail="Ese horario está bloqueado por disponibilidad especial",
             )
 
-    async def create(self, data: AppointmentCreate) -> Appointment:
+    async def create(self, data: AppointmentCreate, actor: str = "client") -> Appointment:
         fingerprint = request_fingerprint(data.model_dump())
         existing = await self.appointments.by_request_id(data.request_id)
         if existing:
@@ -437,7 +437,7 @@ class AppointmentService:
                 action="appointment.created",
                 entity_type="appointment",
                 entity_id=appointment.id,
-                details={"actor": "client", "status": appointment.status.value},
+                details={"actor": actor, "status": appointment.status.value},
             )
             await self.db.commit()
             await self.db.refresh(appointment)

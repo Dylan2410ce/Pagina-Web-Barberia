@@ -187,6 +187,27 @@ class AdminAppointmentReschedule(StrictInput):
     start_min: int = Field(ge=0, le=1439)
 
 
+class BlockPreview(StrictInput):
+    start_date: date
+    end_date: date
+    all_day: bool = True
+    start_min: int = Field(default=0, ge=0, le=1439)
+    end_min: int = Field(default=1440, ge=1, le=1440)
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if not 0 <= (self.end_date - self.start_date).days <= 366:
+            raise ValueError("El periodo debe estar ordenado y no superar un año")
+        if not self.all_day and (self.start_date != self.end_date or self.end_min <= self.start_min):
+            raise ValueError("El intervalo de horas debe pertenecer a un día y estar ordenado")
+        return self
+
+
+class BlockPreviewOut(BaseModel):
+    total: int
+    appointments: list[AppointmentOut]
+
+
 class BlockCreate(StrictInput):
     date: date
     start_min: int = Field(default=480, ge=0, le=1439)
