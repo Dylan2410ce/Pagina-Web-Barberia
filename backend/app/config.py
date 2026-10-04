@@ -89,8 +89,8 @@ class Config:
         os.getenv("GOOGLE_CALENDAR_SEBASTIAN_ID")
         or os.getenv("GOOGLE_CALENDAR_ID")
         or ""
-    )
-    GOOGLE_CALENDAR_GABRIEL_ID = os.getenv("GOOGLE_CALENDAR_GABRIEL_ID", "")
+    ).strip()
+    GOOGLE_CALENDAR_GABRIEL_ID = os.getenv("GOOGLE_CALENDAR_GABRIEL_ID", "").strip()
     GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "")
     GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON", "")
     GOOGLE_CREDENTIALS_B64 = os.getenv("GOOGLE_CREDENTIALS_B64", "")
@@ -132,7 +132,9 @@ class Config:
         1,
     )
 
-    EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "emailjs").lower()
+    EMAIL_PROVIDER = os.getenv(
+        "EMAIL_PROVIDER", "brevo" if os.getenv("BREVO_API_KEY") else "emailjs"
+    ).strip().lower()
     NOTIFY_EMAILS_ENABLED = os.getenv("NOTIFY_EMAILS_ENABLED", "false").lower() == "true"
     SMTP_HOST = os.getenv("SMTP_HOST", "")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -146,12 +148,23 @@ class Config:
     EMAILJS_TEMPLATE_BARBERO = os.getenv("EMAILJS_TEMPLATE_BARBERO", "")
     EMAILJS_PUBLIC_KEY = os.getenv("EMAILJS_PUBLIC_KEY", "")
     EMAILJS_PRIVATE_KEY = os.getenv("EMAILJS_PRIVATE_KEY", "")
+    BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()
+    BREVO_TEMPLATE_CLIENTE = (
+        os.getenv("BREVO_TEMPLATE_CLIENTE") or os.getenv("TEMPLATE_ID_CLIENTE", "")
+    ).strip()
+    BREVO_TEMPLATE_BARBERO = (
+        os.getenv("BREVO_TEMPLATE_BARBERO") or os.getenv("TEMPLATE_ID_BARBERO", "")
+    ).strip()
+    BREVO_SENDER_EMAIL = (
+        os.getenv("BREVO_SENDER_EMAIL") or os.getenv("SENDER_EMAIL", "")
+    ).strip()
+    BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "Sebas Barber").strip()
 
     SHOP_NAME = "Sebas Barber"
     ADDRESS = "C. 19, Provincia de Puntarenas, Espíritu Santo, Barrio Marañonal"
     LAT = 10.002565
     LNG = -84.657672
-    GOOGLE_MAPS_URL = f"https://www.google.com/maps?q={LAT},{LNG}"
+    GOOGLE_MAPS_URL = "https://maps.app.goo.gl/D3vDt9Dx2ijRzL8k9?g_st=ic"
     WAZE_URL = f"https://waze.com/ul?ll={LAT},{LNG}&navigate=yes"
     PARKING_INFO = os.getenv(
         "PARKING_INFO",

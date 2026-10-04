@@ -17,10 +17,10 @@ flowchart LR
   Vercel --> API[FastAPI en Render]
   API --> Neon[(PostgreSQL en Neon)]
   API --> Calendar[Google Calendar]
-  API --> Email[EmailJS]
+  API --> Email[Brevo / EmailJS durante la transición]
 ```
 
-El navegador no envía correos ni incluye claves de EmailJS. La API registra
+El navegador no envía correos ni incluye claves del proveedor. La API registra
 notificaciones en la misma transacción de la cita. Un único despachador lógico
 usa una concesión en PostgreSQL, deduplicación y presupuesto mensual persistente.
 El cron interno y el endpoint de tareas utilizan ese mismo despachador.

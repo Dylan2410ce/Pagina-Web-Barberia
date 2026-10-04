@@ -10,7 +10,7 @@ Google Calendar, PostgreSQL y frontend React.
 - Backend: FastAPI, Pydantic v2 y SQLAlchemy asíncrono.
 - Persistencia: PostgreSQL, recomendado en Neon.
 - Calendario: Google Calendar en `America/Costa_Rica`.
-- Correo: EmailJS para confirmaciones, avisos y recordatorios.
+- Correo: Brevo para confirmaciones, avisos y recordatorios (migración por variable en Render).
 - Despliegue: frontend en Vercel y API en Render.
 - Operación: PWA, modo mantenimiento, CRM, lista de espera, reportes y
   auditoría.
@@ -27,7 +27,8 @@ aislamiento en el servidor.
 | [Interfaz y pruebas visuales](docs/FRONTEND_UI.md) | Componentes, estilos, accesibilidad y revisión responsive |
 | [API](docs/API.md) | Endpoints, autenticación, errores y contratos |
 | [Operación](docs/OPERATIONS.md) | Variables, despliegues, migraciones y runbooks |
-| [EmailJS](docs/EMAILJS.md) | Templates, variables y diagnóstico de correos |
+| [Brevo](docs/BREVO.md) | Configuración, plantillas HTML y variables para Render |
+| [EmailJS anterior](docs/EMAILJS.md) | Referencia para retirar el proveedor anterior |
 | [Actualización gratuita y SEO](docs/FREE_TIER_SEO.md) | Cambios, límites, variables exactas y Search Console |
 | [Contribución](CONTRIBUTING.md) | Flujo de trabajo para mantenimiento |
 
@@ -137,15 +138,15 @@ Install: npm install
 ```
 
 La lista completa de variables, migraciones, cron jobs y comprobaciones está
-en [Operación](docs/OPERATIONS.md).
+en [Operación](docs/OPERATIONS.md). La migración de correo y sus dos plantillas
+están documentadas en [Brevo](docs/BREVO.md).
 
 ## Seguridad y datos sensibles
 
-Las claves de PostgreSQL, JWT, Google Calendar, EmailJS privado, Cloudinary y
+Las claves de PostgreSQL, JWT, Google Calendar, Brevo, Cloudinary y
 las credenciales de tareas solo deben existir en Render o en el proveedor
 correspondiente. Las variables `VITE_*` forman parte del bundle público y solo
-pueden contener valores diseñados para el navegador, como la clave pública de
-EmailJS.
+pueden contener valores diseñados para el navegador, como la URL pública de la API.
 
 El archivo `.env.example` contiene nombres y valores de ejemplo, nunca
 credenciales reales. Las credenciales de Google tampoco se almacenan como

@@ -283,6 +283,7 @@ async def calendar_health():
         config.GOOGLE_CALENDAR_GABRIEL_ID,
     )
     return {
+        "verification": "configuration_only",
         "enabled": calendar.enabled,
         "credentials_configured": bool(
             config.GOOGLE_CREDENTIALS_JSON

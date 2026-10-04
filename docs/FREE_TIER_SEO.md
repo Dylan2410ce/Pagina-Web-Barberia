@@ -2,7 +2,7 @@
 
 ## Alcance y límites
 
-No requiere Redis, colas administradas, workers de pago, adjuntos de EmailJS,
+No requiere Redis, colas administradas, workers de pago, adjuntos,
 Twilio ni tareas programadas de pago. PostgreSQL coordina límites y entregas.
 La suspensión de Render y las cuotas siguen existiendo: no se promete disponibilidad
 continua ni correo exactamente a las 24 horas si el servidor está dormido.
@@ -21,35 +21,17 @@ facturación. [Condiciones de Hobby](https://vercel.com/docs/plans/hobby).
 - `dispatch_leases` permite un despachador a la vez, también entre procesos.
 - `notification_budgets` contabiliza intentos mensuales, incluidos rechazos/timeouts.
 - `sent` no se vuelve a enviar. `processing` abandonado pasa a `uncertain`.
-  Revisa el historial de EmailJS antes de cualquier reenvío manual.
-- No es posible prometer exactly-once con EmailJS: su API no ofrece una clave
-  de idempotencia. Se prioriza evitar duplicados en resultados ambiguos.
+  Revisa el historial del proveedor antes de cualquier reenvío manual.
+- Brevo recibe una clave de idempotencia por entrega y la cola local evita
+  reenviar automáticamente resultados ambiguos.
 - El recordatorio usa el mismo template del cliente, programado 24 h antes.
   Una reserva realizada con menos de 24 h recibe confirmación, no otro aviso inmediato.
 
-EmailJS Free admite actualmente 200 solicitudes al mes y dos templates. El límite
-interno predeterminado es 180 intentos. Dos confirmaciones y un recordatorio pueden
-consumir tres solicitudes por cita; no equivale a 180 reservas.
-La allowlist de dominios no está incluida en Free: no actives una opción de pago.
-[Precios oficiales](https://www.emailjs.com/pricing/).
-
-### EmailJS
-
-1. Conserva tus dos templates y el servicio conectado.
-2. En ambos templates: **To Email** = `{{to_email}}`, **Subject** = `{{email_subject}}`,
-   **Reply To** = `{{reply_to}}`.
-3. Permite solicitudes de aplicaciones no navegador en la configuración de seguridad
-   de EmailJS, necesaria para llamar desde Render.
-4. Configura los IDs y la public key solo en Render. Si tu cuenta permite autenticación
-   con private key, usa `EMAILJS_PRIVATE_KEY` solo allí; no es un requisito de pago.
-5. Conserva `{{manage_url}}`, `{{access_code}}`, `{{barber_name}}`,
-   `{{appointment_date}}`, `{{appointment_time}}`, `{{maps_url}}` y `{{waze_url}}`.
-   No configures attachments ni `cid:`. El QR está en el comprobante web.
-6. Revisa el consumo actual: fija `EMAIL_MONTHLY_LIMIT` a un valor igual o inferior al
-   saldo disponible antes de activar los envíos. El contador nuevo no conoce consumo
-   previo ni envíos de otras aplicaciones. El período local usa el mes calendario UTC.
-7. Elimina las claves anteriores del bundle con el nuevo deploy. Si una clave quedó
-   expuesta previamente, revócala/rotála en el proveedor, no basta con borrarla del código.
+El envío usa Brevo por medio del backend; consulta [`BREVO.md`](BREVO.md) para
+plantillas y variables. El plan Free publica 300 envíos al día, pero también se
+aplica `EMAIL_MONTHLY_LIMIT=180` como tope interno conservador. Cada destinatario
+cuenta por separado: el aviso al barbero y el recordatorio también consumen un
+envío. [Límite oficial del plan Free](https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan).
 
 ## Fase 2. Privacidad y límites
 
@@ -153,17 +135,19 @@ GOOGLE_CALENDAR_GABRIEL_ID
 GOOGLE_CREDENTIALS_JSON (o tu Secret File ya configurado)
 CALENDAR_ENABLED=true
 CALENDAR_REQUIRED=true
-EMAILJS_SERVICE_ID
-EMAILJS_TEMPLATE_CLIENTE
-EMAILJS_TEMPLATE_BARBERO
-EMAILJS_PUBLIC_KEY
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY
+BREVO_TEMPLATE_CLIENTE
+BREVO_TEMPLATE_BARBERO
+BREVO_SENDER_EMAIL
+BREVO_SENDER_NAME=Sebas Barber
 OWNER_EMAIL=sebasbarberg2021@gmail.com
 GABRIEL_EMAIL
 REMINDER_TASK_TOKEN
 ```
 
-`EMAILJS_PRIVATE_KEY` es opcional. Conserva las opciones de negocio y galería que ya
-uses. SMTP, Resend y `TWILIO_*` ya no participan en este flujo. No cambies
+Conserva las opciones de negocio y galería que ya uses. SMTP, EmailJS (tras
+terminar la transición), Resend y `TWILIO_*` no participan en el envío Brevo. No cambies
 `SECRET_KEY` indiscriminadamente: protege JWT y códigos cifrados; para rotación
 conserva temporalmente `SECRET_KEY_PREVIOUS`.
 `RENDER_GIT_COMMIT` lo proporciona Render: no lo copies manualmente.
@@ -219,7 +203,8 @@ EDGE_CONFIG=<conserva tu conexión actual; no lleva prefijo VITE_>
 GOOGLE_SITE_VERIFICATION=<solo el token de verificación HTML, opcional>
 ```
 
-Elimina `VITE_EMAILJS_PUBLIC_KEY`, `VITE_EMAILJS_SERVICE_ID`,
+Elimina cualquier variable de envío de correo con prefijo `VITE_`, incluyendo
+`VITE_EMAILJS_PUBLIC_KEY`, `VITE_EMAILJS_SERVICE_ID`,
 `VITE_EMAILJS_TEMPLATE_CLIENTE`, `VITE_EMAILJS_TEMPLATE_BARBERO` y
 `VITE_BARBERO_EMAIL`. No agregues secretos de Render a Vercel.
 Root Directory: `frontend`; preset Vite; build `npm run build`; output `dist`.
@@ -274,4 +259,4 @@ es exclusivamente para una base desechable.
 Después del deploy compara `/health.commit` con el commit Git. La etiqueta
 `meta[name="build-sha"]` permite comprobar el frontend. Comprueba además el acceso
 por POST, rechazo de búsqueda por teléfono, preselección del servicio, vista móvil
-y ausencia de llamadas a EmailJS desde Network del navegador.
+y ausencia de llamadas a cualquier proveedor de correo desde Network del navegador.

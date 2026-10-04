@@ -818,6 +818,8 @@ class AppointmentService:
             service_duration,
         )
         starts_at, ends_at = range_from_minutes(day, start_min, duration)
+        if starts_at == appointment.starts_at and ends_at == appointment.ends_at:
+            return appointment
         old_start = appointment.starts_at.isoformat()
         old_date = appointment.starts_at.astimezone(TZ).date()
         old_event_id = appointment.calendar_event_id
@@ -860,7 +862,8 @@ class AppointmentService:
             await self.db.flush()
             new_event_id = await self._create_calendar_event(barber, appointment)
             appointment.calendar_event_id = new_event_id
-            await self._delete_calendar_event(barber, old_event_id)
+            if old_event_id != new_event_id:
+                await self._delete_calendar_event(barber, old_event_id)
             await self.notifications.refresh_reminder(appointment, barber)
             await self._notify("appointment_rescheduled", appointment)
             if old_date != day:

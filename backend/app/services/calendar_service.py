@@ -1,5 +1,6 @@
 import base64
 import glob
+import hashlib
 import json
 import logging
 import os
@@ -23,6 +24,8 @@ def parse_calendar_datetime(value: str) -> datetime:
 
 
 def rfc3339_costa_rica(value: datetime) -> str:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("La fecha debe incluir una zona horaria")
     return value.astimezone(CR_TZ).isoformat(timespec="seconds")
 
 
@@ -39,13 +42,42 @@ def calendar_embed_url(calendar_id: str | None) -> str | None:
     return f"https://calendar.google.com/calendar/embed?{query}"
 
 
-def log_google_error(context: str, exc: Exception) -> None:
+def google_error_details(exc: Exception) -> tuple[int | None, str]:
     status = getattr(getattr(exc, "resp", None), "status", None)
-    logger.error("Google Calendar: %s | status=%s tipo=%s", context, status, type(exc).__name__)
+    reason = "unknown"
+    allowed = {"authError", "forbidden", "notFound", "duplicate", "deleted", "badRequest",
+               "rateLimitExceeded", "userRateLimitExceeded", "backendError", "accessNotConfigured"}
+    try:
+        error = json.loads(getattr(exc, "content", b"{}"))["error"]
+        candidate = next((item.get("reason") for item in error.get("errors", []) if item.get("reason") in allowed), None)
+        reason = candidate or reason
+    except (ValueError, TypeError, KeyError, AttributeError):
+        pass
+    return status, reason
+
+
+def log_google_error(context: str, exc: Exception) -> None:
+    status, reason = google_error_details(exc)
+    logger.error("Google Calendar: %s | status=%s reason=%s tipo=%s", context, status, reason, type(exc).__name__)
+
+
+def calendar_failure(exc: Exception) -> "CalendarError":
+    status, reason = google_error_details(exc)
+    messages = {
+        400: "Google Calendar rechazó los datos del evento. Revisa su configuración.",
+        401: "Google Calendar no pudo autenticar la cuenta de servicio.",
+        403: "Google Calendar rechazó la operación. Revisa los permisos y los límites de la API.",
+        404: "El calendario no existe o no está compartido con la cuenta de servicio.",
+        429: "Google Calendar alcanzó su límite temporal. Intenta nuevamente en unos minutos.",
+    }
+    return CalendarError(messages.get(status, "Google Calendar no confirmó la operación. Intenta nuevamente."), status=status, reason=reason)
 
 
 class CalendarError(Exception):
-    pass
+    def __init__(self, message: str, *, status: int | None = None, reason: str = "unavailable"):
+        super().__init__(message)
+        self.status = status
+        self.reason = reason
 
 
 class CalendarService:
@@ -90,6 +122,8 @@ class CalendarService:
         try:
             from google.oauth2 import service_account
             from googleapiclient.discovery import build
+            from google_auth_httplib2 import AuthorizedHttp
+            from httplib2 import Http
         except Exception as exc:
             log_google_error("dependencias no disponibles", exc)
             return None
@@ -123,13 +157,25 @@ class CalendarService:
             return None
 
         try:
-            return build("calendar", "v3", credentials=credentials, cache_discovery=False)
+            return build("calendar", "v3", http=AuthorizedHttp(credentials, http=Http(timeout=10)), cache_discovery=False)
         except Exception as exc:
             log_google_error("cliente no disponible", exc)
             return None
 
     def is_available(self, calendar_id: str | None = None) -> bool:
         return bool(self.enabled and calendar_id and self.service)
+
+    def check_access(self, calendar_id: str | None) -> dict:
+        """Comprueba lectura real sin crear eventos ni modificar la agenda."""
+        if not self.is_available(calendar_id):
+            return {"available": False, "read_access": False, "write_access": "not_verified", "reason": "unavailable"}
+        try:
+            self.service.events().list(calendarId=calendar_id, maxResults=1, fields="items(id)", timeZone="America/Costa_Rica").execute(num_retries=1)
+            return {"available": True, "read_access": True, "write_access": "not_verified", "reason": "ok"}
+        except Exception as exc:
+            log_google_error("diagnóstico de permisos", exc)
+            status, reason = google_error_details(exc)
+            return {"available": False, "read_access": False, "write_access": "not_verified", "status": status, "reason": reason, "message": str(calendar_failure(exc))}
 
     def list_busy(
         self,
@@ -153,7 +199,7 @@ class CalendarService:
                     timeMax=rfc3339_costa_rica(end), timeZone="America/Costa_Rica",
                     singleEvents=True, orderBy="startTime", maxResults=2500,
                     pageToken=page_token,
-                ).execute()
+                ).execute(num_retries=1)
                 for event in response.get("items", []):
                     if event.get("status") == "cancelled" or event.get("transparency") == "transparent":
                         continue
@@ -173,7 +219,7 @@ class CalendarService:
         except Exception as exc:
             log_google_error("error leyendo eventos ocupados", exc)
             if config.CALENDAR_REQUIRED:
-                raise CalendarError("No pudimos verificar Google Calendar en este momento.") from exc
+                raise calendar_failure(exc) from exc
             return []
 
     def has_overlap(
@@ -203,7 +249,15 @@ class CalendarService:
                 )
             return None
 
+        start = rfc3339_costa_rica(appointment.starts_at)
+        end = rfc3339_costa_rica(appointment.ends_at)
+        if appointment.ends_at <= appointment.starts_at:
+            raise CalendarError("La hora final debe ser posterior a la hora inicial.")
+        event_id = "sb" + hashlib.sha256(f"{appointment.id}|{start}|{end}".encode()).hexdigest()
         event = {
+            "id": event_id,
+            "extendedProperties": {"private": {"appointment_id": str(appointment.id), "source": "sebas-barber"}},
+            "location": config.ADDRESS,
             "summary": f"{appointment.service_name} - {appointment.client_name}",
             "description": (
                 f"Cliente: {appointment.client_name}\n"
@@ -212,8 +266,8 @@ class CalendarService:
                 f"Precio: {appointment.total_price}\n"
                 f"Notas: {appointment.notes or ''}"
             ),
-            "start": {"dateTime": rfc3339_costa_rica(appointment.starts_at), "timeZone": "America/Costa_Rica"},
-            "end": {"dateTime": rfc3339_costa_rica(appointment.ends_at), "timeZone": "America/Costa_Rica"},
+            "start": {"dateTime": start, "timeZone": "America/Costa_Rica"},
+            "end": {"dateTime": end, "timeZone": "America/Costa_Rica"},
         }
         try:
             logger.info("Google Calendar: creando evento")
@@ -224,13 +278,29 @@ class CalendarService:
                     body=event,
                     sendUpdates="none",
                 )
-                .execute()
+                .execute(num_retries=1)
             )
-            return created.get("id")
+            if not created.get("id"):
+                raise CalendarError("Google Calendar no devolvió el identificador del evento.")
+            logger.info("Google Calendar: evento confirmado")
+            return created["id"]
         except Exception as exc:
+            status, _ = google_error_details(exc)
+            # Un ID estable permite recuperar una inserción cuya respuesta se perdió.
+            if status == 409 or status is None or status >= 500:
+                try:
+                    existing = self.service.events().get(calendarId=calendar_id, eventId=event_id).execute(num_retries=1)
+                    if (existing.get("status") != "cancelled"
+                        and existing.get("extendedProperties", {}).get("private", {}).get("appointment_id") == str(appointment.id)
+                        and parse_calendar_datetime(existing["start"]["dateTime"]) == appointment.starts_at
+                        and parse_calendar_datetime(existing["end"]["dateTime"]) == appointment.ends_at):
+                        logger.info("Google Calendar: inserción recuperada sin duplicar el evento")
+                        return event_id
+                except Exception as recovery_error:
+                    log_google_error("recuperación de inserción", recovery_error)
             log_google_error("error creando evento", exc)
             if config.CALENDAR_REQUIRED:
-                raise CalendarError("No pudimos confirmar el horario. Intenta nuevamente.") from exc
+                raise calendar_failure(exc) from exc
             return None
 
     def delete_event(self, calendar_id: str, event_id: str | None) -> None:
@@ -251,13 +321,11 @@ class CalendarService:
                 calendarId=calendar_id,
                 eventId=event_id,
                 sendUpdates="none",
-            ).execute()
+            ).execute(num_retries=1)
         except Exception as exc:
             status = getattr(getattr(exc, "resp", None), "status", None)
-            if status == 404:
+            if status in {404, 410}:
                 return
             log_google_error("error eliminando evento", exc)
             if config.CALENDAR_REQUIRED:
-                raise CalendarError(
-                    "Google Calendar no pudo eliminar el evento."
-                ) from exc
+                raise calendar_failure(exc) from exc

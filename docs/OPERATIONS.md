@@ -8,7 +8,7 @@
 | Backend | Render | FastAPI y tareas internas |
 | Base de datos | Neon | PostgreSQL administrado |
 | Calendario | Google Calendar | Disponibilidad por barbero |
-| Correo | EmailJS | Confirmaciones y notificaciones |
+| Correo | Brevo (transición desde EmailJS) | Confirmaciones y notificaciones |
 | Mantenimiento | Vercel Edge Config | Interruptor público |
 
 ## Variables de Render
@@ -54,11 +54,11 @@ realizar cambios en eventos.
 EMAIL_PROVIDER
 OWNER_EMAIL
 GABRIEL_EMAIL
-EMAILJS_SERVICE_ID
-EMAILJS_TEMPLATE_CLIENTE
-EMAILJS_TEMPLATE_BARBERO
-EMAILJS_PUBLIC_KEY
-EMAILJS_PRIVATE_KEY
+BREVO_API_KEY
+BREVO_TEMPLATE_CLIENTE
+BREVO_TEMPLATE_BARBERO
+BREVO_SENDER_EMAIL
+BREVO_SENDER_NAME
 REMINDERS_ENABLED
 REMINDER_LEAD_HOURS
 REMINDER_BATCH_SIZE
@@ -102,7 +102,7 @@ GOOGLE_SITE_VERIFICATION            # opcional; token HTML de Search Console
 
 Las variables `VITE_*` se incluyen en el bundle público. Nunca coloques allí
 una contraseña, token de tarea, conexión de base de datos, credencial de
-Google o clave privada de EmailJS.
+Google o clave privada de correo.
 
 ## Despliegue de Render
 
@@ -198,7 +198,7 @@ prefijo `VITE_`.
 | API devuelve `503` | Neon, `DATABASE_URL`, migraciones y pool |
 | Horarios no cargan | `barber_id`, fecha, bloqueos y `/health/calendar` |
 | Google no crea eventos | permisos, credenciales y zona horaria |
-| No llegan correos | IDs de EmailJS, destinatario, template y límites |
+| No llegan correos | `EMAIL_PROVIDER`, configuración Brevo, remitente, IDs de plantillas y límites |
 | Admin queda fuera | JWT, usuario, contraseña, `FRONTEND_URL` y `401/403` |
 | Mantenimiento no cambia | Edge Config, `EDGE_CONFIG` y `/api/site-status` |
 

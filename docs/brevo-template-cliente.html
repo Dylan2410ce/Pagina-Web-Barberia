@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{params.email_title}}</title>
+  <style>
+    body { margin:0; padding:0; background:#eeece7; color:#211f1b; font-family:Arial,Helvetica,sans-serif; -webkit-text-size-adjust:100%; }
+    table { border-collapse:collapse; }
+    .outer { width:100%; background:#eeece7; padding:30px 12px; }
+    .email { width:100%; max-width:620px; background:#fbfaf7; }
+    .masthead { padding:22px 36px; background:#171715; border-bottom:3px solid #b6935c; }
+    .monogram { display:inline-block; width:38px; height:38px; line-height:38px; border:1px solid #b6935c; border-radius:50%; color:#e5c58c; font-family:Georgia,'Times New Roman',serif; font-size:16px; text-align:center; vertical-align:middle; }
+    .wordmark { padding-left:11px; color:#fbf8f1; font-family:Georgia,'Times New Roman',serif; font-size:19px; letter-spacing:.3px; vertical-align:middle; }
+    .hero { padding:39px 42px 35px; background:#171715; }
+    .eyebrow { margin:0 0 13px; color:#d5b67d; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+    h1 { margin:0 0 15px; color:#fbf8f1; font-family:Georgia,'Times New Roman',serif; font-size:33px; font-weight:400; line-height:1.16; }
+    .intro { margin:0; color:#d2d0ca; font-size:15px; line-height:1.7; white-space:pre-line; }
+    .body { padding:31px 42px 34px; }
+    .greeting { margin:0 0 5px; color:#292722; font-size:16px; font-weight:700; }
+    .copy { margin:0 0 25px; color:#77736b; font-size:14px; line-height:1.65; white-space:pre-line; }
+    .section-label { margin:0 0 12px; color:#93805f; font-size:10px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; }
+    .time-grid { width:100%; margin:0 0 17px; }
+    .time-cell { width:50%; padding:17px 18px; background:#f1eee7; border:1px solid #e6e0d4; vertical-align:top; }
+    .time-left { border-radius:10px 0 0 10px; }
+    .time-right { border-left:0; border-radius:0 10px 10px 0; }
+    .time-label { display:block; margin:0 0 7px; color:#817968; font-size:10px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; }
+    .time-value { display:block; color:#24221e; font-family:Georgia,'Times New Roman',serif; font-size:19px; line-height:1.25; }
+    .service-box { width:100%; margin:0 0 20px; border:1px solid #e6e0d4; border-radius:10px; }
+    .service-box td { padding:12px 15px; border-bottom:1px solid #e9e4da; font-size:13px; line-height:1.45; }
+    .service-box tr:last-child td { border-bottom:0; }
+    .label { color:#77736b; }
+    .value { color:#282620; font-weight:700; text-align:right; }
+    .total-row td { padding-top:16px; padding-bottom:16px; background:#f4f0e7; }
+    .total-row .label { color:#5d5342; font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+    .total-row .value { color:#8b6836; font-family:Georgia,'Times New Roman',serif; font-size:21px; }
+    .code-box { margin:21px 0 23px; padding:17px 19px; border-left:3px solid #b6935c; background:#f3efe6; }
+    .code-label { margin:0 0 7px; color:#84765d; font-size:10px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; }
+    .code-value { margin:0; color:#25231f; font-family:Consolas,'Courier New',monospace; font-size:17px; font-weight:700; letter-spacing:.5px; overflow-wrap:anywhere; }
+    .code-hint { margin:7px 0 0; color:#77736b; font-size:11px; line-height:1.5; }
+    .cta-wrap { padding:0 0 22px; text-align:center; }
+    .cta { display:inline-block; padding:15px 25px; border-radius:4px; background:#b6935c; color:#171715 !important; font-size:13px; font-weight:700; letter-spacing:.3px; text-decoration:none; }
+    .route-title { margin:3px 0 11px; color:#93805f; font-size:10px; font-weight:700; letter-spacing:1.8px; text-align:center; text-transform:uppercase; }
+    .route-wrap { padding:0 0 18px; text-align:center; }
+    .route { display:inline-block; margin:4px; padding:11px 14px; border:1px solid #d9d2c5; border-radius:4px; color:#36332d !important; font-size:12px; font-weight:700; text-decoration:none; }
+    .address { margin:0; color:#858078; font-size:12px; line-height:1.6; text-align:center; }
+    .security { margin:21px 0 0; padding:14px 16px; border:1px solid #e7e2d8; color:#716d65; font-size:11px; line-height:1.6; }
+    .footer { padding:21px 25px 24px; background:#171715; color:#aaa79f; font-size:10px; line-height:1.8; text-align:center; }
+    .footer strong { color:#d5b67d; font-weight:500; }
+    @media only screen and (max-width:520px) {
+      .outer { padding:0; }
+      .email { width:100% !important; }
+      .masthead { padding:9px 16px; }
+      .monogram { width:27px; height:27px; line-height:27px; font-size:12px; }
+      .wordmark { padding-left:7px; font-size:15px; }
+      .hero { padding:13px 18px 12px; }
+      .eyebrow { margin-bottom:5px; font-size:8px; letter-spacing:1.4px; }
+      h1 { margin-bottom:5px; font-size:21px; line-height:1.1; }
+      .intro { display:none; }
+      .body { padding:12px 17px 13px; }
+      .greeting { margin-bottom:11px; font-size:13px; }
+      .copy { display:none; }
+      .section-label { margin-bottom:6px; font-size:8px; letter-spacing:1.2px; }
+      .time-grid { margin-bottom:8px; }
+      .time-cell { padding:8px 10px; }
+      .time-label { margin-bottom:3px; font-size:8px; letter-spacing:1px; }
+      .time-value { font-size:15px; }
+      .service-box { margin-bottom:9px; }
+      .service-box td { padding:6px 9px; font-size:11px; line-height:1.2; }
+      .optional-row { display:none; }
+      .total-row td { padding-top:8px; padding-bottom:8px; }
+      .total-row .label { font-size:9px; }
+      .total-row .value { font-size:17px; }
+      .code-box { margin:9px 0 10px; padding:9px 11px; }
+      .code-label { margin-bottom:3px; font-size:8px; letter-spacing:1.1px; }
+      .code-value { font-size:13px; }
+      .code-hint { display:none; }
+      .cta-wrap { padding-bottom:8px; }
+      .cta { padding:10px 16px; font-size:12px; }
+      .route-title { margin:0 0 4px; font-size:8px; letter-spacing:1.2px; }
+      .route-wrap { padding-bottom:6px; }
+      .route { margin:2px; padding:7px 9px; font-size:10px; }
+      .address { font-size:10px; line-height:1.3; }
+      .security { display:none; }
+      .footer { padding:7px 12px; font-size:8px; line-height:1.4; }
+    }
+  </style>
+</head>
+<body>
+  <table role="presentation" class="outer" width="100%">
+    <tr><td align="center">
+      <table role="presentation" class="email" width="620">
+        <tr><td class="masthead">
+          <span class="monogram">SB</span><span class="wordmark">Sebas Barber</span>
+        </td></tr>
+        <tr><td class="hero">
+          <p class="eyebrow">{{params.notification_badge}}</p>
+          <h1>{{params.email_title}}</h1>
+          <p class="intro">{{params.email_message}}</p>
+        </td></tr>
+        <tr><td class="body">
+          <p class="greeting">Hola, {{params.recipient_name}}.</p>
+          <p class="copy">Tu visita, con todo listo.</p>
+          <p class="section-label">Detalles de tu cita</p>
+
+          <table role="presentation" class="time-grid" width="100%">
+            <tr>
+              <td class="time-cell time-left"><span class="time-label">Día</span><span class="time-value">{{params.appointment_date}}</span></td>
+              <td class="time-cell time-right"><span class="time-label">Hora</span><span class="time-value">{{params.appointment_time}}</span></td>
+            </tr>
+          </table>
+
+          <table role="presentation" class="service-box" width="100%">
+            <tr><td class="label">Servicio</td><td class="value">{{params.service_name}}</td></tr>
+            <tr><td class="label">Con</td><td class="value">{{params.barber_name}}</td></tr>
+            <tr class="optional-row"><td class="label">Duración</td><td class="value">{{params.duration}}</td></tr>
+            <tr class="optional-row"><td class="label">Extras</td><td class="value">{{params.addons}}</td></tr>
+            <tr class="total-row"><td class="label">Total</td><td class="value">{{params.total_price}}</td></tr>
+          </table>
+
+          <div class="code-box">
+            <p class="code-label">Tu clave privada de reserva</p>
+            <p class="code-value">{{params.access_code}}</p>
+            <p class="code-hint">Guárdala. La necesitarás para consultar, cancelar o cambiar tu cita.</p>
+          </div>
+
+          <div class="cta-wrap"><a class="cta" href="{{params.manage_url}}">{{params.manage_button_label}}</a></div>
+          <p class="route-title">Cómo llegar</p>
+          <div class="route-wrap">
+            <a class="route" href="{{params.maps_url}}">Google Maps</a>
+            <a class="route" href="{{params.waze_url}}">Waze</a>
+          </div>
+          <p class="address">{{params.location}}</p>
+          <div class="security">{{params.security_notice}}</div>
+        </td></tr>
+        <tr><td class="footer">
+          Gracias por elegirnos.<br>
+          © 2026 Sebas Barber · Todos los derechos reservados.<br>
+          Desarrollado por <strong>Dylan Calvo Escobar</strong>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

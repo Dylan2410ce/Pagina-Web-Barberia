@@ -17,6 +17,7 @@ from app.models import (
 )
 from app.services.date_service import TZ, day_range, label_from_minutes
 from app.services.emailjs_service import EmailJSService
+from app.services.brevo_service import BrevoEmailService
 from app.services.idempotency_service import decrypt_access_code
 from app.services.qr_service import qr_png_data_url
 
@@ -59,7 +60,22 @@ def spanish_datetime(value: datetime) -> str:
 class NotificationService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.emailjs = EmailJSService()
+        self.mailer = BrevoEmailService() if config.EMAIL_PROVIDER == "brevo" else EmailJSService()
+        self.emailjs = self.mailer
+
+    @staticmethod
+    def _barber_email(barber: Barber) -> str:
+        username = (barber.username or "").strip().lower()
+        if username in {"sebas", "sebastian"} and config.OWNER_EMAIL:
+            return config.OWNER_EMAIL
+        if username == "gabriel" and config.GABRIEL_EMAIL:
+            return config.GABRIEL_EMAIL
+        return barber.email or ""
+
+    def _template_id(self, audience: str) -> str:
+        if config.EMAIL_PROVIDER == "brevo":
+            return self.mailer.template_id(audience)
+        return config.EMAILJS_TEMPLATE_BARBERO if audience == "barbero" else config.EMAILJS_TEMPLATE_CLIENTE
 
     async def _exists(self, dedupe_key: str) -> bool:
         result = await self.db.execute(
@@ -83,8 +99,8 @@ class NotificationService:
         }[action]
         appointment.access_code = decrypt_access_code(appointment.access_code_encrypted) or ""
         destinations = [
-            ("cliente", appointment.client_email, config.EMAILJS_TEMPLATE_CLIENTE),
-            ("barbero", barber.email, config.EMAILJS_TEMPLATE_BARBERO),
+            ("cliente", appointment.client_email, self._template_id("cliente")),
+            ("barbero", self._barber_email(barber), self._template_id("barbero")),
         ]
         for recipient, email, template in destinations:
             if not email or not template:
@@ -92,12 +108,28 @@ class NotificationService:
             key = f"{action}:{appointment.id}:{appointment.starts_at.astimezone(timezone.utc).isoformat()}:{recipient}"
             if await self._exists(key):
                 continue
-            payload = self.emailjs.appointment_payload(
+            payload = self.mailer.appointment_payload(
                 appointment, barber, notification_type=event_type, title=title,
                 message=message if recipient == "cliente" else f"{title}: {appointment.client_name}, con {barber.name}.",
                 to_email=email,
             )
             payload["recipient_name"] = appointment.client_name if recipient == "cliente" else barber.name
+            payload["email_audience"] = recipient
+            if recipient == "barbero":
+                payload["barber_email"] = email
+                payload["reply_to"] = email
+                payload["manage_url"] = config.FRONTEND_URL.rstrip("/") + "/admin"
+                payload["manage_button_label"] = "Abrir mi agenda"
+                payload["has_access_code"] = False
+                for field in ("access_code", "booking_code", "reservation_code"):
+                    payload.pop(field, None)
+                payload["email_title"] = {
+                    "appointment_created": "Nueva cita en tu agenda",
+                    "appointment_cancelled": "Una cita se canceló",
+                    "appointment_rescheduled": "Una cita cambió de horario",
+                }[action]
+                payload["email_subject"] = f"{payload['email_title']} · {barber.name}"
+                payload["email_message"] = f"{appointment.client_name} · {appointment.service_name}. Revisa los detalles en tu agenda."
             self.db.add(NotificationDelivery(
                 barber_id=barber.id, appointment_id=appointment.id,
                 kind=NotificationKind(action), status=NotificationStatus.pending,
@@ -154,7 +186,7 @@ class NotificationService:
             "Seguridad: Sebas Barber nunca solicita contraseñas ni pagos "
             "mediante enlaces enviados por correo."
         )
-        payload = self.emailjs.appointment_payload(
+        payload = self.mailer.appointment_payload(
             appointment,
             barber,
             notification_type="appointment_reminder",
@@ -162,6 +194,7 @@ class NotificationService:
             message=message,
             to_email=appointment.client_email,
         )
+        payload["email_audience"] = "cliente"
         self.db.add(
             NotificationDelivery(
                 barber_id=barber.id,
@@ -170,7 +203,7 @@ class NotificationService:
                 status=NotificationStatus.pending,
                 dedupe_key=dedupe_key,
                 recipient_email=appointment.client_email,
-                template_id=config.EMAILJS_TEMPLATE_CLIENTE,
+                template_id=self._template_id("cliente"),
                 payload=payload,
                 scheduled_for=scheduled_for,
             )
@@ -259,9 +292,10 @@ class NotificationService:
             )
             payload = {
                 "notification_type": "waitlist_available",
+                "email_audience": "cliente",
                 "to_email": entry.client_email,
                 "recipient_name": entry.client_name,
-                "reply_to": barber.email or config.OWNER_EMAIL,
+                "reply_to": self._barber_email(barber),
                 "from_name": config.SHOP_NAME,
                 "shop_name": config.SHOP_NAME,
                 "email_subject": "Se liberó un espacio en Sebas Barber",
@@ -310,7 +344,7 @@ class NotificationService:
                     status=NotificationStatus.pending,
                     dedupe_key=dedupe_key,
                     recipient_email=entry.client_email,
-                    template_id=config.EMAILJS_TEMPLATE_CLIENTE,
+                    template_id=self._template_id("cliente"),
                     payload=payload,
                     scheduled_for=datetime.now(TZ),
                 )
@@ -349,7 +383,7 @@ class NotificationService:
         now = datetime.now(TZ)
         if (
             now.hour < config.DAILY_SUMMARY_HOUR
-            or not config.EMAILJS_TEMPLATE_BARBERO
+            or not self._template_id("barbero")
         ):
             return 0
         result = await self.db.execute(
@@ -392,11 +426,13 @@ class NotificationService:
                 + ("\n".join(lines) if lines else "No hay citas pendientes para hoy.")
                 + f"\n\nTotal de citas: {len(appointments)}"
             )
+            barber_email = self._barber_email(barber)
             payload = {
                 "notification_type": "daily_summary",
-                "to_email": barber.email,
+                "email_audience": "barbero",
+                "to_email": barber_email,
                 "recipient_name": barber.name,
-                "reply_to": barber.email,
+                "reply_to": barber_email,
                 "from_name": config.SHOP_NAME,
                 "shop_name": config.SHOP_NAME,
                 "email_subject": f"Agenda de hoy: {len(appointments)} citas",
@@ -418,8 +454,8 @@ class NotificationService:
                     kind=NotificationKind.daily_summary,
                     status=NotificationStatus.pending,
                     dedupe_key=dedupe_key,
-                    recipient_email=barber.email,
-                    template_id=config.EMAILJS_TEMPLATE_BARBERO,
+                    recipient_email=barber_email,
+                    template_id=self._template_id("barbero"),
                     payload=payload,
                     scheduled_for=now,
                 )

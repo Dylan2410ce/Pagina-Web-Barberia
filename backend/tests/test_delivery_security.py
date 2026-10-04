@@ -97,6 +97,24 @@ class DeliveryTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.dispatch(send))["processed"], 0)
         send.assert_called_once()
 
+    async def test_pending_barber_email_uses_admin_link_and_new_maps_without_client_secret(self):
+        async with self.sessions() as db:
+            db.add(NotificationDelivery(
+                barber_id=self.barber_id, kind=NotificationKind.appointment_created,
+                dedupe_key="legacy-barber", recipient_email="barber@example.com", template_id="old-template",
+                payload={"email_audience": "barbero", "access_code": "SB-PRIVATE-CODE", "booking_code": "SB-PRIVATE-CODE"},
+                scheduled_for=datetime.now(timezone.utc) - timedelta(minutes=5),
+            ))
+            await db.commit()
+        send = MagicMock()
+        with patch.object(config, "EMAIL_PROVIDER", "emailjs"):
+            self.assertEqual((await self.dispatch(send))["processed"], 1)
+        payload = send.call_args.args[1]
+        self.assertEqual(payload["manage_url"], config.FRONTEND_URL.rstrip("/") + "/admin")
+        self.assertEqual(payload["maps_url"], config.GOOGLE_MAPS_URL)
+        self.assertNotIn("access_code", payload)
+        self.assertNotIn("booking_code", payload)
+
     async def test_interrupted_processing_becomes_uncertain_without_resend(self):
         job_id = await self.enqueue(NotificationStatus.processing)
         send = MagicMock()

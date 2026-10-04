@@ -76,7 +76,17 @@ services:
       - key: GABRIEL_EMAIL
         sync: false
       - key: EMAIL_PROVIDER
-        value: emailjs
+        value: brevo
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_TEMPLATE_CLIENTE
+        sync: false
+      - key: BREVO_TEMPLATE_BARBERO
+        sync: false
+      - key: BREVO_SENDER_NAME
+        value: Sebas Barber
       - key: EMAILJS_SERVICE_ID
         sync: false
       - key: EMAILJS_TEMPLATE_CLIENTE

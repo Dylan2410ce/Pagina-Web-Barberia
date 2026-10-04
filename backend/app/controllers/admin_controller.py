@@ -70,13 +70,20 @@ from app.schemas import (
 from app.services.appointment_service import AppointmentService
 from app.services.audit_service import AuditService
 from app.services.auth_service import current_barber, login
-from app.services.calendar_service import calendar_embed_url
+from app.services.calendar_service import CalendarService, calendar_embed_url
 from app.services.cloudinary_service import CloudinaryError, CloudinaryService
 from app.services.date_service import TZ, day_range, range_from_minutes
 from app.services.password_service import hash_password, verify_password
 from app.services.service_cache import service_cache
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
+
+
+@router.get("/integrations/calendar")
+async def calendar_diagnostic(barber: Barber = Depends(current_barber)):
+    if not barber.calendar_sync:
+        return {"available": False, "read_access": False, "write_access": "not_verified", "reason": "disabled"}
+    return await asyncio.to_thread(CalendarService().check_access, barber.calendar_id)
 
 
 def _valid_image_signature(content: bytes, content_type: str) -> bool:

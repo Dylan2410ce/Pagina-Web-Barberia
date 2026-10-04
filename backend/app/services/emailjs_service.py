@@ -32,7 +32,7 @@ class EmailJSService:
             and config.EMAILJS_PUBLIC_KEY
         )
 
-    def send(self, template_id: str, params: dict) -> None:
+    def send(self, template_id: str, params: dict, *, idempotency_key: str | None = None) -> None:
         if not self.available():
             raise EmailJSError("EmailJS no está configurado en Render")
         payload = {

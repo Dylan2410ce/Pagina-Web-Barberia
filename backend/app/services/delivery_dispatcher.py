@@ -27,6 +27,21 @@ def insert_for(db):
     return pg_insert if db.bind.dialect.name == "postgresql" else sqlite_insert
 
 
+def delivery_audience(job, appointment=None):
+    audience = (job.payload or {}).get("email_audience")
+    if audience in {"cliente", "barbero"}:
+        return audience
+    if job.kind == NotificationKind.daily_summary:
+        return "barbero"
+    if job.kind in {NotificationKind.appointment_reminder, NotificationKind.waitlist_available}:
+        return "cliente"
+    if appointment:
+        return "cliente" if job.recipient_email == appointment.client_email else "barbero"
+    if job.template_id and job.template_id == config.EMAILJS_TEMPLATE_BARBERO:
+        return "barbero"
+    return "cliente"
+
+
 async def acquire_lease(db, owner):
     now = datetime.now(timezone.utc)
     stmt = insert_for(db)(DispatchLease).values(
@@ -56,23 +71,25 @@ async def reserve_budget(db):
 
 async def dispatch_due(service):
     db = service.db
-    result = dict(enabled=service.emailjs.available(), processed=0, skipped=0,
+    mailer = service.emailjs
+    result = dict(enabled=mailer.available(), processed=0, skipped=0,
                   failed=0, uncertain=0, status="ok", daily_summaries=0, waitlist_notices=0)
     if not result["enabled"]:
+        if hasattr(mailer, "configuration_errors"):
+            logger.warning("Notificaciones desactivadas | configuración pendiente=%s", ",".join(mailer.configuration_errors()))
         return {**result, "status": "disabled"}
     owner = str(uuid4())
     if not await acquire_lease(db, owner):
         return {**result, "status": "busy"}
     try:
-        # Un corte tras enviar no permite saber si el proveedor acepto el correo.
-        # No reintentar automaticamente ese caso: EmailJS no ofrece idempotencia.
+        # La cola evita reenvios ambiguos; Brevo agrega idempotencia en cada intento.
         now = datetime.now(timezone.utc)
         await db.execute(update(NotificationDelivery).where(
             NotificationDelivery.status == NotificationStatus.processing,
             or_(NotificationDelivery.claimed_at.is_(None),
                 NotificationDelivery.claimed_at < now - timedelta(minutes=2)),
         ).values(status=NotificationStatus.uncertain,
-                 last_error="Resultado incierto tras interrupción; revisar EmailJS antes de reenviar."))
+                 last_error="Resultado incierto tras interrupción; revisar el historial del proveedor."))
         await db.commit()
         if config.REMINDERS_ENABLED:
             await service.prepare_due_reminders()
@@ -131,8 +148,21 @@ async def dispatch_due(service):
             job.status = NotificationStatus.processing
             # Normalizar mensajes heredados antes de enviarlos: sin adjuntos ni codigo en query.
             payload = {**job.payload, "qr_code": "", "has_qr": False}
+            audience = delivery_audience(job, appointment)
+            payload["email_audience"] = audience
+            payload["maps_url"] = config.GOOGLE_MAPS_URL
+            payload["waze_url"] = config.WAZE_URL
+            payload.setdefault("to_email", job.recipient_email)
+            if config.EMAIL_PROVIDER == "brevo":
+                job.template_id = mailer.template_id(audience)
             code = payload.get("access_code", "")
-            if code.startswith("SB-"):
+            if audience == "barbero":
+                payload["manage_url"] = config.FRONTEND_URL.rstrip("/") + "/admin"
+                payload["manage_button_label"] = "Abrir mi agenda"
+                payload["has_access_code"] = False
+                for field in ("access_code", "booking_code", "reservation_code"):
+                    payload.pop(field, None)
+            elif code.startswith("SB-"):
                 from urllib.parse import quote
                 payload["manage_url"] = config.FRONTEND_URL.rstrip("/") + "/#mis-citas?reserva=" + quote(code, safe="")
             job.payload = payload
@@ -140,7 +170,12 @@ async def dispatch_due(service):
             job.attempts += 1
             await db.commit()
             try:
-                await asyncio.to_thread(service.emailjs.send, job.template_id, job.payload)
+                await asyncio.to_thread(
+                    mailer.send,
+                    job.template_id,
+                    job.payload,
+                    idempotency_key=str(job.id),
+                )
                 job.status = NotificationStatus.sent
                 job.sent_at = datetime.now(timezone.utc)
                 job.last_error = None
