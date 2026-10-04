@@ -8,7 +8,7 @@
 - `hooks/useAdminController.js` conserva las operaciones de escritura. `useAdminData.js` consulta únicamente los recursos de la vista activa, registra errores y fechas de actualización por recurso e invalida los datos tras una modificación. Las respuestas de consultas reemplazadas o de sesiones cerradas no actualizan la interfaz.
 - `components/ui/` contiene campos, diálogos, búsquedas, menús de acciones y estados vacíos reutilizables.
 
-La API sigue siendo la autoridad para precios, autorización, validación de reservas y aislamiento por barbero. Los filtros locales solo operan sobre los registros que el servidor ya autorizó. EmailJS continúa exclusivamente en el backend.
+La API sigue siendo la autoridad para precios, autorización, validación de reservas y aislamiento por barbero. Los filtros locales solo operan sobre los registros que el servidor ya autorizó. El proveedor de correo se configura solo en el backend; el bundle del frontend no contiene claves ni SDK de envío.
 
 ## Estilos
 

@@ -219,7 +219,7 @@ export default function AdminPanel({
             />
           )}
           {admin.tab === "actividad" && <Actividad items={admin.actividad} />}
-          {admin.tab === "seguridad" && <Seguridad onChangePassword={onChangePassword} />}
+          {admin.tab === "seguridad" && <Seguridad token={admin.token} onChangePassword={onChangePassword} />}
           </Suspense>}
         </main>
       </div>

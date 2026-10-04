@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ShieldCheck, LockKeyhole } from "lucide-react";
 import PageHead from "./AdminPageHead";
+import CalendarConnection from "./CalendarConnection";
 
 
-export default function Seguridad({ onChangePassword }) {
+export default function Seguridad({ token, onChangePassword }) {
   const [form, setForm] = useState({
     current_password: "",
     new_password: "",
     confirmation: "",
   });
   const [error, setError] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const pendiente = useRef(false);
 
   const actualizarCampo = (campo, valor) => {
     setForm((actual) => ({ ...actual, [campo]: valor }));
@@ -18,6 +21,7 @@ export default function Seguridad({ onChangePassword }) {
 
   const guardar = async (event) => {
     event.preventDefault();
+    if (pendiente.current) return;
     if (form.new_password !== form.confirmation) {
       setError("Las contraseñas nuevas no coinciden.");
       return;
@@ -27,12 +31,19 @@ export default function Seguridad({ onChangePassword }) {
       return;
     }
 
-    const actualizado = await onChangePassword({
-      current_password: form.current_password,
-      new_password: form.new_password,
-    });
-    if (actualizado) {
-      setForm({ current_password: "", new_password: "", confirmation: "" });
+    pendiente.current = true;
+    setGuardando(true);
+    try {
+      const actualizado = await onChangePassword({
+        current_password: form.current_password,
+        new_password: form.new_password,
+      });
+      if (actualizado) setForm({ current_password: "", new_password: "", confirmation: "" });
+    } catch (error) {
+      setError(error.message || "No pudimos actualizar la contraseña.");
+    } finally {
+      pendiente.current = false;
+      setGuardando(false);
     }
   };
 
@@ -89,9 +100,10 @@ export default function Seguridad({ onChangePassword }) {
             />
           </div>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="btn btn-principal" type="submit"><LockKeyhole size={17} />Actualizar contraseña</button>
+          <button className="btn btn-principal" type="submit" disabled={guardando}><LockKeyhole size={17} aria-hidden="true" />{guardando ? "Actualizando…" : "Actualizar contraseña"}</button>
         </form>
       </section>
+      <CalendarConnection token={token} />
     </>
   );
 }

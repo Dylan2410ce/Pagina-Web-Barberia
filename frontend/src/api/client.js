@@ -160,6 +160,7 @@ export const publicoApi = {
 };
 
 export const adminApi = {
+  calendario: (token) => api("/api/admin/integrations/calendar", { token }),
   login: (datos) => api("/api/admin/login", { method: "POST", body: datos }),
   perfil: (token) => api("/api/admin/me", { token }),
   dashboard: (token) => api("/api/admin/dashboard", { token }),

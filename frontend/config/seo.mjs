@@ -30,7 +30,7 @@ export function datosSEO(env = process.env) {
     telephone: "+50683778700", priceRange: "CRC 2000-20000", currenciesAccepted: "CRC",
     address: { "@type": "PostalAddress", streetAddress: "C. 19, Barrio Marañonal", addressLocality: "Espíritu Santo, Esparza", addressRegion: "Puntarenas", addressCountry: "CR" },
     geo: { "@type": "GeoCoordinates", latitude: 10.002565, longitude: -84.657672 },
-    hasMap: "https://www.google.com/maps?q=10.002565,-84.657672",
+    hasMap: "https://maps.app.goo.gl/D3vDt9Dx2ijRzL8k9?g_st=ic",
     openingHoursSpecification: [{ "@type": "OpeningHoursSpecification", dayOfWeek: ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], opens: "08:00", closes: "19:00" }],
     sameAs: ["https://www.instagram.com/__andres29__/"],
     hasOfferCatalog: { "@type": "OfferCatalog", name: "Servicios de barbería", itemListElement: servicios.map((servicio) => ({

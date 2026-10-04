@@ -330,7 +330,7 @@ export default function PublicApp() {
           onMapa={() => setModalMapa(true)}
         />
       </main>
-      <Footer />
+      <Footer location={datos.location} />
       <FloatingContact barberos={datos.barbers} seleccionado={reserva.barber_id} />
       <ScrollToTop />
       {modalMapa && <Suspense fallback={null}><MapModal location={datos.location} onClose={() => setModalMapa(false)} /></Suspense>}

@@ -34,7 +34,7 @@ export default function seoPlugin(env) {
           + '<p class="hero-kicker">Barbería en Esparza</p><h1>Sebas Barber</h1>'
           + '<p class="hero-lead">Cortes precisos, barba bien definida y tu espacio reservado desde el celular.</p>'
           + '<div class="hero-acciones"><a class="btn btn-principal" href="#reserva">Reservar cita online</a>'
-          + '<a class="btn btn-cristal" href="https://www.google.com/maps?q=10.002565,-84.657672">Cómo llegar</a></div></div></div></section>'
+          + '<a class="btn btn-cristal" href="https://maps.app.goo.gl/D3vDt9Dx2ijRzL8k9?g_st=ic">Cómo llegar</a></div></div></div></section>'
           + '<section class="seccion"><h2>Servicios y precios</h2><ul class="static-menu">'
           + servicios.map((servicio) => '<li><strong>' + servicio.nombre + '</strong><span>₡' + servicio.precio.toLocaleString("es-CR") + ' · ' + servicio.minutos + ' min</span></li>').join("")
           + '</ul></section><section id="reserva" class="seccion"><h2>Reserva tu cita</h2><p>Selecciona tu servicio y tu barbero para consultar la agenda.</p>'

@@ -8,6 +8,7 @@ export default function useClientBookings({ reserva, recordarContacto, recordarR
   const [errorReserva, setErrorReserva] = useState(null);
   const pendiente = useRef(null);
   const enviando = useRef(false);
+  const modificando = useRef(false);
   const crearCita = async (event) => {
     event?.preventDefault();
     if (enviando.current) return;
@@ -118,10 +119,12 @@ export default function useClientBookings({ reserva, recordarContacto, recordarR
   };
 
   const ejecutarCancelacionCliente = async (cita) => {
+    if (modificando.current) return;
     const accessCode = cita._access_code || "";
     if (!accessCode) {
       return avisar("warning", "Falta el código de reserva");
     }
+    modificando.current = true;
     setProcesando("Liberando el espacio...");
     try {
       const actualizada = await publicoApi.cancelarCita(cita.id, {
@@ -139,6 +142,7 @@ export default function useClientBookings({ reserva, recordarContacto, recordarR
     } catch (error) {
       avisar("error", "No se pudo cancelar", error.message);
     } finally {
+      modificando.current = false;
       setProcesando("");
     }
   };
@@ -229,7 +233,9 @@ export default function useClientBookings({ reserva, recordarContacto, recordarR
   };
 
   const confirmarReprogramacion = async () => {
+    if (modificando.current) return;
     if (modalReprogramar?.start_min == null) return avisar("warning", "Escoge una hora");
+    modificando.current = true;
     setProcesando("Moviendo la cita...");
     try {
       if (modalReprogramar.modo === "cliente") {
@@ -261,6 +267,7 @@ export default function useClientBookings({ reserva, recordarContacto, recordarR
       if (error.status === 409) await cambiarFechaModal(modalReprogramar.date);
       setModalReprogramar((actual) => actual ? { ...actual, error: error.message } : actual);
     } finally {
+      modificando.current = false;
       setProcesando("");
     }
   };
