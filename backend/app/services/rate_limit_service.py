@@ -42,6 +42,7 @@ RULES = {
 }
 GLOBAL_RULE = RateRule("global", 300, 300)
 CLIENT_MUTATION_RULE = RateRule("booking-change", 12, 3600)
+TEAM_MUTATION_RULE = RateRule("team-change", 20, 600)
 
 
 class BurstLimiter:
@@ -105,6 +106,8 @@ class RateLimiter:
 
     @staticmethod
     def _rule(request):
+        if request.method in {"POST", "PUT", "DELETE"} and request.url.path.startswith("/api/admin/team"):
+            return TEAM_MUTATION_RULE
         if request.method == "PATCH" and request.url.path.startswith("/api/public/appointments/"):
             return CLIENT_MUTATION_RULE
         return RULES.get((request.method, request.url.path), GLOBAL_RULE)

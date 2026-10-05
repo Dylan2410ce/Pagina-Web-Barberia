@@ -12,7 +12,12 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, stored_hash: str) -> bool:
     if stored_hash.startswith("$2"):
-        return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+        if len(password.encode("utf-8")) > 72:
+            return False
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+        except ValueError:
+            return False
 
     try:
         algorithm, salt_text, digest_text = stored_hash.split("$", 2)

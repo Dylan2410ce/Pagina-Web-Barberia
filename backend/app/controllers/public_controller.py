@@ -100,6 +100,11 @@ async def init(db: AsyncSession = Depends(get_db)):
     }
 
 
+@router.get("/shop-status", response_model=list[ShopStatusOut])
+async def team_status(db: AsyncSession = Depends(get_db)):
+    return await ShopStatusService(db).status_all()
+
+
 @router.get("/shop-status/{barber_id}", response_model=ShopStatusOut)
 async def shop_status(
     barber_id: UUID,

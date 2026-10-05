@@ -95,6 +95,10 @@ class AppointmentService:
             profile.email = appointment.client_email
 
     async def lock_schedule(self, barber_id: UUID, day: date) -> None:
+        # El retiro del perfil y una reserva comparten el mismo bloqueo transaccional.
+        barber = await self.barbers.profile_for_update(barber_id)
+        if not barber or not barber.is_active:
+            raise HTTPException(status_code=409, detail="Este barbero ya no está disponible. Elige otro.")
         if self.db.bind and self.db.bind.dialect.name != "postgresql":
             return
         lock_key = f"schedule:{barber_id}:{day.isoformat()}"

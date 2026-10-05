@@ -23,6 +23,7 @@ from app.controllers import (
     operations_controller,
     public_controller,
     tasks_controller,
+    team_controller,
 )
 from app.database import AsyncSessionLocal, engine, required_schema_revisions
 from app.routers import bookings
@@ -211,6 +212,7 @@ app.include_router(engagement_controller.router)
 app.include_router(admin_controller.router)
 app.include_router(operations_controller.router)
 app.include_router(tasks_controller.router)
+app.include_router(team_controller.router)
 
 
 @app.get("/")

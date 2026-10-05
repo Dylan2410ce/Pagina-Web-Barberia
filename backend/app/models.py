@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -92,6 +93,9 @@ class PromotionType(str, enum.Enum):
 
 class Barber(Base):
     __tablename__ = "barbers"
+    __table_args__ = (Index("uq_barbers_active_calendar", "calendar_id", unique=True,
+        postgresql_where=text("is_active AND calendar_sync AND calendar_id IS NOT NULL"),
+        sqlite_where=text("is_active AND calendar_sync AND calendar_id IS NOT NULL")),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -108,6 +112,7 @@ class Barber(Base):
     calendar_sync: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     instagram_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     cancellation_notice_hours: Mapped[int] = mapped_column(
         Integer,

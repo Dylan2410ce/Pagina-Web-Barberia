@@ -65,6 +65,9 @@ class NotificationService:
 
     @staticmethod
     def _barber_email(barber: Barber) -> str:
+        correo_perfil = getattr(barber, "email", None)
+        if correo_perfil:
+            return correo_perfil
         username = (barber.username or "").strip().lower()
         if username in {"sebas", "sebastian"} and config.OWNER_EMAIL:
             return config.OWNER_EMAIL

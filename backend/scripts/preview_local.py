@@ -24,6 +24,8 @@ def main():
         from app.database import AsyncSessionLocal, Base, engine
         from app.models import Appointment, AppointmentStatus, Barber, Service
         from app.services.seed_service import seed_data
+        from app.schemas_team import CrearBarbero
+        from app.services.team_service import EquipoService
 
         async def preparar():
             async with engine.begin() as conexion:
@@ -31,6 +33,11 @@ def main():
             async with AsyncSessionLocal() as db:
                 await seed_data(db)
                 barbero = (await db.execute(select(Barber).where(Barber.username == "sebas"))).scalar_one()
+                await EquipoService(db, barbero).crear(CrearBarbero(name="Leo", username="leo",
+                    phone="88887777", password=f"QA-Aa1!{clave}", public_message="Perfil ficticio para revisar la gestión del equipo."))
+                for perfil in (await db.execute(select(Barber))).scalars():
+                    perfil.calendar_sync = False
+                    perfil.calendar_id = None
                 servicio = (await db.execute(select(Service).where(Service.name == "Corte Premium"))).scalar_one()
                 hoy = datetime.now(ZoneInfo("America/Costa_Rica")).replace(hour=8, minute=0, second=0, microsecond=0)
                 for indice, nombre in enumerate(["Cliente de muestra 1", "Cliente de muestra 2", "Cliente de muestra 3"]):

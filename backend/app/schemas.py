@@ -44,6 +44,7 @@ class BarberOut(BaseModel):
     phone: str
     email: str | None = None
     instagram_url: str | None = None
+    photo_url: str | None = None
     calendar_sync: bool = False
     cancellation_notice_hours: int = 2
     reschedule_notice_hours: int = 2
@@ -696,6 +697,8 @@ class DataRetentionRunOut(BaseModel):
 
 
 def validate_strong_password(value: str) -> str:
+    if len(value.encode("utf-8")) > 72:
+        raise ValueError("La contraseña supera el límite de 72 bytes")
     checks = (
         re.search(r"[A-Z]", value),
         re.search(r"[a-z]", value),

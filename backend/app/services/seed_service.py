@@ -96,11 +96,11 @@ async def seed_data(db: AsyncSession):
 
     barbers_result = await db.execute(select(Barber))
     existing_barbers = {barber.username: barber for barber in barbers_result.scalars().all()}
-    active_usernames = {item["username"] for item in BARBERS}
     active_barbers: list[Barber] = []
 
     for profile in BARBERS:
         barber = existing_barbers.get(profile["username"])
+        nuevo = barber is None
         if not barber:
             configured_hash = profile["password_hash"]()
             credentials_initialized = False
@@ -138,13 +138,16 @@ async def seed_data(db: AsyncSession):
                 else:
                     barber.password_hash = "unconfigured"
 
-        barber.name = profile["name"]
-        barber.role = profile["role"]
-        barber.phone = profile["phone"]
-        barber.calendar_sync = profile["calendar_sync"]
-        barber.calendar_id = profile["calendar_id"]() or None
-        barber.instagram_url = profile["instagram_url"]
-        barber.is_active = True
+        if nuevo:
+            barber.name = profile["name"]
+            barber.role = profile["role"]
+            barber.phone = profile["phone"]
+            barber.calendar_sync = profile["calendar_sync"]
+            barber.calendar_id = profile["calendar_id"]() or None
+            barber.instagram_url = profile["instagram_url"]
+            foto = "Sebastian" if profile["username"] == "sebas" else "Gabriel"
+            barber.photo_url = f"/assets/fotosbarberias/{foto}.png"
+            barber.is_active = True
         if not barber.email:
             barber.email = profile["email"]() or None
         if not barber.parking_info:
@@ -152,10 +155,6 @@ async def seed_data(db: AsyncSession):
         if not barber.directions_hint:
             barber.directions_hint = config.DIRECTIONS_HINT
         active_barbers.append(barber)
-
-    for username, barber in existing_barbers.items():
-        if username not in active_usernames:
-            barber.is_active = False
 
     await db.flush()
 

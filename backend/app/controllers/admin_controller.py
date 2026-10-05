@@ -181,6 +181,7 @@ async def me(barber: Barber = Depends(current_barber)):
         "calendar_connected": bool(barber.calendar_sync and barber.calendar_id),
         "calendar_embed_url": calendar_embed_url(barber.calendar_id),
         "can_manage_services": barber.username == "sebas",
+        "can_manage_team": barber.username == "sebas",
     }
 
 

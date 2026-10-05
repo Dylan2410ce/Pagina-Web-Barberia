@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AvailabilityException, BusinessBreak, BusinessHour
+from app.models import AvailabilityException, Barber, BusinessBreak, BusinessHour
 from app.repositories.barber_repository import BarberRepository
 from app.services.date_service import TZ, label_from_minutes, range_from_minutes
 
@@ -45,6 +45,30 @@ class ShopStatusService:
         )
         exceptions = list(exceptions_result.scalars().all())
 
+        return self._calcular(barber, now, hours, breaks, exceptions)
+
+    async def status_all(self) -> list[dict]:
+        barberos = await self.barbers.all_active()
+        if not barberos:
+            return []
+        ahora = datetime.now(TZ)
+        ids = [barbero.id for barbero in barberos]
+        horas = list((await self.db.execute(select(BusinessHour).where(BusinessHour.barber_id.in_(ids)))).scalars())
+        pausas = list((await self.db.execute(select(BusinessBreak).where(BusinessBreak.barber_id.in_(ids), BusinessBreak.is_active.is_(True)))).scalars())
+        excepciones = list((await self.db.execute(select(AvailabilityException).where(AvailabilityException.barber_id.in_(ids), AvailabilityException.end_date >= ahora.date(), AvailabilityException.start_date <= ahora.date() + timedelta(days=14)))).scalars())
+        def agrupar(filas):
+            grupos = {}
+            for fila in filas:
+                grupos.setdefault(fila.barber_id, []).append(fila)
+            return grupos
+        horas, pausas, excepciones = map(agrupar, (horas, pausas, excepciones))
+        return [self._calcular(barbero, ahora,
+            {fila.weekday: fila for fila in horas.get(barbero.id, [])},
+            pausas.get(barbero.id, []), excepciones.get(barbero.id, [])) for barbero in barberos]
+
+    def _calcular(self, barber: Barber, now: datetime, hours: dict[int, BusinessHour],
+        breaks: list[BusinessBreak], exceptions: list[AvailabilityException]) -> dict:
+
         today_hours = hours.get(now.weekday())
         today_exceptions = self._exceptions_for(exceptions, now.date())
         minute = now.hour * 60 + now.minute
@@ -67,7 +91,7 @@ class ShopStatusService:
                     now,
                     False,
                     "unavailable",
-                    full_day.title,
+                    "No atiende hoy",
                     next_open,
                 )
 
