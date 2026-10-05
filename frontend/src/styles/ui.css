@@ -5,9 +5,9 @@ body { line-height: 1.5; }
 :where(button, a) { touch-action: manipulation; }
 :where(input, select, textarea) { font-size: 1rem; min-width: 0; }
 :where(button, input, select, textarea):disabled { cursor: not-allowed; opacity: .5; }
-textarea, textarea:focus { background: #fff; }
+textarea, textarea:focus { background: var(--surface); }
 .btn { min-height: 3.25rem; padding: .875rem 1.5rem; font-size: 1rem; font-weight: 500; box-shadow: none; }
-.btn-linea { border-color: var(--line); background: #fff; }
+.btn-linea { border-color: var(--line); background: var(--surface); }
 .btn-linea:hover { background: var(--bg-soft); }
 .btn:disabled:hover { transform: none; box-shadow: none; }
 .btn svg, .icon-btn svg { flex-shrink: 0; }

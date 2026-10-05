@@ -16,9 +16,11 @@ La API sigue siendo la autoridad para precios, autorización, validación de res
 
 Los estilos de mantenimiento deben limitarse a sus clases `maintenance-*`. No agregar allí reglas generales de formularios, secciones o tipografía, pues afectarían el sitio operativo.
 
-Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa. La paleta combina blanco, gris claro y texto carbón; las acciones principales usan negro sólido. Azul indica selección o foco, verde confirma una acción y rojo señala errores o acciones destructivas. `light-surfaces.css` unifica los módulos secundarios y diálogos que comparten la misma paleta.
+Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa. La paleta combina gris suave `#e7eae8`, superficies `#f3f5f2` y texto carbón verdoso `#26332e`; las acciones principales usan verde profundo `#22594f`. Azul petróleo indica foco, verde confirma una acción y rojo señala errores o acciones destructivas. `light-surfaces.css` unifica los módulos secundarios y diálogos que comparten la misma paleta.
 
-Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`. La navegación cambia a menú desplegable por debajo de 960 px; el administrador muestra accesos a Hoy, Bloquear y Clientes, más un selector para las vistas secundarias, por debajo de 1040 px.
+Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`. La navegación cambia a menú desplegable por debajo de 960 px; el administrador muestra accesos a Hoy, Bloquear y Clientes, más herramientas agrupadas en Más, por debajo de 1040 px. En escritorio `AdminNavigation` agrupa Día a día, Negocio, Contenido y Mi cuenta. El resumen inicia con las citas por atender; Todas recupera el día completo. El bloqueo rápido confirma antes de bloquear 45 minutos en el siguiente espacio **de hoy**, sin desplazar citas ni bloquear otros días. El catálogo compartido es editable por Sebastián y de lectura para Gabriel; la API valida esta autorización independientemente de los botones.
+
+Para una revisión visual aislada, `python scripts/preview_local.py` desde `backend` genera una base temporal con clientes ficticios y una contraseña temporal. La API se limita a `127.0.0.1:8008`; no envía correos ni llama a Calendar. Iniciar Vite con `VITE_API_URL=http://127.0.0.1:8008`. Esta utilidad no forma parte del arranque de producción.
 
 ## Contratos de interacción
 

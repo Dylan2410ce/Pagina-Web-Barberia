@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { adminApi, publicoApi, borrarToken, guardarToken } from "../api/client";
 import { hoyISO, fechaHumana, horaAMinutos } from "../utils/format";
 import { normalizarBarberos } from "../utils/barbers";
@@ -5,6 +6,8 @@ import useAdminData, { adminBase } from "./useAdminData";
 
 export default function useAdminController({ avisar, setProcesando, setConfirmacion, setDatos = () => {}, cargarSlots = () => {} }) {
   const { admin, setAdmin, cargarAdmin, cargarRecursos, consultaAgenda, cargaPanel } = useAdminData(avisar);
+  const citasEnProceso = useRef(new Set());
+  const bloqueoRapidoEnCurso = useRef(false);
 
   const loginAdmin = async (data) => {
     setProcesando("Entrando al panel...");
@@ -75,6 +78,8 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
   };
 
   const cambiarEstadoAdmin = async (id, status) => {
+    if (citasEnProceso.current.has(id)) return;
+    citasEnProceso.current.add(id);
     setProcesando("Actualizando agenda...");
     try {
       await adminApi.estadoCita(admin.token, id, status);
@@ -84,6 +89,7 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
     } catch (error) {
       avisar("error", "No se pudo actualizar", error.message);
     } finally {
+      citasEnProceso.current.delete(id);
       setProcesando("");
     }
   };
@@ -168,12 +174,21 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
     }
   };
 
-  const bloquearProximoEspacio = async () => {
+  const bloquearProximoEspacio = () => setConfirmacion({
+    title: "¿Reservar un descanso para hoy?",
+    message: "Se bloquearán 45 minutos en el próximo espacio libre de hoy. Tus citas actuales no se moverán y no se bloquearán otros días.",
+    confirmLabel: "Bloquear 45 minutos",
+    onConfirm: crearBloqueoRapido,
+  });
+
+  const crearBloqueoRapido = async () => {
+    if (bloqueoRapidoEnCurso.current) return;
+    bloqueoRapidoEnCurso.current = true;
     setProcesando("Buscando el próximo espacio...");
     try {
       const bloqueo = await adminApi.bloqueoRapido(admin.token, {
         duration_min: 45,
-        horizon_days: 14,
+        horizon_days: 1,
         notes: "Bloqueo rápido desde el panel",
       });
       await cargarAdmin();
@@ -182,6 +197,7 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
     } catch (error) {
       avisar("error", "No se pudo crear el bloqueo", error.message);
     } finally {
+      bloqueoRapidoEnCurso.current = false;
       setProcesando("");
     }
   };

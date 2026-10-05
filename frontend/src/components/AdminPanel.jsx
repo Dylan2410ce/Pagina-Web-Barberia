@@ -1,5 +1,5 @@
 import Login from "./admin/AdminLogin";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense } from "react";
 import { recursosDeSeccion } from "../hooks/useAdminData";
 const Bloqueos = lazy(() => import("./admin/AdminBlocks"));
 const Servicios = lazy(() => import("./admin/AdminServices"));
@@ -8,7 +8,8 @@ const Seguridad = lazy(() => import("./admin/AdminSecurity"));
 const Reportes = lazy(() => import("./admin/AdminReports"));
 const Actividad = lazy(() => import("./admin/AdminActivity"));
 
-import { BarChart3, BellRing, BriefcaseBusiness, CalendarCheck2, CalendarOff, Clock3, Home, History, Images, LayoutDashboard, LockKeyhole, LogOut, MessageSquareQuote, Scissors, Users, MoreHorizontal, RefreshCw, Plus } from "lucide-react";
+import { LogOut, Scissors, RefreshCw, Plus } from "lucide-react";
+import AdminNavigation from "./admin/AdminNavigation";
 
 import AdminAgenda from "./admin/AdminAgenda";
 const AdminClients = lazy(() => import("./admin/AdminClients"));
@@ -18,22 +19,6 @@ const AdminReviews = lazy(() => import("./admin/AdminReviews"));
 const AdminWaitlist = lazy(() => import("./admin/AdminWaitlist"));
 const AdminOperations = lazy(() => import("./admin/AdminOperations"));
 
-
-const secciones = [
-  { id: "resumen", label: "Resumen", icon: LayoutDashboard },
-  { id: "agenda", label: "Agenda", icon: CalendarCheck2 },
-  { id: "espera", label: "Lista de espera", icon: BellRing },
-  { id: "bloqueos", label: "Bloqueos", icon: CalendarOff },
-  { id: "servicios", label: "Servicios", icon: Scissors },
-  { id: "horarios", label: "Horarios", icon: Clock3 },
-  { id: "clientes", label: "Clientes", icon: Users },
-  { id: "resenas", label: "Reseñas", icon: MessageSquareQuote },
-  { id: "galeria", label: "Galería", icon: Images },
-  { id: "reportes", label: "Reportes", icon: BarChart3 },
-  { id: "operacion", label: "Negocio", icon: BriefcaseBusiness },
-  { id: "actividad", label: "Actividad", icon: History },
-  { id: "seguridad", label: "Seguridad", icon: LockKeyhole },
-];
 
 export default function AdminPanel({
   admin,
@@ -73,7 +58,6 @@ export default function AdminPanel({
   onNuevaCita,
   onPreviewBloqueo,
 }) {
-  const [mas, setMas] = useState(false);
   const necesarios = recursosDeSeccion(admin.tab);
   const errores = necesarios.filter((clave) => admin.errores?.[clave]);
   const cargando = necesarios.some((clave) => admin.actualizados && !admin.actualizados[clave] && !admin.errores?.[clave]);
@@ -105,39 +89,7 @@ export default function AdminPanel({
       </header>
 
       <div className="admin-layout">
-        <nav className="admin-mobile-navigation" aria-label="Accesos del panel">
-          <div className="admin-mobile-tabs">
-            {[{ id: "resumen", label: "Hoy", icon: CalendarCheck2 }, { id: "bloqueos", label: "Bloquear", icon: CalendarOff }, { id: "clientes", label: "Clientes", icon: Users }].map(({ id, label, icon: Icon }) => <button type="button" key={id} aria-current={admin.tab === id ? "page" : undefined} onClick={() => { onTab(id); setMas(false); }}><Icon size={19} /><span>{label}</span></button>)}
-            <button type="button" aria-expanded={mas} aria-controls="admin-more-sections" onClick={() => setMas((valor) => !valor)}><MoreHorizontal size={19} /><span>Más</span></button>
-          </div>
-          {mas && <label id="admin-more-sections"><span>Ir a una sección</span>
-          <select value={admin.tab} onChange={(event) => onTab(event.target.value)} aria-label="Sección del panel">
-            {secciones.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-          </select>
-          </label>}
-        </nav>
-        <aside className="admin-sidebar">
-          <nav aria-label="Secciones del panel">
-            {secciones.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  className={admin.tab === item.id ? "activo" : ""}
-                  key={item.id}
-                  type="button"
-                  aria-current={admin.tab === item.id ? "page" : undefined}
-                  onClick={(event) => {
-                    onTab(item.id);
-                  }}
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-          <a href="/"><Home size={18} /><span>Volver a la web</span></a>
-        </aside>
+        <AdminNavigation seccion={admin.tab} onSeleccionar={onTab} />
 
         <main className="admin-content">
           <div className="admin-sync-bar"><span>{actualizacion > 0 && Number.isFinite(actualizacion) ? `Actualizado a las ${new Date(actualizacion).toLocaleTimeString("es-CR", { hour: "numeric", minute: "2-digit" })}` : "Consultando tu agenda"}</span><button className="text-action" type="button" onClick={() => onRefresh?.()} disabled={admin.cargando || cargando}><RefreshCw size={16} />Actualizar</button>{onNuevaCita && <button className="btn btn-principal" type="button" onClick={onNuevaCita}><Plus size={18} />Nueva cita</button>}</div>
@@ -180,7 +132,7 @@ export default function AdminPanel({
               onPreview={onPreviewBloqueo}
             />
           )}
-          {admin.tab === "servicios" && <Servicios servicios={admin.servicios} onGuardar={onGuardarServicio} />}
+          {admin.tab === "servicios" && <Servicios servicios={admin.servicios} onGuardar={onGuardarServicio} puedeEditar={admin.perfil.can_manage_services ?? admin.perfil.username === "sebas"} />}
           {admin.tab === "horarios" && <Horarios horarios={admin.horarios} onGuardar={onGuardarHorario} />}
           {admin.tab === "clientes" && (
             <AdminClients

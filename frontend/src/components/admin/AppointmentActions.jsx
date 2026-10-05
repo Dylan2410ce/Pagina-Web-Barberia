@@ -12,7 +12,7 @@ export default function AppointmentActions({ cita, onEstado, onMover }) {
         <button className="btn btn-peligro" type="button" onClick={() => onEstado(cita.id, "no_show")}><UserX size={17} />No llegó</button>
       </>}
       <ActionMenu label={`Acciones de ${bloqueo ? "bloqueo" : cita.client_name}`} actions={[
-        { label: "Reprogramar", icon: MoveRight, onClick: () => onMover(cita) },
+        ...(!bloqueo ? [{ label: "Reprogramar", icon: MoveRight, onClick: () => onMover(cita) }] : []),
         { label: bloqueo ? "Liberar horario" : "Cancelar cita", icon: XCircle, danger: true, onClick: () => onEstado(cita.id, "cancelled") },
       ]} />
     </div>

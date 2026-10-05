@@ -34,7 +34,7 @@ function Editor({ servicio, onGuardar, onClose }) {
   );
 }
 
-export default function Servicios({ servicios = [], onGuardar }) {
+export default function Servicios({ servicios = [], onGuardar, puedeEditar = true }) {
   const [consulta, setConsulta] = useState("");
   const [estado, setEstado] = useState("");
   const [editor, setEditor] = useState(null);
@@ -42,7 +42,7 @@ export default function Servicios({ servicios = [], onGuardar }) {
     && (!estado || (estado === "extras" ? item.is_addon : estado === "activos" ? item.is_active : !item.is_active)));
   return (
     <>
-      <PageHead eyebrow="Catálogo" title="Servicios y precios" text="El menú de Sebastián y Gabriel." action={<button className="btn btn-principal" type="button" onClick={() => setEditor({})}><Plus size={18} />Nuevo servicio</button>} />
+      <PageHead eyebrow="Catálogo" title="Servicios y precios" text="El menú de Sebastián y Gabriel." action={puedeEditar ? <button className="btn btn-principal" type="button" onClick={() => setEditor({})}><Plus size={18} />Nuevo servicio</button> : null} />
       <SearchToolbar value={consulta} onChange={setConsulta} label="Buscar servicio" count={visibles.length}>
         <select value={estado} onChange={(event) => setEstado(event.target.value)} aria-label="Filtrar servicios"><option value="">Todos</option><option value="activos">Disponibles</option><option value="inactivos">Ocultos</option><option value="extras">Extras</option></select>
       </SearchToolbar>
@@ -51,11 +51,11 @@ export default function Servicios({ servicios = [], onGuardar }) {
           <span className="service-directory-icon"><Scissors size={20} /></span>
           <div><h2>{servicio.name}</h2><span>{servicio.is_addon ? "Extra opcional" : `${servicio.duration_min} min`} · {servicio.is_active ? "Disponible" : "Oculto"}</span></div>
           <strong>{dinero(servicio.price)}</strong>
-          <button className="icon-btn labeled-action" type="button" title={`Editar ${servicio.name}`} aria-label={`Editar ${servicio.name}`} onClick={() => setEditor(servicio)}><Pencil size={17} /><span>Editar</span></button>
+          {puedeEditar && <button className="icon-btn labeled-action" type="button" title={`Editar ${servicio.name}`} aria-label={`Editar ${servicio.name}`} onClick={() => setEditor(servicio)}><Pencil size={17} /><span>Editar</span></button>}
         </article>)}
         {!visibles.length && <EmptyState />}
       </div>
-      {editor && <Editor servicio={editor} onGuardar={onGuardar} onClose={() => setEditor(null)} />}
+      {puedeEditar && editor && <Editor servicio={editor} onGuardar={onGuardar} onClose={() => setEditor(null)} />}
     </>
   );
 }

@@ -1,11 +1,11 @@
 /* Superficies compartidas de reservas, CRM y diálogos. */
-.location-band { background: #fff; border: 0; }
+.location-band { background: var(--surface); border: 0; }
 .hours-panel { padding: 0; border: 0; }
 .hours-list > div { padding-block: .875rem; font-size: .9375rem; }
 .hours-head span, .reviews-strip p { font-size: .9375rem; }
 .reviews-strip > div > span { color: var(--muted); text-transform: none; font-size: .875rem; font-weight: 500; }
 .client-search-layout { border: 0; gap: 2.5rem; padding-block: 1rem; }
-.empty-appointments, .menu-empty { border: 0; border-radius: 1.25rem; background: #ececf1; gap: .75rem; padding: 2rem; }
+.empty-appointments, .menu-empty { border: 0; border-radius: 1.25rem; background: var(--bg-soft); gap: .75rem; padding: 2rem; }
 .cita-card { border: 0; border-radius: 1.25rem; box-shadow: var(--shadow); padding: 1.5rem; }
 .cita-card p { font-size: 1rem; }
 .estado, .waitlist-status, .review-status { border-radius: 9999px; padding: .375rem .75rem; font-size: .8125rem; text-transform: none; font-weight: 500; }
@@ -15,13 +15,13 @@
 .estado-cancelled, .estado-no_show, .estado-noshow, .waitlist-status-cancelled, .review-status-rejected { color: #a7212e; background: #fbeaec; }
 .pantalla-carga, .loader-global { background: rgb(245 245 247 / 94%); color: var(--text); }
 .modal-backdrop { background: rgb(45 47 54 / 22%); backdrop-filter: blur(12px); }
-.modal { border: 1px solid #fff9; border-radius: 1.5rem; background: #fff; box-shadow: 0 24px 100px #1d1d1f26; max-height: calc(100dvh - 32px); }
-.modal > header { background: rgb(255 255 255 / 95%); backdrop-filter: blur(20px); border: 0; }
+.modal { border: 1px solid #fff9; border-radius: 1.5rem; background: var(--surface); box-shadow: 0 24px 100px #1d1d1f26; max-height: calc(100dvh - 32px); }
+.modal > header { background: rgb(243 245 242 / 95%); backdrop-filter: blur(20px); border: 0; }
 .modal h2 { color: var(--text); line-height: 1.25; }
 .modal-body { padding: 1.5rem; }
 .modal .icon-btn { width: auto; height: auto; }
 .modal .modal-actions { gap: .75rem; }
-.booking-success { background: #fff; padding: 2rem; }
+.booking-success { background: var(--surface); padding: 2rem; }
 .booking-success-icon { color: var(--green); background: var(--success-bg); border: 0; box-shadow: none; }
 .booking-success h2 { padding-top: 1rem; font-size: 2rem; }
 .booking-success-summary dt, .booking-success-summary dd { font-size: .9375rem; }
@@ -41,21 +41,21 @@
 .form-error { color: var(--red); font-size: .9375rem; }
 .password-field input { padding-right: 7rem; }
 .password-toggle { position: absolute; right: .375rem; bottom: .375rem; width: auto; padding-inline: .75rem; font-size: .8125rem; }
-.local-agenda-state { background: #fff; border: 0; border-radius: 1rem; }
+.local-agenda-state { background: var(--surface); border: 0; border-radius: 1rem; }
 .block-overview .admin-panel-head > strong { color: var(--text); background: var(--bg-soft); }
 .legal-page { background: var(--bg); }
 .legal-hero h1 { font-size: 2.5rem; line-height: 1.2; }
-.faq-item, .review-card { background: #fff; border: 0; box-shadow: none; border-radius: 1rem; }
+.faq-item, .review-card { background: var(--surface); border: 0; box-shadow: none; border-radius: 1rem; }
 .faq-item summary { font-size: 1rem; padding: 1.25rem; }
 .review-stars { color: #926c17; }
 .lookbook-photo::after { background: linear-gradient(0deg, #0009, transparent 45%); }
 .lookbook-photo, .galeria-item { border-radius: 1.25rem; }
 .lookbook-photo strong, .galeria-item figcaption strong { color: #fff; }
-.lookbook-modal-close { color: var(--text); background: #fff; }
+.lookbook-modal-close { color: var(--text); background: var(--surface); }
 .feedback-scale button.activo, .feedback-scale button:hover { color: var(--blue); background: var(--accent-soft); border-color: var(--blue); }
 .operations-tabs { border-bottom: 0; }
 .operations-tabs button { border: 0; border-radius: 9999px; min-height: 2.75rem; }
-.operations-tabs button.activo { background: #fff; }
+.operations-tabs button.activo { background: var(--surface); }
 .operations-list article { border-color: var(--line); }
 .toggle-line input { accent-color: var(--blue); }
 .rating-picker button { min-width: 2.75rem; min-height: 2.75rem; }
@@ -68,7 +68,7 @@
 .search-clear { width: auto; display: flex; gap: .25rem; padding-inline: .5rem; font-size: .8125rem; }
 .client-contact-actions, .gallery-admin-item > div:last-child { flex-wrap: wrap; }
 .icon-btn.success { color: var(--green); background: var(--success-bg); }
-.security-intro { display: flex; align-items: start; gap: .75rem; padding: 1.25rem; background: #fff; border-radius: 1rem; }
+.security-intro { display: flex; align-items: start; gap: .75rem; padding: 1.25rem; background: var(--surface); border-radius: 1rem; }
 .security-intro p { font-size: .875rem; }
 .security-icon { color: var(--blue); background: var(--accent-soft); }
 .chart-track { background: #e7e8ed; }

@@ -1,27 +1,27 @@
 :root {
   color-scheme: light;
-  --bg: #f5f5f7;
-  --bg-soft: #f0f1f3;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-warm: #f7f8fa;
-  --line: #e6e7eb;
-  --line-strong: #b7bac2;
-  --text: #1d1d1f;
-  --text-soft: #46474d;
-  --muted: #62646c;
-  --accent: #1d1d1f;
-  --accent-soft: #eaf2ff;
+  --bg: #e7eae8;
+  --bg-soft: #dce2df;
+  --surface: #f3f5f2;
+  --surface-raised: #f8f9f6;
+  --surface-warm: #eef0eb;
+  --line: #cdd5d0;
+  --line-strong: #87978e;
+  --text: #26332e;
+  --text-soft: #42534b;
+  --muted: #53665c;
+  --accent: #22594f;
+  --accent-soft: #d6e6df;
   --gold: #8a6b38;
   --gold-light: #735a30;
   --amber: #856112;
   --copper: #985544;
   --green: #19714a;
-  --blue: #0066cc;
+  --blue: #245f75;
   --red: #b42330;
-  --focus: #0066cc;
-  --success-bg: #eaf6ef;
-  --danger-bg: #fff0f1;
+  --focus: #245f75;
+  --success-bg: #dcebe0;
+  --danger-bg: #f4e1de;
   --space-1: .25rem;
   --space-2: .5rem;
   --space-3: .75rem;
@@ -33,8 +33,8 @@
   --font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --gold-glow: transparent;
   --blue-glow: transparent;
-  --primary-gradient: #1d1d1f;
-  --shadow: 0 12px 40px rgb(29 29 31 / 5%);
+  --primary-gradient: #22594f;
+  --shadow: 0 12px 32px rgb(38 51 46 / 7%);
   --motion: 240ms cubic-bezier(.2, .7, .2, 1);
   color: var(--text);
   background: var(--bg);
@@ -60,7 +60,7 @@ input, select, textarea {
   color: var(--text); background: var(--surface); outline: none;
   transition: border-color var(--motion), box-shadow var(--motion);
 }
-input:focus, select:focus, textarea:focus { border-color: var(--focus); background: var(--surface); box-shadow: 0 0 0 3px #0066cc1a; }
+input:focus, select:focus, textarea:focus { border-color: var(--focus); background: var(--surface-raised); box-shadow: 0 0 0 3px #245f751a; }
 input::placeholder, textarea::placeholder { color: var(--muted); }
 select option { color: var(--text); background: var(--surface); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--blue); }
@@ -71,17 +71,17 @@ label { display: block; margin-bottom: .5rem; color: var(--text); font-size: .93
 .btn {
   min-height: 3.25rem; display: inline-flex; align-items: center; justify-content: center;
   gap: .625rem; border: 1px solid transparent; border-radius: 9999px;
-  padding: .875rem 1.5rem; color: var(--text); background: #e8e8ed;
+  padding: .875rem 1.5rem; color: var(--text); background: var(--bg-soft);
   font-size: 1rem; font-weight: 600; line-height: 1.35;
   transition: transform var(--motion), background var(--motion), box-shadow var(--motion);
 }
-.btn:hover { background: #dddde3; transform: translateY(-1px); }
+.btn:hover { background: #cbd6d0; transform: translateY(-1px); }
 .btn:active { transform: scale(.98); }
 .btn:disabled { cursor: not-allowed; opacity: .5; transform: none; }
 .btn-principal { background: var(--accent); color: #fff; }
-.btn-principal:hover { background: #353538; color: #fff; box-shadow: 0 6px 20px #1d1d1f16; }
-.btn-linea, .btn-cristal { color: var(--text); background: #fff; border-color: var(--line); }
-.btn-linea:hover, .btn-cristal:hover { background: #ededf1; }
+.btn-principal:hover { background: #17483e; color: #fff; box-shadow: 0 6px 20px #22594f20; }
+.btn-linea, .btn-cristal { color: var(--text); background: var(--surface); border-color: var(--line); }
+.btn-linea:hover, .btn-cristal:hover { background: var(--accent-soft); }
 .btn-secundario, .btn-success { color: var(--green); background: var(--success-bg); }
 .btn-secundario:hover, .btn-success:hover { background: #d8eedf; }
 .btn-peligro { color: var(--red); background: var(--danger-bg); }
@@ -90,7 +90,7 @@ label { display: block; margin-bottom: .5rem; color: var(--text); font-size: .93
 .btn-grande { min-height: 3.75rem; padding-inline: 2rem; font-size: 1.125rem; }
 .btn-ancho { width: 100%; }
 .icon-btn { min-height: 2.75rem; min-width: 2.75rem; border: 0; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .625rem; color: var(--text); background: var(--bg-soft); transition: background var(--motion); }
-.icon-btn:hover { background: #e2e3e8; }
+.icon-btn:hover { background: var(--accent-soft); }
 .icon-btn.danger { color: var(--red); background: var(--danger-bg); }
 .icon-btn.success { color: var(--green); background: var(--success-bg); }
 .labeled-action { width: auto; height: auto; padding-inline: 1rem; font-size: .875rem; white-space: normal; }

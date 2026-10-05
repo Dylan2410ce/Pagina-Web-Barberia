@@ -1,11 +1,13 @@
-import { ArrowRight, CalendarCheck2 } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, CalendarCheck2, CalendarOff } from "lucide-react";
 import { claseEstado, dinero, fechaHumana, fechaISOCR, hoyISO, textoEstado } from "../../utils/format";
 import AdminPageHead from "./AdminPageHead";
 import AppointmentActions from "./AppointmentActions";
 
 const hora = new Intl.DateTimeFormat("es-CR", { hour: "numeric", minute: "2-digit", timeZone: "America/Costa_Rica" });
 
-export default function AdminDashboard({ data, perfil, onTab, onEstado, onMover, citas = [], fechaAgenda, cargando = false }) {
+export default function AdminDashboard({ data, perfil, onTab, onEstado, onMover, onBloqueoRapido, citas = [], fechaAgenda, cargando = false }) {
+  const [vista, setVista] = useState("pendientes");
   const resumen = data || {};
   const hoy = resumen.today || hoyISO();
   const proximas = resumen.upcoming || [];
@@ -15,6 +17,8 @@ export default function AdminDashboard({ data, perfil, onTab, onEstado, onMover,
   const total = resumen.appointments_today || 0;
   const completadas = resumen.completed_today || 0;
   const progreso = total ? Math.min(100, Math.round(completadas / total * 100)) : 0;
+  const porAtender = citasHoy.filter((cita) => ["pending", "confirmed"].includes(cita.status));
+  const visibles = vista === "pendientes" ? porAtender : citasHoy;
 
   return <>
     <AdminPageHead eyebrow={perfil?.name || "Tu panel"} title="Tu día." />
@@ -28,14 +32,15 @@ export default function AdminDashboard({ data, perfil, onTab, onEstado, onMover,
     <div className="dashboard-workspace">
       <section className="daily-agenda" aria-labelledby="daily-title">
         <div className="admin-panel-head"><div><h2 id="daily-title">Agenda de hoy</h2></div><button className="btn btn-linea" type="button" onClick={() => onTab("agenda")}>Otra fecha <ArrowRight size={17} /></button></div>
+        <div className="agenda-view-switch" role="group" aria-label="Citas de hoy"><button type="button" aria-pressed={vista === "pendientes"} onClick={() => setVista("pendientes")}>Por atender <span>{porAtender.length}</span></button><button type="button" aria-pressed={vista === "todas"} onClick={() => setVista("todas")}>Todas <span>{citasHoy.length}</span></button></div>
         <div className="daily-list">
           {cargando && <div className="admin-empty" role="status"><span className="spinner" /><span>Actualizando agenda…</span></div>}
-          {!cargando && citasHoy.map((cita) => <article className={`daily-appointment ${cita.status === "completed" ? "is-completed" : ""}`} key={cita.id}>
+          {!cargando && visibles.map((cita) => <article className={`daily-appointment ${cita.status === "completed" ? "is-completed" : ""}`} key={cita.id}>
             <time dateTime={cita.starts_at}>{hora.format(new Date(cita.starts_at))}</time>
             <div className="daily-appointment-main"><span className={claseEstado(cita.status)}>{textoEstado(cita.status)}</span><h3>{cita.client_name}</h3><p>{cita.service_name}</p><span className="daily-amount">{dinero(cita.total_price)}</span></div>
             <AppointmentActions cita={cita} onEstado={onEstado} onMover={onMover} />
           </article>)}
-          {!cargando && !citasHoy.length && <div className="admin-empty"><CalendarCheck2 size={28} /><strong>Hoy tienes la agenda despejada.</strong><span>Las próximas reservas aparecerán aquí.</span></div>}
+          {!cargando && !visibles.length && <div className="admin-empty"><CalendarCheck2 size={28} /><strong>{citasHoy.length ? "No quedan citas por atender." : "Hoy tienes la agenda despejada."}</strong><span>{citasHoy.length ? "Puedes revisar el día completo en Todas." : "Las próximas reservas aparecerán aquí."}</span></div>}
         </div>
       </section>
       <aside className="day-overview">
@@ -46,6 +51,7 @@ export default function AdminDashboard({ data, perfil, onTab, onEstado, onMover,
         <div className="snapshot-row"><span>Más solicitado</span><strong>{resumen.top_service_week || "Sin datos"}</strong></div>
         <button className="btn btn-linea btn-ancho" type="button" onClick={() => onTab("reportes")}>Ver reportes <ArrowRight size={16} /></button>
         <button className="text-action" type="button" onClick={() => onTab("operacion")}>Gastos y cierre de caja <ArrowRight size={16} /></button>
+        {onBloqueoRapido && <button className="btn btn-linea btn-ancho quick-break" type="button" onClick={onBloqueoRapido}><CalendarOff size={18} />Bloquear 45 min hoy</button>}
       </aside>
     </div>
     {proximas.some((cita) => fechaISOCR(cita.starts_at) !== hoy) && <details className="future-appointments"><summary>Próximos días</summary><div className="upcoming-list">{proximas.filter((cita) => fechaISOCR(cita.starts_at) !== hoy).map((cita) => <article key={cita.id}><time dateTime={cita.starts_at}>{fechaHumana(cita.starts_at)}</time><div><strong>{cita.client_name}</strong><span>{cita.service_name}</span></div><strong>{dinero(cita.total_price)}</strong></article>)}</div></details>}
