@@ -153,6 +153,7 @@ export const publicoApi = {
   cancelarCita: (id, datos) => api(`/api/public/appointments/${id}/cancel`, { method: "PATCH", body: datos }),
   reprogramarCita: (id, datos) => api(`/api/public/appointments/${id}/reschedule`, { method: "PATCH", body: datos }),
   estadoLocal: (barberId) => api(`/api/public/shop-status/${barberId}`),
+  estadoEquipo: () => api("/api/public/shop-status"),
   listaEspera: (datos) => api("/api/public/waitlist", { method: "POST", body: datos }),
   reseñas: (limit = 12) => api(`/api/public/reviews${query({ limit })}`),
   crearReseña: (datos) => api("/api/public/reviews", { method: "POST", body: datos }),
@@ -160,6 +161,11 @@ export const publicoApi = {
 };
 
 export const adminApi = {
+  equipo: (token) => api("/api/admin/team", { token }),
+  crearBarbero: (token, datos) => api("/api/admin/team", { method: "POST", token, body: datos }),
+  editarBarbero: (token, id, datos) => api(`/api/admin/team/${id}`, { method: "PUT", token, body: datos }),
+  retirarBarbero: (token, id) => api(`/api/admin/team/${id}`, { method: "DELETE", token }),
+  reactivarBarbero: (token, id) => api(`/api/admin/team/${id}/activate`, { method: "POST", token }),
   calendario: (token) => api("/api/admin/integrations/calendar", { token }),
   login: (datos) => api("/api/admin/login", { method: "POST", body: datos }),
   perfil: (token) => api("/api/admin/me", { token }),

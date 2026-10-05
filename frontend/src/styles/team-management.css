@@ -1,0 +1,29 @@
+.team-admin-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; padding-block: .5rem 2rem; }
+.team-admin-summary > svg { color: var(--accent); }
+.team-admin-summary > span { display: grid; flex: 1; gap: .375rem; min-width: 10rem; }
+.team-admin-summary small { color: var(--muted); font-size: .875rem; }
+.team-admin-summary > .btn { width: 100%; }
+.team-admin-grid { display: grid; gap: 1.5rem; margin-top: 1.5rem; }
+.team-admin-card { padding: 1.5rem; border-radius: 1rem; background: var(--surface); box-shadow: var(--shadow); display: grid; gap: 1.5rem; min-width: 0; }
+.team-admin-profile { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.team-admin-profile > div { flex: 1; min-width: 8rem; }
+.team-admin-profile h2 { font-size: 1.25rem; }
+.team-admin-profile p, .team-admin-profile small { color: var(--muted); font-size: .875rem; }
+.team-admin-profile > .estado { font-size: .8125rem; padding: .375rem .625rem; border-radius: 9999px; }
+.estado-inactive { color: var(--muted); background: var(--bg-soft); }
+.team-calendar-label { display: flex; align-items: center; gap: .625rem; font-size: .9375rem; }
+.team-calendar-label svg { color: var(--accent); flex-shrink: 0; }
+.team-admin-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.team-admin-actions > .btn { flex: 1 1 8rem; padding-inline: 1rem; font-size: .9375rem; }
+.team-editor fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 1.25rem; }
+.team-editor fieldset:disabled { opacity: .65; }
+.team-editor details summary { cursor: pointer; min-height: 2.75rem; display: list-item; padding-block: .75rem; font-weight: 500; }
+.team-editor-details { display: grid; gap: 1.25rem; padding-block: 1.5rem .5rem; }
+.team-editor-note { font-size: .875rem; }
+.team-retire-dialog { display: grid; gap: 1.5rem; }
+.team-retire-dialog p { font-size: 1rem; }
+.form-error { color: var(--red); }
+@media (min-width: 640px) {
+  .team-admin-summary > .btn { width: auto; }
+  .team-admin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

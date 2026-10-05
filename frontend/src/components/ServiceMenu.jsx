@@ -55,7 +55,7 @@ export default function ServiceMenu({
       <div className="cabecera-seccion reveal">
         <div>
           <span className="eyebrow">El menú</span>
-          <h2>Un corte. Muy tú.</h2>
+          <h2>Servicios y precios.</h2>
           <p>Elige tu servicio. Nosotros cuidamos los detalles.</p>
         </div>
         <button className="btn btn-linea" type="button" onClick={() => setMostrarPoster(true)}>

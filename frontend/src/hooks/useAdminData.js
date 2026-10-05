@@ -5,7 +5,7 @@ import { hoyISO, mesActual } from "../utils/format";
 export const adminBase = {
   token: "", perfil: null, dashboard: null, citas: [], bloqueos: [], servicios: [],
   horarios: [], ausencias: [], clientes: [], actividad: [], listaEspera: [],
-  reseñas: [], galeria: [], stats: null, operaciones: null,
+  reseñas: [], galeria: [], stats: null, operaciones: null, equipo: [],
   tab: "resumen", filtros: { date: hoyISO(), status: "", q: "" },
   errores: {}, actualizados: {}, cargas: {},
 };
@@ -14,7 +14,7 @@ const recursos = {
   resumen: ["dashboard", "citas"], agenda: ["citas"], bloqueos: ["bloqueos", "ausencias"],
   servicios: ["servicios"], horarios: ["horarios"], clientes: ["clientes"],
   espera: ["listaEspera"], resenas: ["reseñas"], galeria: ["galeria"],
-  reportes: ["stats"], operacion: ["operaciones", "servicios"], actividad: ["actividad"], seguridad: [],
+  reportes: ["stats"], operacion: ["operaciones", "servicios"], actividad: ["actividad"], seguridad: [], equipo: ["equipo"],
 };
 export const recursosDeSeccion = (tab) => recursos[tab] || [];
 

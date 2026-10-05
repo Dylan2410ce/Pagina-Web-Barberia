@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, CalendarCheck2, CalendarOff } from "lucide-react";
+import { ArrowRight, CalendarCheck2, CalendarOff, Check, Phone, UserRoundX } from "lucide-react";
 import { claseEstado, dinero, fechaHumana, fechaISOCR, hoyISO, textoEstado } from "../../utils/format";
 import AdminPageHead from "./AdminPageHead";
 import AppointmentActions from "./AppointmentActions";
@@ -19,6 +19,8 @@ export default function AdminDashboard({ data, perfil, onTab, onEstado, onMover,
   const progreso = total ? Math.min(100, Math.round(completadas / total * 100)) : 0;
   const porAtender = citasHoy.filter((cita) => ["pending", "confirmed"].includes(cita.status));
   const visibles = vista === "pendientes" ? porAtender : citasHoy;
+  const siguiente = !cargando && vista === "pendientes" ? porAtender[0] : null;
+  const restantes = siguiente ? visibles.filter((cita) => cita.id !== siguiente.id) : visibles;
 
   return <>
     <AdminPageHead eyebrow={perfil?.name || "Tu panel"} title="Tu día." />
@@ -31,11 +33,16 @@ export default function AdminDashboard({ data, perfil, onTab, onEstado, onMover,
 
     <div className="dashboard-workspace">
       <section className="daily-agenda" aria-labelledby="daily-title">
+        {siguiente && <article className="next-client" aria-label="Primero por atender">
+          <div className="next-client-head"><span>Primero por atender</span><time dateTime={siguiente.starts_at}>{hora.format(new Date(siguiente.starts_at))}</time></div>
+          <h3>{siguiente.client_name}</h3><p>{siguiente.service_name} · {dinero(siguiente.total_price)}</p>
+          <div className="next-client-actions"><button type="button" className="btn btn-principal" onClick={() => onEstado(siguiente.id, "completed")}><Check size={18} />Atendido</button><button type="button" className="btn btn-linea" onClick={() => onEstado(siguiente.id, "no_show")}><UserRoundX size={18} />No llegó</button>{/^[24678]\d{7}$/.test(siguiente.client_phone || "") && <a className="text-action" href={`tel:+506${siguiente.client_phone}`}><Phone size={17} />Llamar</a>}<button className="text-action" type="button" onClick={() => onMover(siguiente)}>Cambiar hora</button></div>
+        </article>}
         <div className="admin-panel-head"><div><h2 id="daily-title">Agenda de hoy</h2></div><button className="btn btn-linea" type="button" onClick={() => onTab("agenda")}>Otra fecha <ArrowRight size={17} /></button></div>
         <div className="agenda-view-switch" role="group" aria-label="Citas de hoy"><button type="button" aria-pressed={vista === "pendientes"} onClick={() => setVista("pendientes")}>Por atender <span>{porAtender.length}</span></button><button type="button" aria-pressed={vista === "todas"} onClick={() => setVista("todas")}>Todas <span>{citasHoy.length}</span></button></div>
         <div className="daily-list">
           {cargando && <div className="admin-empty" role="status"><span className="spinner" /><span>Actualizando agenda…</span></div>}
-          {!cargando && visibles.map((cita) => <article className={`daily-appointment ${cita.status === "completed" ? "is-completed" : ""}`} key={cita.id}>
+          {!cargando && restantes.map((cita) => <article className={`daily-appointment ${cita.status === "completed" ? "is-completed" : ""}`} key={cita.id}>
             <time dateTime={cita.starts_at}>{hora.format(new Date(cita.starts_at))}</time>
             <div className="daily-appointment-main"><span className={claseEstado(cita.status)}>{textoEstado(cita.status)}</span><h3>{cita.client_name}</h3><p>{cita.service_name}</p><span className="daily-amount">{dinero(cita.total_price)}</span></div>
             <AppointmentActions cita={cita} onEstado={onEstado} onMover={onMover} />

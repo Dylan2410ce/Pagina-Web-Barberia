@@ -24,7 +24,7 @@ export default function TeamSection({
         <div>
           <span className="eyebrow">Nuestro equipo</span>
           <h2>Conoce a tu barbero.</h2>
-          <p>Sebastián y Gabriel. Dos estilos, el mismo cuidado.</p>
+          <p>Buen trato. Buen pulso. Tu estilo en buenas manos.</p>
         </div>
       </div>
 
@@ -34,7 +34,7 @@ export default function TeamSection({
           return (
             <article className="team-card" key={barbero.id}>
               <div className={`team-visual team-visual-${index + 1}`}>
-                <BarberPhoto nombre={barbero.name} />
+                <BarberPhoto nombre={barbero.name} foto={barbero.photo_url} />
                 <span className="team-photo-accent"><Scissors size={24} /></span>
                 {estado && (
                   <span className={`team-availability ${estado.is_open ? "open" : ""}`}>
@@ -51,15 +51,10 @@ export default function TeamSection({
                   </div>
                 </div>
                 <p>
-                  {barbero.name.toLocaleLowerCase("es-CR").startsWith("sebas")
+                  {barbero.public_message || (barbero.name.toLocaleLowerCase("es-CR").startsWith("sebas")
                     ? "Degradados precisos, textura limpia y atención al detalle."
-                    : "Cortes actuales, acabados definidos y trato directo."}
+                    : "Cortes actuales, acabados definidos y trato directo.")}
                 </p>
-                {barbero.public_message && (
-                  <div className="barber-public-message">
-                    {barbero.public_message}
-                  </div>
-                )}
                 <div className="team-contact" aria-label={`Contacto de ${barbero.name}`}>
                   {barbero.instagram_url && (
                     <a

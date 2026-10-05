@@ -42,7 +42,7 @@ export default function Servicios({ servicios = [], onGuardar, puedeEditar = tru
     && (!estado || (estado === "extras" ? item.is_addon : estado === "activos" ? item.is_active : !item.is_active)));
   return (
     <>
-      <PageHead eyebrow="Catálogo" title="Servicios y precios" text="El menú de Sebastián y Gabriel." action={puedeEditar ? <button className="btn btn-principal" type="button" onClick={() => setEditor({})}><Plus size={18} />Nuevo servicio</button> : null} />
+      <PageHead eyebrow="Catálogo" title="Servicios y precios" text="El menú compartido de la barbería." action={puedeEditar ? <button className="btn btn-principal" type="button" onClick={() => setEditor({})}><Plus size={18} />Nuevo servicio</button> : null} />
       <SearchToolbar value={consulta} onChange={setConsulta} label="Buscar servicio" count={visibles.length}>
         <select value={estado} onChange={(event) => setEstado(event.target.value)} aria-label="Filtrar servicios"><option value="">Todos</option><option value="activos">Disponibles</option><option value="inactivos">Ocultos</option><option value="extras">Extras</option></select>
       </SearchToolbar>

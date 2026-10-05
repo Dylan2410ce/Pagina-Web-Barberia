@@ -4,7 +4,7 @@
 .cabecera-seccion > div { gap: .875rem; }
 .cabecera-seccion h2, .location-copy h2 { max-width: 42rem; font-size: 2.25rem; line-height: 1.15; font-weight: 600; }
 .cabecera-seccion p { max-width: 36rem; color: var(--muted); font-size: 1.0625rem; }
-.navbar, .navbar-solida, .navbar:has(.nav-links.abierto) { background: rgb(231 234 232 / 92%); backdrop-filter: blur(20px); border: 0; box-shadow: 0 1px 0 #26332e12; }
+.navbar, .navbar-solida, .navbar:has(.nav-links.abierto) { background: rgb(233 237 241 / 92%); backdrop-filter: blur(20px); border: 0; box-shadow: 0 1px 0 #2028330c; }
 .nav-contenido { width: min(1280px, calc(100% - 32px)); min-height: 4.75rem; gap: 1rem; }
 .marca { gap: .5rem; }
 .marca strong { font-family: var(--font-heading); font-size: 1rem; font-weight: 600; }
@@ -17,7 +17,7 @@
 .nav-links a:hover, .nav-links a.activo:not(.nav-reservar) { color: var(--text); background: var(--bg-soft); transform: none; }
 .nav-links .nav-reservar, .nav-links .nav-reservar.activo { color: #fff; background: var(--accent); box-shadow: none; }
 .hero { background-color: var(--bg); background-size: auto 14rem; background-repeat: no-repeat; background-position: 70% bottom; min-height: 0; max-height: none; align-items: center; }
-.hero-overlay { background: linear-gradient(180deg, var(--bg) 0%, var(--bg) calc(100% - 14rem), rgb(231 234 232 / 10%) calc(100% - 11rem), transparent 100%); }
+.hero-overlay { background: linear-gradient(180deg, var(--bg) 0%, var(--bg) calc(100% - 14rem), rgb(233 237 241 / 10%) calc(100% - 11rem), transparent 100%); }
 .hero-inner { padding-block: 7.5rem 15.5rem; }
 .hero-copy { max-width: 37rem; gap: 1.125rem; }
 .hero-kicker { color: var(--muted); font-weight: 500; font-size: .875rem; text-transform: none; }
@@ -66,9 +66,9 @@
 .reserva-section { border: 0; }
 .reserva-grid { gap: 2.5rem; grid-template-columns: minmax(0, 1fr); }
 .wizard-panel { padding: 1.5rem; border: 0; border-radius: 1.25rem; background: var(--surface); box-shadow: var(--shadow); }
-.wizard-steps { gap: .5rem; border: 0; padding-bottom: 1.5rem; }
-.wizard-steps button { min-height: 3.5rem; font-size: .875rem; font-weight: 500; gap: .625rem; }
-.wizard-steps button > span { width: 2rem; height: 2rem; border: 0; background: var(--bg-soft); color: var(--muted); }
+.wizard-steps { gap: .5rem; border: 0; padding-block: .5rem; margin-bottom: 1rem; position: sticky; top: 4.75rem; z-index: 20; background: var(--surface); }
+.wizard-steps button { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); min-height: 3rem; padding: .5rem .375rem; text-align: left; border-radius: .75rem; font-size: .875rem; font-weight: 500; gap: .375rem; }
+.wizard-steps button > span { width: 1.5rem; height: 1.5rem; border: 0; background: var(--bg-soft); color: var(--muted); }
 .wizard-steps button.activo { color: var(--text); }
 .wizard-steps button.activo > span { color: #fff; background: var(--text); box-shadow: none; }
 .wizard-steps button.completo > span { background: var(--success-bg); color: var(--green); }
@@ -86,6 +86,13 @@
 .booking-service-list > button.activo, .booking-barber-option.activo, .booking-extras button.activo { border-color: var(--blue); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--blue); }
 .booking-service-list > button.activo .booking-service-check, .booking-extras button.activo > span { color: #fff; background: var(--blue); border-color: var(--blue); }
 .booking-barber-option.activo > svg { color: var(--blue); }
+.barber-preference { margin: .75rem 0 0; align-items: center; min-height: 2.75rem; font-size: .875rem; color: var(--text-soft); }
+.booking-date-shortcuts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .625rem; margin-block: .5rem 1rem; }
+.booking-date-shortcuts > button { display: grid; gap: .375rem; min-height: 4rem; padding: .75rem .375rem; border: 1px solid var(--line); border-radius: .75rem; color: var(--text); background: var(--bg); transition: background var(--motion), border-color var(--motion), transform var(--motion); }
+.booking-date-shortcuts > button strong { font-size: .9375rem; }
+.booking-date-shortcuts > button span { color: var(--muted); font-size: .8125rem; }
+.booking-date-shortcuts > button:hover { border-color: var(--accent); transform: translateY(-1px); }
+.booking-date-shortcuts > button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .booking-service-list:has(> button:only-child) { grid-template-columns: minmax(0, 1fr); }
 .booking-service-list strong, .booking-service-list > button > strong:last-child { font-size: 1rem; color: var(--text); }
 .booking-service-list small, .booking-barber-option small { font-size: .875rem; }
@@ -131,7 +138,7 @@
   .nav-contenido { display: flex; justify-content: space-between; }
   .nav-links, .nav-links.abierto { display: flex; grid-column: auto; padding: 0; }
   .hero { min-height: min(43rem, 80svh); background-size: auto 100%; background-position: right center; }
-  .hero-overlay { background: linear-gradient(90deg, var(--bg) 0%, var(--bg) 29%, rgb(231 234 232 / 92%) 39%, rgb(231 234 232 / 18%) 66%, transparent 80%); }
+  .hero-overlay { background: linear-gradient(90deg, var(--bg) 0%, var(--bg) 29%, rgb(233 237 241 / 92%) 39%, rgb(233 237 241 / 18%) 66%, transparent 80%); }
   .hero-inner { padding-block: 8rem 5rem; }
   .hero-copy { max-width: 35rem; gap: 1.5rem; }
   .hero h1 { font-size: 4.5rem; }
@@ -141,6 +148,7 @@
   .team-card { grid-template-columns: minmax(0, 1fr); }
   .team-visual { aspect-ratio: 16 / 10; }
   .menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .team-grid { grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
   .reserva-grid { grid-template-columns: minmax(0, 1fr) 18rem; gap: 3rem; }
   .resumen-card { display: grid; position: sticky; top: 6rem; }
   .reserva-grid-final { grid-template-columns: minmax(0, 1fr); max-width: 54rem; margin-inline: auto; }
@@ -172,7 +180,7 @@
 
 .wizard-fields { border: 0; min-width: 0; padding: 0; margin: 0; }
 .wizard-fields:disabled { opacity: .6; }
-.wizard-panel { scroll-margin-top: 0; }
+.wizard-panel { scroll-margin-top: 0; overflow-anchor: none; }
 .booking-extras > summary { min-height: 3rem; padding-block: .75rem; font-weight: 500; cursor: pointer; }
 .booking-extras:not([open]) > div { display: none; }
 .booking-review { display: grid; gap: 1rem; padding-block: 1.5rem; border-block: 1px solid var(--line); }

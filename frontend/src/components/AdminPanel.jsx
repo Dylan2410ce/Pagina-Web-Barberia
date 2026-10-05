@@ -7,6 +7,7 @@ const Horarios = lazy(() => import("./admin/AdminHours"));
 const Seguridad = lazy(() => import("./admin/AdminSecurity"));
 const Reportes = lazy(() => import("./admin/AdminReports"));
 const Actividad = lazy(() => import("./admin/AdminActivity"));
+const Equipo = lazy(() => import("./admin/AdminTeam"));
 
 import { LogOut, Scissors, RefreshCw, Plus } from "lucide-react";
 import AdminNavigation from "./admin/AdminNavigation";
@@ -57,6 +58,7 @@ export default function AdminPanel({
   onAnonimizarCliente,
   onNuevaCita,
   onPreviewBloqueo,
+  onAvisar,
 }) {
   const necesarios = recursosDeSeccion(admin.tab);
   const errores = necesarios.filter((clave) => admin.errores?.[clave]);
@@ -89,7 +91,7 @@ export default function AdminPanel({
       </header>
 
       <div className="admin-layout">
-        <AdminNavigation seccion={admin.tab} onSeleccionar={onTab} />
+        <AdminNavigation seccion={admin.tab} onSeleccionar={onTab} puedeGestionarEquipo={admin.perfil.can_manage_team} />
 
         <main className="admin-content">
           <div className="admin-sync-bar"><span>{actualizacion > 0 && Number.isFinite(actualizacion) ? `Actualizado a las ${new Date(actualizacion).toLocaleTimeString("es-CR", { hour: "numeric", minute: "2-digit" })}` : "Consultando tu agenda"}</span><button className="text-action" type="button" onClick={() => onRefresh?.()} disabled={admin.cargando || cargando}><RefreshCw size={16} />Actualizar</button>{onNuevaCita && <button className="btn btn-principal" type="button" onClick={onNuevaCita}><Plus size={18} />Nueva cita</button>}</div>
@@ -172,6 +174,7 @@ export default function AdminPanel({
           )}
           {admin.tab === "actividad" && <Actividad items={admin.actividad} />}
           {admin.tab === "seguridad" && <Seguridad token={admin.token} onChangePassword={onChangePassword} />}
+          {admin.tab === "equipo" && admin.perfil.can_manage_team && <Equipo items={admin.equipo} token={admin.token} onSaved={onRefresh} avisar={onAvisar} />}
           </Suspense>}
         </main>
       </div>

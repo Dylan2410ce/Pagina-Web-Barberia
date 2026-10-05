@@ -14,6 +14,7 @@ const grupos = [
     { id: "operacion", titulo: "Caja y configuración", icono: BriefcaseBusiness },
     { id: "servicios", titulo: "Servicios", icono: Scissors },
     { id: "horarios", titulo: "Horario semanal", icono: Clock3 },
+    { id: "equipo", titulo: "Equipo", icono: Users, propietario: true },
   ] },
   { id: "contenido", titulo: "Contenido", opciones: [
     { id: "galeria", titulo: "Galería", icono: Images },
@@ -25,7 +26,7 @@ const grupos = [
   ] },
 ];
 
-export default function AdminNavigation({ seccion, onSeleccionar }) {
+export default function AdminNavigation({ seccion, onSeleccionar, puedeGestionarEquipo = false }) {
   const grupoActivo = grupos.find((grupo) => grupo.opciones.some((opcion) => opcion.id === seccion))?.id || "dia";
   const [abiertos, setAbiertos] = useState(() => new Set(["dia", grupoActivo]));
   const [mas, setMas] = useState(false);
@@ -35,7 +36,7 @@ export default function AdminNavigation({ seccion, onSeleccionar }) {
   }, [grupoActivo, seccion]);
 
   const elegir = (id) => { setMas(false); onSeleccionar(id); };
-  const opciones = (grupo) => grupo.opciones.map(({ id, titulo, icono: Icono }) => (
+  const opciones = (grupo) => grupo.opciones.filter((opcion) => !opcion.propietario || puedeGestionarEquipo).map(({ id, titulo, icono: Icono }) => (
     <button type="button" key={id} className={seccion === id ? "activo" : ""} aria-current={seccion === id ? "page" : undefined} onClick={() => elegir(id)}>
       <Icono size={18} aria-hidden="true" /><span>{titulo}</span>
     </button>

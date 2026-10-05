@@ -13,21 +13,21 @@ function claveFoto(nombre = "") {
     .toLocaleLowerCase("es-CR");
 }
 
-export default function BarberPhoto({ nombre, compacta = false }) {
-  const [error, setError] = useState(false);
-  const src = FOTOS[claveFoto(nombre)];
+export default function BarberPhoto({ nombre, foto, compacta = false }) {
+  const [fallida, setFallida] = useState(null);
+  const src = foto || FOTOS[claveFoto(nombre)];
   const inicial = nombre?.trim().slice(0, 1).toUpperCase() || "S";
 
   return (
     <span className={`barber-photo ${compacta ? "barber-photo-compacta" : ""}`}>
       <span className="barber-photo-fallback" aria-hidden="true">{inicial}</span>
-      {src && !error && (
+      {src && fallida !== src && (
         <img
           src={src}
           alt={`Retrato de ${nombre}`}
           loading="lazy"
           decoding="async"
-          onError={() => setError(true)}
+          onError={() => setFallida(src)}
         />
       )}
     </span>

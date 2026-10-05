@@ -15,7 +15,9 @@ Google Calendar, PostgreSQL y frontend React.
 - Operación: PWA, modo mantenimiento, CRM, lista de espera, reportes y
   auditoría.
 
-La aplicación admite los perfiles `sebas` y `gabriel`. Cada sesión
+La aplicación incluye los perfiles iniciales `sebas` y `gabriel` y permite
+añadir barberos desde **Negocio > Equipo**, disponible solo para Sebastián.
+Los perfiles se retiran de las reservas sin borrar su historial. Cada sesión
 administrativa queda limitada al barbero autenticado; la API aplica este
 aislamiento en el servidor.
 
@@ -25,6 +27,7 @@ aislamiento en el servidor.
 | --- | --- |
 | [Arquitectura](docs/ARCHITECTURE.md) | Capas, módulos, flujos y decisiones técnicas |
 | [Interfaz y pruebas visuales](docs/FRONTEND_UI.md) | Componentes, estilos, accesibilidad y revisión responsive |
+| [Gestión del equipo](docs/TEAM_MANAGEMENT.md) | Altas, retiro seguro, permisos y calendarios independientes |
 | [API](docs/API.md) | Endpoints, autenticación, errores y contratos |
 | [Operación](docs/OPERATIONS.md) | Variables, despliegues, migraciones y runbooks |
 | [Migración a Aiven](docs/AIVEN_MIGRATION.md) | Respaldo, verificación transaccional y cambio de conexión gratuito |

@@ -341,9 +341,13 @@
 }
 
 .reveal {
+  opacity: 1;
+}
+
+.reveal[data-animate="true"] {
   opacity: 0;
   transform: translateY(16px);
-  transition: opacity 0.48s ease, transform 0.48s ease;
+  transition: opacity var(--motion), transform var(--motion);
 }
 
 .reveal.visible {

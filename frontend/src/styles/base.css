@@ -1,25 +1,25 @@
 :root {
   color-scheme: light;
-  --bg: #e7eae8;
-  --bg-soft: #dce2df;
-  --surface: #f3f5f2;
-  --surface-raised: #f8f9f6;
-  --surface-warm: #eef0eb;
-  --line: #cdd5d0;
-  --line-strong: #87978e;
-  --text: #26332e;
-  --text-soft: #42534b;
-  --muted: #53665c;
-  --accent: #22594f;
-  --accent-soft: #d6e6df;
+  --bg: #e9edf1;
+  --bg-soft: #dde3e9;
+  --surface: #f3f5f7;
+  --surface-raised: #fafbfc;
+  --surface-warm: #eee8e2;
+  --line: #cbd3dc;
+  --line-strong: #85919e;
+  --text: #202833;
+  --text-soft: #414e5c;
+  --muted: #596575;
+  --accent: #165c72;
+  --accent-soft: #d7e8ed;
   --gold: #8a6b38;
   --gold-light: #735a30;
   --amber: #856112;
   --copper: #985544;
   --green: #19714a;
-  --blue: #245f75;
+  --blue: #165c72;
   --red: #b42330;
-  --focus: #245f75;
+  --focus: #165c72;
   --success-bg: #dcebe0;
   --danger-bg: #f4e1de;
   --space-1: .25rem;
@@ -33,9 +33,9 @@
   --font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --gold-glow: transparent;
   --blue-glow: transparent;
-  --primary-gradient: #22594f;
-  --shadow: 0 12px 32px rgb(38 51 46 / 7%);
-  --motion: 240ms cubic-bezier(.2, .7, .2, 1);
+  --primary-gradient: #165c72;
+  --shadow: 0 12px 32px rgb(32 40 51 / 6%);
+  --motion: 280ms cubic-bezier(.22, 1, .36, 1);
   color: var(--text);
   background: var(--bg);
   font-family: var(--font-heading);
@@ -75,11 +75,11 @@ label { display: block; margin-bottom: .5rem; color: var(--text); font-size: .93
   font-size: 1rem; font-weight: 600; line-height: 1.35;
   transition: transform var(--motion), background var(--motion), box-shadow var(--motion);
 }
-.btn:hover { background: #cbd6d0; transform: translateY(-1px); }
+.btn:hover { background: #cfd9e2; transform: translateY(-1px); }
 .btn:active { transform: scale(.98); }
 .btn:disabled { cursor: not-allowed; opacity: .5; transform: none; }
 .btn-principal { background: var(--accent); color: #fff; }
-.btn-principal:hover { background: #17483e; color: #fff; box-shadow: 0 6px 20px #22594f20; }
+.btn-principal:hover { background: #104659; color: #fff; box-shadow: 0 6px 20px #165c7220; }
 .btn-linea, .btn-cristal { color: var(--text); background: var(--surface); border-color: var(--line); }
 .btn-linea:hover, .btn-cristal:hover { background: var(--accent-soft); }
 .btn-secundario, .btn-success { color: var(--green); background: var(--success-bg); }

@@ -18,8 +18,8 @@ import LocationSection from "./components/LocationSection";
 import MaintenancePage from "./components/MaintenancePage";
 const MapModal = lazy(() => import("./components/MapModal"));
 import Navbar from "./components/Navbar";
-import RescheduleModal from "./components/RescheduleModal";
-import ReviewsSection from "./components/ReviewsSection";
+const RescheduleModal = lazy(() => import("./components/RescheduleModal"));
+const ReviewsSection = lazy(() => import("./components/ReviewsSection"));
 import ServiceMenu from "./components/ServiceMenu";
 import ScrollToTop from "./components/ScrollToTop";
 import Footer from "./components/Footer";
@@ -33,6 +33,8 @@ import useBookingState from "./hooks/useBookingState";
 import useClientBookings from "./hooks/useClientBookings";
 import { hoyISO } from "./utils/format";
 import { normalizarBarberos } from "./utils/barbers";
+import { leerBarberoPreferido } from "./hooks/useBarberPreference";
+import useRevealAnimation from "./hooks/useRevealAnimation";
 import {
   leerReservasGuardadas,
   ultimaReservaGuardada,
@@ -48,6 +50,7 @@ const LEGAL_ROUTES = new Set([
 import { nuevaReserva, codigoReservaDesdeUrl } from "./utils/bookingDraft";
 
 export default function PublicApp() {
+  useRevealAnimation();
   const [ruta, setRuta] = useState(() => window.location.pathname);
   const esRutaLegal = LEGAL_ROUTES.has(ruta);
   const mantenimiento = useMaintenanceStatus(true);
@@ -131,7 +134,8 @@ export default function PublicApp() {
           gallery: bootstrap.gallery || [],
         };
         setDatos(normalizados);
-        setReserva(nuevaReserva);
+        const preferido = leerBarberoPreferido();
+        setReserva({ ...nuevaReserva(), barber_id: barbers.some((item) => item.id === preferido) ? preferido : "" });
         setCargando(false);
         const codigoUrl = codigoReservaDesdeUrl();
         if (codigoUrl) {
@@ -173,19 +177,10 @@ export default function PublicApp() {
     let active = true;
     const cargarEstados = async () => {
       if (document.hidden) return;
-      const results = await Promise.allSettled(
-        datos.barbers.map((item) => publicoApi.estadoLocal(item.id)),
-      );
-      if (!active) return;
-      setEstadosLocal(Object.fromEntries(
-        results
-          .map((result, index) => (
-            result.status === "fulfilled"
-              ? [datos.barbers[index].id, result.value]
-              : null
-          ))
-          .filter(Boolean),
-      ));
+      try {
+        const estados = await publicoApi.estadoEquipo();
+        if (active) setEstadosLocal(Object.fromEntries(estados.map((estado) => [estado.barber_id, estado])));
+      } catch { /* El estado del local no bloquea la consulta de disponibilidad. */ }
     };
     cargarEstados();
     const timer = window.setInterval(cargarEstados, 5 * 60 * 1000);
@@ -206,15 +201,6 @@ export default function PublicApp() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add("visible")),
-      { threshold: 0.14 },
-    );
-    document.querySelectorAll(".reveal").forEach((item) => observer.observe(item));
-    return () => observer.disconnect();
-  }, [cargando, ruta]);
 
   const irAReserva = useCallback(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -258,20 +244,6 @@ export default function PublicApp() {
         {(cargando || errorAgenda) ? (
           <AgendaLoading error={errorAgenda} onRetry={() => setIntentoCarga((valor) => valor + 1)} />
         ) : (<>
-        <TeamSection
-          barberos={datos.barbers}
-          estados={estadosLocal}
-        />
-        <ServiceMenu
-          servicios={datos.services}
-          extras={datos.addons}
-          onSeleccionar={(id) => {
-            if (reservaPendiente) { avisar("warning", "Comprueba tu reserva pendiente", "La confirmación sigue disponible en el formulario."); irAReserva(); return; }
-            seleccionarServicio(id);
-            setPasoSolicitado({ step: 1, key: Date.now() });
-            irAReserva();
-          }}
-        />
         <BookingWizard
           reserva={reserva}
           setReserva={setReserva}
@@ -300,13 +272,24 @@ export default function PublicApp() {
           recordarReserva={recordarReserva}
           onRecordarReserva={setRecordarReserva}
         />
+        <ServiceMenu
+          servicios={datos.services}
+          extras={datos.addons}
+          onSeleccionar={(id) => {
+            if (reservaPendiente) { avisar("warning", "Comprueba tu reserva pendiente", "La confirmación sigue disponible en el formulario."); irAReserva(); return; }
+            seleccionarServicio(id);
+            setPasoSolicitado({ step: 1, key: Date.now() });
+            irAReserva();
+          }}
+        />
+        <TeamSection barberos={datos.barbers} estados={estadosLocal} />
         </>)}
         <DeferredSection>
           <Suspense fallback={<div className="section-placeholder" aria-label="Cargando galería" />}>
             <Gallery items={datos.gallery} onElegirEstilo={elegirEstilo} />
           </Suspense>
         </DeferredSection>
-        <ReviewsSection reviews={datos.reviews} />
+        <DeferredSection><Suspense fallback={<div className="section-placeholder" aria-label="Cargando reseñas" />}><ReviewsSection reviews={datos.reviews} /></Suspense></DeferredSection>
         <ClientAppointments
           codigo={codigoBusqueda}
           setCodigo={setCodigoBusqueda}
@@ -343,13 +326,13 @@ export default function PublicApp() {
         />
         </Suspense>
       )}
-      <RescheduleModal
+      {modalReprogramar && <Suspense fallback={<div role="status" className="loader-global">Abriendo horarios…</div>}><RescheduleModal
         data={modalReprogramar}
         onClose={() => setModalReprogramar(null)}
         onDate={cambiarFechaModal}
         onSlot={(startMin) => setModalReprogramar((actual) => ({ ...actual, start_min: startMin }))}
         onConfirm={confirmarReprogramacion}
-      />
+      /></Suspense>}
       {procesando && (
         <div className="loader-global">
           <div>

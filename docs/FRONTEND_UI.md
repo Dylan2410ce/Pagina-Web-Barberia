@@ -16,13 +16,20 @@ La API sigue siendo la autoridad para precios, autorización, validación de res
 
 Los estilos de mantenimiento deben limitarse a sus clases `maintenance-*`. No agregar allí reglas generales de formularios, secciones o tipografía, pues afectarían el sitio operativo.
 
-Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa. La paleta combina gris suave `#e7eae8`, superficies `#f3f5f2` y texto carbón verdoso `#26332e`; las acciones principales usan verde profundo `#22594f`. Azul petróleo indica foco, verde confirma una acción y rojo señala errores o acciones destructivas. `light-surfaces.css` unifica los módulos secundarios y diálogos que comparten la misma paleta.
+Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa. La paleta combina gris mineral `#e9edf1`, superficies `#f3f5f7` y texto tinta `#202833`; las acciones principales usan azul petróleo `#165c72`. Verde confirma una acción y rojo señala errores o acciones destructivas. `light-surfaces.css` unifica los módulos secundarios y diálogos que comparten la misma paleta.
 
 Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`. La navegación cambia a menú desplegable por debajo de 960 px; el administrador muestra accesos a Hoy, Bloquear y Clientes, más herramientas agrupadas en Más, por debajo de 1040 px. En escritorio `AdminNavigation` agrupa Día a día, Negocio, Contenido y Mi cuenta. El resumen inicia con las citas por atender; Todas recupera el día completo. El bloqueo rápido confirma antes de bloquear 45 minutos en el siguiente espacio **de hoy**, sin desplazar citas ni bloquear otros días. El catálogo compartido es editable por Sebastián y de lectura para Gabriel; la API valida esta autorización independientemente de los botones.
 
 Para una revisión visual aislada, `python scripts/preview_local.py` desde `backend` genera una base temporal con clientes ficticios y una contraseña temporal. La API se limita a `127.0.0.1:8008`; no envía correos ni llama a Calendar. Iniciar Vite con `VITE_API_URL=http://127.0.0.1:8008`. Esta utilidad no forma parte del arranque de producción.
 
 ## Contratos de interacción
+
+- La reserva aparece inmediatamente después de la portada. El catálogo y los perfiles mantienen sus enlaces en la navegación, sin anteponerse al formulario principal.
+- El estado de atención de todos los barberos se consulta en una sola petición a `/api/public/shop-status`, sin multiplicar llamadas HTTP por cada nuevo perfil. Las consultas de PostgreSQL del estado agrupado son constantes (cuatro), no una cadena por barbero.
+- `BookingDateShortcuts` ofrece tres fechas cercanas de atención, sin afirmar que tengan espacios libres: la API confirma sus horarios al seleccionarlas. La entrada de fecha conserva acceso a cualquier otro día.
+- Recordar el barbero es opcional y almacena solamente su identificador en este dispositivo. Un perfil retirado no se preselecciona.
+- `AdminTeam` se descarga bajo demanda. Su búsqueda y filtro de actividad son locales; la API exige al propietario en todas las operaciones. Los errores de guardado permanecen en el diálogo y se bloquean envíos simultáneos.
+- El primer cliente pendiente se destaca con acciones directas Atendido y No llegó; ambas reutilizan la confirmación y autorización de la agenda.
 
 - `FormField` valida al salir del campo y durante la edición posterior. La validación final permanece en el formulario y en el servidor.
 - `Dialog` y `useDialogA11y` administran Escape, foco inicial, confinamiento del foco y restauración al cerrar. El callback de cierre puede cambiar sin reiniciar el foco.
@@ -56,4 +63,4 @@ Las pruebas automatizadas cubren reserva, validación, selección, búsquedas, e
 
 ## Despliegue
 
-Esta actualización no requiere migraciones ni nuevas variables de entorno. Vercel compila `frontend`; Render debe publicar también las rutas administrativas de creación y revisión de bloqueos. Tras publicar, comprobar el estado del deployment de Vercel y comparar el SHA de `/health` en Render con el commit esperado. `/health/ready` verifica la conexión y las migraciones.
+Esta actualización requiere Alembic `20261004_01`, ejecutado por el comando de arranque de Render; no requiere variables nuevas. Vercel compila `frontend`. Tras publicar, comparar el SHA del HTML y `/health` en Render con el commit esperado. `/health/ready` verifica la conexión y las migraciones.

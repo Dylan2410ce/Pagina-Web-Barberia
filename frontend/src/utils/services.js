@@ -14,5 +14,8 @@ export function normalizarServicios(servicios = []) {
   return servicios.map((servicio) => ({
     ...servicio,
     name: nombreServicioPublico(servicio),
-  }));
+  })).sort((a, b) => {
+    const prioridad = (item) => /^corte/i.test(item.name) ? 0 : /barba/i.test(item.name) ? 1 : 2;
+    return prioridad(a) - prioridad(b) || Number(a.price) - Number(b.price);
+  });
 }

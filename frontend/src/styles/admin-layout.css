@@ -1,6 +1,6 @@
 /* Agenda de trabajo: datos esenciales primero; herramientas secundarias aparte. */
 .admin-route, .admin-app { background: var(--bg); }
-.admin-topbar { min-height: 5rem; padding: 1rem 1.25rem; background: rgb(231 234 232 / 94%); backdrop-filter: blur(20px); border: 0; box-shadow: 0 1px 0 #26332e12; }
+.admin-topbar { min-height: 5rem; padding: 1rem 1.25rem; background: rgb(233 237 241 / 94%); backdrop-filter: blur(20px); border: 0; box-shadow: 0 1px 0 #2028330c; }
 .admin-brand > span { color: var(--text); background: transparent; }
 .admin-brand strong { font-size: 1rem; font-weight: 600; }
 .admin-brand small, .admin-user small { font-size: .8125rem; }
@@ -26,6 +26,13 @@
 .dashboard-workspace { display: grid; gap: 3rem; }
 .daily-agenda, .daily-list, .day-overview { min-width: 0; }
 .daily-list { display: grid; gap: 1rem; }
+.next-client { margin-block: 0 2rem; padding: 1.5rem; border-radius: 1rem; background: var(--accent-soft); display: grid; gap: .75rem; }
+.next-client-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .75rem; color: var(--accent); }
+.next-client-head span { font-size: .875rem; font-weight: 600; }
+.next-client-head time { font-size: 1.125rem; font-weight: 600; }
+.next-client h3 { font-size: 1.5rem; }
+.next-client-actions { display: flex; flex-wrap: wrap; gap: .75rem 1rem; margin-top: .5rem; }
+.next-client-actions > .btn { flex: 1 1 8rem; padding-inline: 1rem; }
 .daily-appointment { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; padding: 1.25rem; border-radius: 1.25rem; background: var(--surface); box-shadow: 0 4px 20px #1d1d1f04; }
 .daily-appointment.is-completed { background: #f0f5f1; box-shadow: none; }
 .daily-appointment > time { font-weight: 600; font-size: 1.0625rem; color: var(--text); font-variant-numeric: tabular-nums; }

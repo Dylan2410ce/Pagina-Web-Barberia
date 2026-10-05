@@ -27,7 +27,7 @@ export default function AdminWorkspace() {
   useEffect(() => { if (admin.token) void cargarAdmin(); }, []);
 
   const props = {
-    admin, onRefresh: () => cargarAdmin(), onLogin: control.loginAdmin,
+    admin, onRefresh: () => cargarAdmin(), onLogin: control.loginAdmin, onAvisar: avisar,
     onResetPassword: control.resetPassword, onSalir: control.cerrarAdmin,
     onTab: control.cambiarTabAdmin, onFiltrar: control.filtrarAdmin,
     onEstado: control.solicitarEstadoAdmin, onMover: (cita) => abrirReprogramar(cita, "admin"),

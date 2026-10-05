@@ -6,6 +6,8 @@ import BarberPhoto from "./BarberPhoto";
 import WaitlistModal from "./WaitlistModal";
 import BookingReview from "./booking/BookingReview";
 import { horarioDelDia, siguienteDiaAbierto } from "../utils/availability";
+import useBarberPreference from "../hooks/useBarberPreference";
+import BookingDateShortcuts from "./booking/BookingDateShortcuts";
 
 const pasos = [
   { id: 1, label: "Tu cita" },
@@ -59,6 +61,7 @@ export default function BookingWizard({
   const pasoAnterior = useRef(paso);
   const cerrado = horarioDelDia(horarios, reserva.date)?.is_open === false;
   const proximaFecha = reserva.date ? siguienteDiaAbierto(horarios, reserva.date) : null;
+  const [recordarBarbero, setRecordarBarbero] = useBarberPreference(barberos, reserva.barber_id);
 
   useEffect(() => {
     if (pasoAnterior.current === paso) return;
@@ -224,7 +227,7 @@ export default function BookingWizard({
                         aria-pressed={activo}
                         onClick={() => onBarbero(item.id)}
                       >
-                        <BarberPhoto nombre={item.name} compacta />
+                        <BarberPhoto nombre={item.name} foto={item.photo_url} compacta />
                         <span>
                           <strong>{item.name}</strong>
                           <small>{item.role}</small>
@@ -234,6 +237,7 @@ export default function BookingWizard({
                     );
                   })}
                 </div>
+                {reserva.barber_id && <label className="check-line barber-preference"><input type="checkbox" checked={recordarBarbero} onChange={(event) => setRecordarBarbero(event.target.checked)} />Recordar mi barbero en este dispositivo</label>}
               </div>
 
               {reserva.service_id && reserva.barber_id && (
@@ -280,6 +284,7 @@ export default function BookingWizard({
               </div>
               <div className="campo">
                 <label htmlFor="booking-date">Fecha</label>
+                <BookingDateShortcuts desde={minFecha} horarios={horarios} seleccionada={reserva.date} onSeleccionar={onFecha} />
                 <input
                   id="booking-date"
                   type="date"

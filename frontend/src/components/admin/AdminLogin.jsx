@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Home, Scissors, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import FormField from "../ui/FormField";
 
 export default function Login({ onLogin, onResetPassword }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [visible, setVisible] = useState(false);
+  const [enviando, setEnviando] = useState("");
+  const solicitud = useRef(false);
   const [resetForm, setResetForm] = useState({
     username: "",
     master_code: "",
@@ -13,15 +15,20 @@ export default function Login({ onLogin, onResetPassword }) {
 
   const enviarLogin = async (event) => {
     event.preventDefault();
-    await onLogin(loginForm);
+    if (solicitud.current) return;
+    solicitud.current = true; setEnviando("login");
+    try { await onLogin(loginForm); }
+    finally { solicitud.current = false; setEnviando(""); }
   };
 
   const enviarRecuperacion = async (event) => {
     event.preventDefault();
-    const actualizado = await onResetPassword(resetForm);
-    if (actualizado) {
-      setResetForm({ username: "", master_code: "", new_password: "" });
-    }
+    if (solicitud.current) return;
+    solicitud.current = true; setEnviando("reset");
+    try {
+      const actualizado = await onResetPassword(resetForm);
+      if (actualizado) setResetForm({ username: "", master_code: "", new_password: "" });
+    } finally { solicitud.current = false; setEnviando(""); }
   };
 
   return (
@@ -37,14 +44,14 @@ export default function Login({ onLogin, onResetPassword }) {
         <div className="admin-login-form">
           <div>
             <h2>Iniciar sesión</h2>
-            <p>Acceso para Sebastián y Gabriel.</p>
+            <p>Acceso para el equipo de la barbería.</p>
           </div>
           <form className="formulario grid gap-4" onSubmit={enviarLogin}>
               <FormField label="Usuario"
                 id="admin-user"
                 name="username"
                 value={loginForm.username}
-                placeholder="sebas o gabriel"
+                placeholder="Tu usuario"
                 autoComplete="username"
                 required
                 onChange={(event) => setLoginForm((actual) => ({ ...actual, username: event.target.value }))}
@@ -63,7 +70,7 @@ export default function Login({ onLogin, onResetPassword }) {
               />
               <button className="password-toggle icon-btn labeled-action" type="button" onClick={() => setVisible(!visible)} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} title={visible ? "Ocultar contraseña" : "Mostrar contraseña"}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}<span>{visible ? "Ocultar" : "Mostrar"}</span></button>
             </div>
-            <button className="btn btn-principal btn-ancho" type="submit">Entrar al panel</button>
+            <button className="btn btn-principal btn-ancho" type="submit" disabled={Boolean(enviando)}>{enviando === "login" ? "Entrando…" : "Entrar al panel"}</button>
           </form>
           <details className="reset-box">
             <summary>Olvidé mi contraseña</summary>
@@ -90,14 +97,16 @@ export default function Login({ onLogin, onResetPassword }) {
               <input
                 name="new_password"
                 type="password"
-                minLength={8}
+                minLength={12}
+                maxLength={72}
                 value={resetForm.new_password}
                 placeholder="Nueva contraseña"
                 aria-label="Nueva contraseña"
                 required
                 onChange={(event) => setResetForm((actual) => ({ ...actual, new_password: event.target.value }))}
               />
-              <button className="btn btn-secundario" type="submit">Cambiar contraseña</button>
+              <p className="nota">Usa 12 caracteres o más, con mayúscula, minúscula, número y símbolo.</p>
+              <button className="btn btn-secundario" type="submit" disabled={Boolean(enviando)}>{enviando === "reset" ? "Guardando…" : "Cambiar contraseña"}</button>
             </form>
           </details>
         </div>

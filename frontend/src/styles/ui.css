@@ -60,5 +60,6 @@ textarea, textarea:focus { background: var(--surface); }
 .booking-notice p { color: var(--text-soft); font-size: 1rem; }
 .booking-notice .btn { justify-self: start; }
 @media (prefers-reduced-motion: reduce) {
+  .reveal[data-animate="true"] { opacity: 1; transform: none; }
   *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }

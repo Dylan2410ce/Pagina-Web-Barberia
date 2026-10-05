@@ -1,15 +1,11 @@
-export const SEBASTIAN_INSTAGRAM_URL = "https://www.instagram.com/__andres29__/";
-
-function esSebastian(barbero = {}) {
-  return String(barbero.name || "")
-    .toLocaleLowerCase("es-CR")
-    .startsWith("sebas");
+function instagramSeguro(enlace) {
+  try {
+    const url = new URL(enlace);
+    return url.protocol === "https:" && !url.username && !url.password
+      && ["instagram.com", "www.instagram.com"].includes(url.hostname) ? enlace : null;
+  } catch { return null; }
 }
 
 export function normalizarBarberos(barberos = []) {
-  return barberos.map((barbero) => (
-    esSebastian(barbero)
-      ? { ...barbero, instagram_url: SEBASTIAN_INSTAGRAM_URL }
-      : barbero
-  ));
+  return barberos.map((barbero) => ({ ...barbero, instagram_url: instagramSeguro(barbero.instagram_url) }));
 }

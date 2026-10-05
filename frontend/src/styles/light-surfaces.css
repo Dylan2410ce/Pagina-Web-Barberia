@@ -16,7 +16,7 @@
 .pantalla-carga, .loader-global { background: rgb(245 245 247 / 94%); color: var(--text); }
 .modal-backdrop { background: rgb(45 47 54 / 22%); backdrop-filter: blur(12px); }
 .modal { border: 1px solid #fff9; border-radius: 1.5rem; background: var(--surface); box-shadow: 0 24px 100px #1d1d1f26; max-height: calc(100dvh - 32px); }
-.modal > header { background: rgb(243 245 242 / 95%); backdrop-filter: blur(20px); border: 0; }
+.modal > header { background: rgb(243 245 247 / 95%); backdrop-filter: blur(20px); border: 0; }
 .modal h2 { color: var(--text); line-height: 1.25; }
 .modal-body { padding: 1.5rem; }
 .modal .icon-btn { width: auto; height: auto; }
