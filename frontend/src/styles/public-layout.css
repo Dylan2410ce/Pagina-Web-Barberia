@@ -67,7 +67,7 @@
 .reserva-grid { gap: 2.5rem; grid-template-columns: minmax(0, 1fr); }
 .wizard-panel { padding: 1.5rem; border: 0; border-radius: 1.25rem; background: var(--surface); box-shadow: var(--shadow); }
 .wizard-steps { gap: .5rem; border: 0; padding-block: .5rem; margin-bottom: 1rem; position: sticky; top: 4.75rem; z-index: 20; background: var(--surface); }
-.wizard-steps button { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); min-height: 3rem; padding: .5rem .375rem; text-align: left; border-radius: .75rem; font-size: .875rem; font-weight: 500; gap: .375rem; }
+.wizard-steps button { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; min-height: 4rem; padding: .5rem .125rem; text-align: center; white-space: nowrap; border-radius: .75rem; font-size: .875rem; font-weight: 500; gap: .25rem; }
 .wizard-steps button > span { width: 1.5rem; height: 1.5rem; border: 0; background: var(--bg-soft); color: var(--muted); }
 .wizard-steps button.activo { color: var(--text); }
 .wizard-steps button.activo > span { color: #fff; background: var(--text); box-shadow: none; }
@@ -125,6 +125,7 @@
 .floating-contact small { display: none; }
 .floating-contact strong { font-size: .875rem; }
 @media (min-width: 640px) {
+  .wizard-steps button { grid-template-columns: 1.5rem minmax(0, 1fr); justify-items: start; min-height: 3rem; padding-inline: .5rem; text-align: left; gap: .5rem; }
   .seccion { width: min(1184px, calc(100% - 64px)); padding-block: var(--space-16); }
   .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero-inner { padding-block: 8rem 16rem; }
