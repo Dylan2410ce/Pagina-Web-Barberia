@@ -18,6 +18,10 @@ def day_range(day: date) -> tuple[datetime, datetime]:
     return range_from_minutes(day, 0, 24 * 60)
 
 
+def as_utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+
 def label_from_minutes(minutes: int) -> str:
     hour, minute = divmod(minutes, 60)
     suffix = "p. m." if hour >= 12 else "a. m."

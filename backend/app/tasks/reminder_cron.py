@@ -11,6 +11,8 @@ _worker = None
 
 
 async def run_delivery_job():
+    if config.DATABASE_MIGRATION_MODE:
+        return {"paused": True}
     try:
         async with AsyncSessionLocal() as db:
             return await NotificationService(db).process_due()
@@ -26,6 +28,8 @@ async def _poll():
 
 def start_cron():
     global _worker
+    if config.DATABASE_MIGRATION_MODE:
+        return
     if _worker is None or _worker.done():
         _worker = asyncio.create_task(_poll())
 

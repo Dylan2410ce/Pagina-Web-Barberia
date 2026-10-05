@@ -1,5 +1,5 @@
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -7,11 +7,39 @@ from uuid import uuid4
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from app.controllers.admin_controller import create_manual_appointment, preview_block
-from app.schemas import AppointmentCreate, BlockPreview
+from app.controllers.admin_controller import create_manual_appointment, create_service, dashboard, preview_block
+from app.models import AppointmentStatus
+from app.services.date_service import TZ
+from app.schemas import AppointmentCreate, BlockPreview, ServiceCreate
 
 
 class AdminBookingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_gabriel_cannot_change_shared_catalog(self):
+        barbero = SimpleNamespace(id=uuid4(), username="gabriel", role="owner")
+        datos = ServiceCreate(name="Corte", price=5000, duration_min=45)
+        with self.assertRaises(HTTPException) as raised:
+            await create_service(datos, barbero, MagicMock())
+        self.assertEqual(raised.exception.status_code, 403)
+
+    async def test_sebastian_can_create_service_with_display_role(self):
+        barbero = SimpleNamespace(id=uuid4(), username="sebas", role="Barbero principal")
+        db = SimpleNamespace(add=MagicMock(), flush=AsyncMock(), commit=AsyncMock(), refresh=AsyncMock())
+        servicio = await create_service(ServiceCreate(name="Corte", price=5000, duration_min=45), barbero, db)
+        self.assertEqual(servicio.price, 5000)
+        db.commit.assert_awaited_once()
+    async def test_dashboard_accepts_legacy_naive_utc_timestamp(self):
+        ahora = datetime.now(TZ).replace(hour=8, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+        cita = SimpleNamespace(starts_at=ahora.replace(tzinfo=None), status=AppointmentStatus.completed,
+            total_price=6000, service_name="Corte Premium")
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = []
+        db = SimpleNamespace(execute=AsyncMock(return_value=result))
+        with patch("app.controllers.admin_controller.AppointmentRepository") as repositorio:
+            repositorio.return_value.list_by_barber = AsyncMock(return_value=[cita])
+            datos = await dashboard(SimpleNamespace(id=uuid4()), db)
+        self.assertEqual(datos["income_today"], 6000)
+        self.assertEqual(datos["completed_today"], 1)
+
     def payload(self, barber_id):
         return AppointmentCreate(
             barber_id=barber_id, service_id=uuid4(), date=date(2026, 10, 6),

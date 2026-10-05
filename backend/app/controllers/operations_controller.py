@@ -44,7 +44,7 @@ from app.schemas import (
 from app.services.audit_service import AuditService
 from app.services.auth_service import current_barber
 from app.services.calendar_service import CalendarError, CalendarService
-from app.services.date_service import TZ, day_range
+from app.services.date_service import TZ, as_utc, day_range
 
 router = APIRouter(prefix="/api/admin", tags=["Operations"])
 
@@ -226,7 +226,7 @@ async def anonymize_client(
             AppointmentStatus.pending,
             AppointmentStatus.confirmed,
         }
-        and appointment.starts_at >= datetime.now(TZ)
+        and as_utc(appointment.starts_at) >= datetime.now(TZ)
         for appointment in appointments
     ):
         raise HTTPException(

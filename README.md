@@ -8,7 +8,7 @@ Google Calendar, PostgreSQL y frontend React.
 
 - Frontend: React 19, Vite, CSS3, Tailwind CSS y Lucide React.
 - Backend: FastAPI, Pydantic v2 y SQLAlchemy asíncrono.
-- Persistencia: PostgreSQL, recomendado en Neon.
+- Persistencia: PostgreSQL; compatible con Neon y Aiven mediante TLS verificado.
 - Calendario: Google Calendar en `America/Costa_Rica`.
 - Correo: Brevo para confirmaciones, avisos y recordatorios (migración por variable en Render).
 - Despliegue: frontend en Vercel y API en Render.
@@ -27,6 +27,7 @@ aislamiento en el servidor.
 | [Interfaz y pruebas visuales](docs/FRONTEND_UI.md) | Componentes, estilos, accesibilidad y revisión responsive |
 | [API](docs/API.md) | Endpoints, autenticación, errores y contratos |
 | [Operación](docs/OPERATIONS.md) | Variables, despliegues, migraciones y runbooks |
+| [Migración a Aiven](docs/AIVEN_MIGRATION.md) | Respaldo, verificación transaccional y cambio de conexión gratuito |
 | [Brevo](docs/BREVO.md) | Configuración, plantillas HTML y variables para Render |
 | [EmailJS anterior](docs/EMAILJS.md) | Referencia para retirar el proveedor anterior |
 | [Actualización gratuita y SEO](docs/FREE_TIER_SEO.md) | Cambios, límites, variables exactas y Search Console |

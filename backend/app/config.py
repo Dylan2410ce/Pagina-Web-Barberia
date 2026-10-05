@@ -66,6 +66,9 @@ class Config:
         )
     )
     DATABASE_SSL = os.getenv("DATABASE_SSL", "require")
+    DATABASE_CA_CERT_FILE = os.getenv("DATABASE_CA_CERT_FILE", "").strip()
+    DATABASE_CA_CERT = os.getenv("DATABASE_CA_CERT", "").strip()
+    DATABASE_MIGRATION_MODE = os.getenv("DATABASE_MIGRATION_MODE", "false").lower() == "true"
 
     SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(48)
     SECRET_KEY_PREVIOUS = os.getenv("SECRET_KEY_PREVIOUS", "")

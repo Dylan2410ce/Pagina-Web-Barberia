@@ -17,6 +17,10 @@ def database_connect_args():
     if not config.DATABASE_URL.startswith("postgresql+asyncpg://"):
         return {}
     tls = False if config.DATABASE_SSL == "disable" else ssl.create_default_context()
+    if tls and config.DATABASE_CA_CERT_FILE:
+        tls.load_verify_locations(cafile=config.DATABASE_CA_CERT_FILE)
+    if tls and config.DATABASE_CA_CERT:
+        tls.load_verify_locations(cadata=config.DATABASE_CA_CERT.replace("\\n", "\n"))
     return {"ssl": tls, "timeout": 15, "command_timeout": 30}
 
 

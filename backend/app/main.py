@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from uuid import uuid4
 from datetime import datetime, timezone
 from time import perf_counter
@@ -15,6 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import config
+from app.middleware.request_guard import RequestGuardMiddleware
 from app.controllers import (
     admin_controller,
     engagement_controller,
@@ -52,8 +54,9 @@ async def lifespan(_: FastAPI):
             "Faltan variables de seguridad; se usaron valores aleatorios de cierre seguro: %s",
             ", ".join(config.MISSING_SECURITY_ENV),
         )
-    async with AsyncSessionLocal() as db:
-        await seed_data(db)
+    if not config.DATABASE_MIGRATION_MODE:
+        async with AsyncSessionLocal() as db:
+            await seed_data(db)
         
     from app.tasks.reminder_cron import start_cron, shutdown_cron
     start_cron()
@@ -75,34 +78,14 @@ allowed_origins = {
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 }
+LOCAL_ORIGIN_PATTERN = r"^http://(localhost|127\.0\.0\.1)(:\d+)?$"
 
 app.middleware("http")(rate_limit_middleware)
 
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    request_id = request.headers.get("X-Request-ID") or str(uuid4())
-    content_length = request.headers.get("content-length")
-    try:
-        payload_too_large = (
-            bool(content_length)
-            and int(content_length)
-            > max(config.GALLERY_UPLOAD_MAX_MB + 1, 6) * 1024 * 1024
-        )
-    except ValueError:
-        payload_too_large = True
-    if payload_too_large:
-        return JSONResponse(
-            status_code=413,
-            content={
-                "error": {
-                    "code": "payload_too_large",
-                    "message": "El archivo o solicitud supera el tamaño permitido.",
-                    "details": None,
-                }
-            },
-            headers={"X-Request-ID": request_id},
-        )
+    request_id = getattr(request.state, "request_id", None) or str(uuid4())
     response = await call_next(request)
     if (
         request.method in {"POST", "PATCH", "PUT"} and 200 <= response.status_code < 300
@@ -132,14 +115,15 @@ async def security_headers(request: Request, call_next):
     return response
 
 
+app.add_middleware(RequestGuardMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=sorted(allowed_origins),
-    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origin_regex=LOCAL_ORIGIN_PATTERN,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"],
 )
 
 
@@ -203,6 +187,11 @@ async def database_exception_handler(request: Request, exc: SQLAlchemyError):
 @app.exception_handler(Exception)
 async def unexpected_exception_handler(request: Request, exc: Exception):
     logger.error("Error no controlado: %s", type(exc).__name__)
+    headers = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY",
+        "X-Request-ID": getattr(request.state, "request_id", None) or str(uuid4())}
+    origin = request.headers.get("origin", "")
+    if origin in allowed_origins or re.fullmatch(LOCAL_ORIGIN_PATTERN, origin):
+        headers.update({"Access-Control-Allow-Origin": origin, "Vary": "Origin"})
     return JSONResponse(
         status_code=500,
         content={
@@ -212,6 +201,7 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
                 "details": None,
             }
         },
+        headers=headers,
     )
 
 

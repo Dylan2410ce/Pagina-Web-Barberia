@@ -14,6 +14,7 @@ from app.models import (
     ReviewStatus,
     WaitlistStatus,
 )
+from app.services.date_service import as_utc
 
 
 class StrictInput(BaseModel):
@@ -145,6 +146,11 @@ class AppointmentOut(BaseModel):
     status: AppointmentStatus
     notes: str | None = None
     calendar_event_id: str | None = None
+
+    @field_validator("starts_at", "ends_at")
+    @classmethod
+    def normalize_timestamps(cls, value: datetime):
+        return as_utc(value)
 
 
 class AppointmentCreatedOut(AppointmentOut):

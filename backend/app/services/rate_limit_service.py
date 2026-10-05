@@ -2,8 +2,10 @@ import hashlib
 import hmac
 import ipaddress
 import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import lru_cache
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -25,6 +27,8 @@ class RateRule:
 
 
 RULES = {
+    ("GET", "/api/public/init"): RateRule("bootstrap", 40, 60),
+    ("GET", "/api/public/availability"): RateRule("availability", 60, 60),
     ("POST", "/api/public/appointments"): RateRule("booking", 6, 600),
     ("POST", "/api/public/waitlist"): RateRule("waitlist", 6, 900),
     ("POST", "/api/public/reviews"): RateRule("reviews", 5, 3600),
@@ -40,12 +44,39 @@ GLOBAL_RULE = RateRule("global", 300, 300)
 CLIENT_MUTATION_RULE = RateRule("booking-change", 12, 3600)
 
 
+class BurstLimiter:
+    """Filtro local acotado; el límite definitivo sigue persistido en PostgreSQL."""
+    def __init__(self, limit=40, window_seconds=10, max_entries=2048):
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self.max_entries = max_entries
+        self.buckets = OrderedDict()
+
+    def allow(self, key, now=None):
+        now = time.monotonic() if now is None else now
+        start, count = self.buckets.pop(key, (now, 0))
+        if now - start >= self.window_seconds:
+            start, count = now, 0
+        self.buckets[key] = (start, count + 1)
+        if len(self.buckets) > self.max_entries:
+            self.buckets.popitem(last=False)
+        return count < self.limit
+
+
+@lru_cache(maxsize=8)
+def trusted_networks(configuration):
+    networks = []
+    for value in configuration.split(","):
+        try:
+            networks.append(ipaddress.ip_network(value.strip()))
+        except ValueError:
+            continue
+    return tuple(networks)
+
+
 def client_address(request: Request) -> str:
     peer = request.client.host if request.client else "unknown"
-    networks = [
-        ipaddress.ip_network(value.strip()) for value in config.TRUSTED_PROXY_CIDRS.split(",")
-        if value.strip()
-    ]
+    networks = trusted_networks(config.TRUSTED_PROXY_CIDRS)
 
     def trusted(value):
         try:
@@ -81,31 +112,38 @@ class RateLimiter:
     async def check(self, request):
         rule = self._rule(request)
         now = time.time()
-        window = int(now // rule.window_seconds)
-        expires = datetime.fromtimestamp((window + 1) * rule.window_seconds, timezone.utc)
         digest = hmac.new(config.SECRET_KEY.encode(), client_address(request).encode(), hashlib.sha256).hexdigest()
-        key = f"{rule.scope}:{digest}:{window}"
+        remaining = rule.limit
         async with self.session_factory() as db:
             insert = pg_insert if db.bind.dialect.name == "postgresql" else sqlite_insert
-            stmt = insert(RateLimitBucket).values(key=key, count=1, expires_at=expires)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["key"],
-                set_={"count": RateLimitBucket.count + 1},
-                where=RateLimitBucket.count < rule.limit,
-            ).returning(RateLimitBucket.count)
-            count = (await db.execute(stmt)).scalar_one_or_none()
+            rules = [rule] if rule == GLOBAL_RULE else [GLOBAL_RULE, rule]
+            for current in rules:
+                window = int(now // current.window_seconds)
+                expires = datetime.fromtimestamp((window + 1) * current.window_seconds, timezone.utc)
+                key = f"{current.scope}:{digest}:{window}"
+                stmt = insert(RateLimitBucket).values(key=key, count=1, expires_at=expires)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["key"],
+                    set_={"count": RateLimitBucket.count + 1},
+                    where=RateLimitBucket.count < current.limit,
+                ).returning(RateLimitBucket.count)
+                count = (await db.execute(stmt)).scalar_one_or_none()
+                if count is None:
+                    await db.rollback()
+                    return False, max(1, int(expires.timestamp() - now)), current
+                if current == rule:
+                    remaining = max(rule.limit - count, 0)
             if now - self.last_cleanup > 300:
                 await db.execute(delete(RateLimitBucket).where(
                     RateLimitBucket.expires_at < datetime.now(timezone.utc)
                 ))
                 self.last_cleanup = now
             await db.commit()
-        if count is None:
-            return False, max(1, int(expires.timestamp() - now)), rule
-        return True, max(rule.limit - count, 0), rule
+        return True, remaining, rule
 
 
 rate_limiter = RateLimiter()
+burst_limiter = BurstLimiter()
 
 
 async def rate_limit_middleware(request: Request, call_next):
@@ -114,6 +152,13 @@ async def rate_limit_middleware(request: Request, call_next):
         or not request.url.path.startswith("/api/")
         or request.url.path.startswith("/api/tasks/")
     ):
+        return await call_next(request)
+    digest = hmac.new(config.SECRET_KEY.encode(), client_address(request).encode(), hashlib.sha256).hexdigest()
+    if not burst_limiter.allow(digest):
+        return JSONResponse(status_code=429, content={"error": {
+            "code": "burst_limit_exceeded", "message": "Espera unos segundos antes de continuar.", "details": None,
+        }}, headers={"Retry-After": "10"})
+    if config.DATABASE_MIGRATION_MODE:
         return await call_next(request)
     try:
         allowed, value, rule = await rate_limiter.check(request)

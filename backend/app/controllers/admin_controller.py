@@ -72,7 +72,7 @@ from app.services.audit_service import AuditService
 from app.services.auth_service import current_barber, login
 from app.services.calendar_service import CalendarService, calendar_embed_url
 from app.services.cloudinary_service import CloudinaryError, CloudinaryService
-from app.services.date_service import TZ, day_range, range_from_minutes
+from app.services.date_service import TZ, as_utc, day_range, range_from_minutes
 from app.services.password_service import hash_password, verify_password
 from app.services.service_cache import service_cache
 
@@ -180,6 +180,7 @@ async def me(barber: Barber = Depends(current_barber)):
         "calendar_sync": barber.calendar_sync,
         "calendar_connected": bool(barber.calendar_sync and barber.calendar_id),
         "calendar_embed_url": calendar_embed_url(barber.calendar_id),
+        "can_manage_services": barber.username == "sebas",
     }
 
 
@@ -203,7 +204,7 @@ async def dashboard(
     today_items = [
         item
         for item in week_items
-        if today_start <= item.starts_at < today_end
+        if today_start <= as_utc(item.starts_at) < today_end
     ]
     active_today = [
         item
@@ -426,7 +427,7 @@ async def create_service(
     barber: Barber = Depends(current_barber),
     db: AsyncSession = Depends(get_db),
 ):
-    if barber.role != "owner":
+    if barber.username != "sebas":
         raise HTTPException(
             status_code=403,
             detail="Solo el administrador principal puede crear servicios globales"
@@ -468,7 +469,7 @@ async def update_service(
     barber: Barber = Depends(current_barber),
     db: AsyncSession = Depends(get_db),
 ):
-    if barber.role != "owner":
+    if barber.username != "sebas":
         raise HTTPException(
             status_code=403,
             detail="Solo el administrador principal puede modificar servicios globales"

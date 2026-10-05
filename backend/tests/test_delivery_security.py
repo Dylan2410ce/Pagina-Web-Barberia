@@ -20,7 +20,7 @@ from app.services.calendar_service import CalendarService, log_google_error
 from app.services.delivery_dispatcher import acquire_lease, reserve_budget
 from app.services.emailjs_service import EmailJSError, EmailJSService
 from app.services.notification_service import NotificationService
-from app.services.rate_limit_service import RateLimiter, client_address
+from app.services.rate_limit_service import GLOBAL_RULE, RateLimiter, client_address
 from app.services.shop_status_service import ShopStatusService
 
 
@@ -72,6 +72,15 @@ class DeliveryTests(unittest.IsolatedAsyncioTestCase):
         for _ in range(3):
             self.assertTrue((await restarted.check(request()))[0])
         self.assertFalse((await restarted.check(request()))[0])
+
+    async def test_scoped_requests_also_consume_global_limit(self):
+        with patch("app.services.rate_limit_service.GLOBAL_RULE", type(GLOBAL_RULE)("global", 2, 300)):
+            limiter = RateLimiter(self.sessions)
+            self.assertTrue((await limiter.check(request()))[0])
+            self.assertTrue((await limiter.check(request("/api/public/appointments/lookup")))[0])
+            allowed, _, rule = await limiter.check(request("/api/admin/login"))
+            self.assertFalse(allowed)
+            self.assertEqual(rule.scope, "global")
 
     async def test_only_one_dispatcher_claims_lease_and_expired_lease_recovers(self):
         async with self.sessions() as first, self.sessions() as second:

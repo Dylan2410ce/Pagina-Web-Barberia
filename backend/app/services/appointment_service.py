@@ -604,7 +604,7 @@ class AppointmentService:
 
         raise HTTPException(
             status_code=404,
-            detail="No encontramos un espacio libre para bloquear en los próximos días",
+            detail="Hoy no quedan espacios libres para bloquear." if data.horizon_days == 1 else "No encontramos un espacio libre para bloquear en los próximos días",
         )
 
     async def update_status(

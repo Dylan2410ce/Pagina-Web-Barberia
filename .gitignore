@@ -5,6 +5,10 @@
 *.pem
 *.key
 .backups/
+*.dump
+*.backup
+*.pgpass
+.migration/
 **/credentials.json
 **/*credentials*.json
 **/*service-account*.json
