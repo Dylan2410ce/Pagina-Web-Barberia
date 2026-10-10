@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Contraseña pública de fixture SQLite; no es una credencial de despliegue"
+regexTarget = "secret"
+regexes = ['''^ClavePrueba-12345$''']

@@ -32,10 +32,21 @@ export default function AdminGallery({
   const [file, setFile] = useState(null);
   const [consulta, setConsulta] = useState("");
   const [estado, setEstado] = useState("");
+  const [errorArchivo, setErrorArchivo] = useState("");
   const visibles = items.filter((item) => coincideBusqueda([item.title, item.category], consulta) && (!estado || item.is_active === (estado === "publicadas")));
 
   const update = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const seleccionarArchivo = (event) => {
+    const elegido = event.target.files?.[0] || null;
+    const error = elegido && !["image/jpeg", "image/png", "image/webp"].includes(elegido.type)
+      ? "Selecciona una imagen JPG, PNG o WebP."
+      : elegido?.size > 4 * 1024 * 1024 ? "La imagen debe pesar 4 MB o menos." : "";
+    setErrorArchivo(error);
+    setFile(error ? null : elegido);
+    event.target.setCustomValidity(error);
   };
 
   const submit = async (event) => {
@@ -97,7 +108,7 @@ export default function AdminGallery({
                   id="gallery-file"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  onChange={(event) => setFile(event.target.files?.[0] || null)}
+                  onChange={seleccionarArchivo}
                   required
                 />
                 <label className="gallery-file-picker" htmlFor="gallery-file">
@@ -107,7 +118,8 @@ export default function AdminGallery({
                     <small>{file ? "Toca para cambiarla" : "JPG, PNG o WebP"}</small>
                   </span>
                 </label>
-                <small>JPG, PNG o WebP. Máximo según la configuración del servidor.</small>
+                <small>JPG, PNG o WebP. Hasta 4 MB.</small>
+                {errorArchivo && <p className="form-error" role="alert">{errorArchivo}</p>}
               </div>
             ) : (
               <div className="campo">

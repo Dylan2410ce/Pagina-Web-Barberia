@@ -1,3 +1,6 @@
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+
 const METODOS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]);
 const CABECERAS = ["accept", "content-type", "cookie", "origin", "x-csrf-token", "x-session-mode"];
 
@@ -36,7 +39,7 @@ export default async function handler(solicitud, respuesta) {
   try {
     let cuerpo;
     if (!["GET", "HEAD"].includes(solicitud.method)) {
-      const limite = cabeceras.get("content-type")?.startsWith("multipart/form-data") ? 6 * 1024 * 1024 : 65536;
+      const limite = cabeceras.get("content-type")?.startsWith("multipart/form-data") ? 4 * 1024 * 1024 + 65536 : 65536;
       const partes = [];
       let cantidad = 0;
       for await (const parte of solicitud) {
@@ -58,9 +61,11 @@ export default async function handler(solicitud, respuesta) {
     if (cookies.length) respuesta.setHeader("Set-Cookie", cookies);
     respuesta.status(resultado.status);
     if (resultado.status === 204 || solicitud.method === "HEAD") return respuesta.end();
-    respuesta.end(Buffer.from(await resultado.arrayBuffer()));
+    if (!resultado.body) return respuesta.end();
+    await pipeline(Readable.fromWeb(resultado.body), respuesta);
   } catch {
-    respuesta.status(503).json({ error: { message: "La agenda está despertando. Intenta de nuevo en unos segundos." } });
+    if (!respuesta.headersSent) respuesta.status(503).json({ error: { message: "La agenda está despertando. Intenta de nuevo en unos segundos." } });
+    else respuesta.end();
   } finally {
     clearTimeout(temporizador);
   }

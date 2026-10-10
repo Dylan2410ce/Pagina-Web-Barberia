@@ -87,7 +87,9 @@ La migración a Aiven no se da por completada solo por soportar su URL y CA.
 ### Secretos
 
 Gitleaks 8.30.1 revisó todas las referencias Git locales disponibles y no detectó
-secretos según sus reglas. Solo .env.example está versionado entre los patrones
+secretos reales según sus reglas. El valor exacto de una contraseña ficticia de
+pruebas está permitido explícitamente en .gitleaks.toml; no se excluyen archivos
+de pruebas completos. Solo .env.example está versionado entre los patrones
 de entorno/credenciales comprobados. Esto no garantiza ausencia de filtraciones
 en otras referencias remotas, logs, copias o conversaciones. Rota las credenciales
 compartidas anteriormente desde sus proveedores. No se reescribió el historial.
@@ -99,6 +101,12 @@ reducen spam y fuerza bruta. No sustituyen protección de red contra DDoS ni
 garantizan inmunidad al phishing. No se añadió CAPTCHA ni servicios de pago.
 Los límites por cuenta son compartidos entre IPs; el límite IP del proxy puede
 agrupar sesiones detrás del mismo punto de salida de Vercel.
+
+La interfaz limita fotos a 4 MB para dejar margen al multipart bajo el
+[límite de 4,5 MB de Vercel Functions](https://vercel.com/docs/functions/limitations).
+Los respaldos/respuestas del proxy se transmiten como stream, sin cargar todo el
+documento en memoria. Las herramientas de respaldo y migración usan un contexto
+de servicio explícito para evitar exportaciones parciales al activar RLS.
 
 ## Repetir las pruebas
 
