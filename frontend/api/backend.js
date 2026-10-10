@@ -12,8 +12,15 @@ export function destinoBackend(url, base) {
     throw new Error("Configuración de API inválida");
   }
   const entrada = new URL(url, "https://proxy.local");
-  if (!/^\/api\/backend\/admin\/[a-zA-Z0-9/_-]+$/.test(entrada.pathname)) return null;
-  return `${origen.origin}${entrada.pathname.replace("/api/backend/", "/api/")}${entrada.search}`;
+  let ruta = entrada.pathname;
+  if (ruta === "/api/backend") {
+    const segmentos = entrada.searchParams.getAll("__ruta");
+    if (segmentos.length !== 1 || !/^[a-zA-Z0-9/_-]+$/.test(segmentos[0])) return null;
+    ruta = `/api/backend/admin/${segmentos[0]}`;
+  }
+  entrada.searchParams.delete("__ruta");
+  if (!/^\/api\/backend\/admin\/[a-zA-Z0-9/_-]+$/.test(ruta)) return null;
+  return `${origen.origin}${ruta.replace("/api/backend/", "/api/")}${entrada.search}`;
 }
 
 export default async function handler(solicitud, respuesta) {

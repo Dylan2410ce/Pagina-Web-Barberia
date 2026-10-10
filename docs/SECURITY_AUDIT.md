@@ -27,10 +27,12 @@ de correo en producción.
 
 Una cookie SameSite=Strict no debe depender de peticiones del navegador entre
 los dominios distintos de Vercel y Render. La Function
-`frontend/api/backend/[...path].js` publica solo `/api/backend/admin/*` en el
+`frontend/api/backend.js`, mediante una reescritura explícita de vercel.json,
+publica solo `/api/backend/admin/*` en el
 dominio del frontend. El destino procede de VITE_API_URL, nunca del visitante.
 Rechaza HTTP, credenciales en la URL, rutas ajenas al admin y redirecciones.
 Conserva Set-Cookie y no reenvía cabeceras IP aportadas por el visitante.
+La entrada estática evita depender de la convención catch-all de Next.js en Vite.
 
 Las consultas públicas siguen yendo directamente a Render. El proxy consume la
 cuota gratuita normal de Functions; no requiere un plan de pago ni elimina los

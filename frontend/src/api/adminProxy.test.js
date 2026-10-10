@@ -1,6 +1,7 @@
 import { Readable, Writable } from "node:stream";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import handler, { destinoBackend } from "../../api/backend/[...path].js";
+import handler, { destinoBackend } from "../../api/backend.js";
+import configuracionVercel from "../../vercel.json";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
@@ -22,6 +23,16 @@ describe("proxy de administración", () => {
     expect(destinoBackend("/api/backend/tasks/run", "https://api.example.com")).toBeNull();
     expect(destinoBackend("/api/backend/admin/../../health", "https://api.example.com")).toBeNull();
   });
+  it("resuelve la reescritura de Vercel sin depender de rutas catch-all de Next.js", () => {
+    expect(configuracionVercel.rewrites[0]).toEqual({
+      source: "/api/backend/admin/:path*", destination: "/api/backend?__ruta=:path*",
+    });
+    expect(destinoBackend("/api/backend?__ruta=appointments/abc/status&status=completed", "https://api.example.com"))
+      .toBe("https://api.example.com/api/admin/appointments/abc/status?status=completed");
+    for (const ruta of ["/api/backend", "/api/backend?__ruta=../../health", "/api/backend?__ruta=me&__ruta=team", "/api/backend?__ruta=https://evil.example"]) {
+      expect(destinoBackend(ruta, "https://api.example.com")).toBeNull();
+    }
+  });
   it.each(["http://api.example.com", "https://user:secret@api.example.com", "https://api.example.com?target=evil"])("rechaza destinos inseguros %s", (base) => {
     expect(() => destinoBackend("/api/backend/admin/login", base)).toThrow();
   });
@@ -29,7 +40,7 @@ describe("proxy de administración", () => {
   it("conserva Set-Cookie, transmite JSON y no confía en IP reenviada", async () => {
     vi.stubEnv("VITE_API_URL", "https://api.example.com");
     const solicitud = Readable.from([Buffer.from('{"username":"prueba"}')]);
-    Object.assign(solicitud, { url: "/api/backend/admin/login", method: "POST", headers: {
+    Object.assign(solicitud, { url: "/api/backend?__ruta=login", method: "POST", headers: {
       "content-type": "application/json", origin: "https://site.example.com", "x-forwarded-for": "spoofed",
     } });
     const fetchMock = vi.fn().mockResolvedValue(new Response('{"token":"cookie"}', {
