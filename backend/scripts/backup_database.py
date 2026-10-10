@@ -24,6 +24,7 @@ async def main():
     try:
         async with engine.connect() as connection:
             await connection.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
+            await connection.execute(text("SELECT set_config('app.security_scope', 'system', true)"))
             tables = (await connection.execute(text(
                 "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename"
             ))).scalars().all()

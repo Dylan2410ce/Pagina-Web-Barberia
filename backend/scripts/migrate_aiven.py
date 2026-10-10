@@ -39,7 +39,7 @@ def contexto_tls(destino=False):
 async def conectar(url, destino=False):
     return await asyncpg.connect(host=url.host, port=url.port or 5432, database=url.database,
         user=url.username, password=url.password, ssl=contexto_tls(destino), timeout=20,
-        command_timeout=300, server_settings={"timezone": "UTC", "DateStyle": "ISO, MDY"})
+        command_timeout=300, server_settings={"timezone": "UTC", "DateStyle": "ISO, MDY", "app.security_scope": "system"})
 
 
 def entorno_pg(url, destino=False):
@@ -48,7 +48,8 @@ def entorno_pg(url, destino=False):
         if clave.startswith("PG"):
             entorno.pop(clave)
     entorno.update(PGHOST=url.host, PGPORT=str(url.port or 5432), PGDATABASE=url.database,
-        PGUSER=url.username, PGPASSWORD=url.password, PGSSLMODE="verify-full", PGCONNECT_TIMEOUT="20")
+        PGUSER=url.username, PGPASSWORD=url.password, PGSSLMODE="verify-full", PGCONNECT_TIMEOUT="20",
+        PGOPTIONS="-c app.security_scope=system")
     if destino:
         entorno["PGSSLROOTCERT"] = os.environ["AIVEN_CA_CERT_FILE"]
     else:
@@ -111,7 +112,8 @@ async def ejecutar(accion):
             async with fuente.transaction(isolation="repeatable_read", readonly=True):
                 instantanea = await fuente.fetchval("SELECT pg_export_snapshot()")
                 datos = await resumen(fuente)
-                await asyncio.to_thread(ejecutar_pg, "pg_dump", ["--format=custom", "--no-owner", "--no-privileges", "--snapshot=" + instantanea, "--file=" + str(respaldo)], origen)
+                await asyncio.to_thread(ejecutar_pg, "pg_dump", ["--format=custom", "--no-owner", "--no-privileges",
+                    "--enable-row-security", "--inserts", "--snapshot=" + instantanea, "--file=" + str(respaldo)], origen)
             manifiesto.write_text(json.dumps({"tables": datos, "sha256": hashlib.sha256(respaldo.read_bytes()).hexdigest()}, indent=2), encoding="utf-8")
             print(json.dumps({"exported": True, "tables": len(datos), "rows": sum(t["filas"] for t in datos.values())}))
             return
