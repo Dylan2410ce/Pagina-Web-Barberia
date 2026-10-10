@@ -1,0 +1,97 @@
+/* Tokens de apariencia: todas las superficies comparten el mismo contraste. */
+:root, :root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eaecea; --bg-soft: #dfe3e1; --surface: #f4f5f3;
+  --surface-raised: #fafbf9; --surface-warm: #e6e8e4;
+  --text: #222b2a; --text-soft: #444f4c; --muted: #586460;
+  --line: #ccd3cf; --line-strong: #84928b;
+  --accent: #205e53; --blue: #205e53; --focus: #205e53;
+  --accent-soft: #d6e7df; --accent-hover: #174a41; --on-accent: #fff;
+  --green: #20623e; --success-bg: #dcebe0; --red: #a92639; --danger-bg: #f2dfe2;
+  --amber: #785710; --warning-bg: #ece4cd; --info: #235e8a; --info-bg: #dbe7f0;
+  --glass: rgb(234 236 234 / 92%); --overlay: rgb(26 35 32 / 34%);
+  --shadow: 0 8px 28px rgb(34 43 42 / 5%); --motion: 220ms cubic-bezier(.2, .8, .2, 1);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1c2021; --bg-soft: #303637; --surface: #262c2d;
+  --surface-raised: #303738; --surface-warm: #343935;
+  --text: #eef2ee; --text-soft: #c5cfc9; --muted: #a8b5ae;
+  --line: #414d48; --line-strong: #76877e;
+  --accent: #9bd4bd; --blue: #9bd4bd; --focus: #9bd4bd;
+  --accent-soft: #29463c; --accent-hover: #b5e3ce; --on-accent: #152d24;
+  --green: #a0d7b2; --success-bg: #293f32; --red: #ffb1ba; --danger-bg: #4b2c33;
+  --amber: #e7cb8b; --warning-bg: #443e2c; --info: #a6cceb; --info-bg: #2c3e4a;
+  --gold: #d6bd8a; --gold-light: #e6cf9f; --copper: #e3b09c;
+  --glass: rgb(28 32 33 / 93%); --overlay: rgb(9 12 12 / 66%);
+  --shadow: 0 8px 28px rgb(0 0 0 / 12%);
+}
+.appearance-control { display: flex; align-items: center; gap: .625rem; min-width: 0; }
+.appearance-control label { display: inline-flex; align-items: center; gap: .375rem; margin: 0; font-size: .8125rem; color: var(--muted); }
+.appearance-control select { width: auto; min-width: 6.75rem; min-height: 2.75rem; padding: .5rem .625rem; border-color: var(--line); font-size: .875rem; border-radius: .75rem; background: var(--surface); }
+.admin-login-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+.admin-login-toolbar .admin-back { position: static; margin: 0; }
+.navbar, .navbar-solida, .navbar:has(.nav-links.abierto), .admin-topbar { background: var(--glass); }
+.nav-links.abierto { background: var(--glass); }
+.nav-links .appearance-control { padding: .375rem 1rem; }
+.btn-principal, .nav-links .nav-reservar, .nav-links .nav-reservar.activo { color: var(--on-accent); background: var(--accent); }
+.btn-principal:hover { color: var(--on-accent); background: var(--accent-hover); }
+.btn-principal .spinner { border-color: currentColor; border-top-color: transparent; }
+.btn:hover, .hamburguesa:hover, .filtros-servicios button, .filtros-servicios button:hover { background: var(--bg-soft); color: var(--text); }
+.btn-principal:hover { color: var(--on-accent); background: var(--accent-hover); }
+.btn-peligro, .btn-peligro:hover { background: var(--danger-bg); color: var(--red); }
+.btn-success, .btn-success:hover, .btn-secundario, .btn-secundario:hover, .btn-whatsapp { background: var(--success-bg); color: var(--green); }
+.btn-linea:hover, .btn-cristal:hover { background: var(--accent-soft); }
+.filtros-servicios button.activo, .slot.activo, .wizard-steps button.activo > span { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.wizard-progress > span { background: var(--accent); }
+.booking-service-list > button:hover, .booking-barber-option:hover, .booking-extras button:hover, .slot:hover { background: var(--surface-raised); color: var(--text); }
+.booking-service-list > button.activo, .booking-barber-option.activo, .booking-extras button.activo { background: var(--accent-soft); }
+.booking-service-list > button.activo .booking-service-check, .booking-extras button.activo > span { background: var(--accent); color: var(--on-accent); }
+.team-availability, .modal > header, .action-menu-list, .ui-dialog, .toast, .booking-notice, .client-search .formulario { background: var(--surface); color: var(--text); }
+.modal { border-color: var(--line); }
+.modal-backdrop { background: var(--overlay); }
+.daily-appointment.is-completed, .agenda-event:has(.estado-completed) { background: var(--success-bg); }
+.estado-pending, .estado-booked, .waitlist-status-contacted { color: var(--info); background: var(--info-bg); }
+.estado-confirmed, .estado-blocked, .waitlist-status-waiting, .review-status-pending { color: var(--amber); background: var(--warning-bg); }
+.estado-completed, .estado-present, .waitlist-status-booked, .review-status-approved { color: var(--green); background: var(--success-bg); }
+.estado-cancelled, .estado-no_show, .estado-noshow, .waitlist-status-cancelled, .review-status-rejected { color: var(--red); background: var(--danger-bg); }
+.chart-track, .day-overview progress, .day-overview progress::-webkit-progress-bar { background: var(--bg-soft); }
+.pantalla-carga, .loader-global { background: var(--glass); color: var(--text); }
+.spinner { border-color: var(--line); border-top-color: var(--accent); }
+.skeleton { background: var(--bg-soft); }
+.skeleton::after { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface-raised) 65%, transparent), transparent); }
+input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+button:active:not(:disabled), .btn:active { transform: scale(.98); }
+.admin-content, .admin-layout, .admin-user, .nav-contenido, .modal-body { min-width: 0; }
+.admin-user > .appearance-control { display: flex; gap: .625rem; text-align: left; }
+.admin-sync-bar { row-gap: 1rem; }
+.security-diagnostics { margin-top: 2rem; }
+.security-diagnostics summary { min-height: 2.75rem; padding-block: .75rem; cursor: pointer; font-weight: 600; }
+.security-diagnostics > p, .security-diagnostics > button { margin-top: 1rem; }
+.admin-sync-bar > .btn { margin-left: auto; }
+[data-theme="dark"] .hero-overlay { background: linear-gradient(180deg, var(--bg) 0%, var(--bg) calc(100% - 14rem), transparent 100%); }
+@media (min-width: 960px) {
+  [data-theme="dark"] .hero-overlay { background: linear-gradient(90deg, var(--bg) 0%, var(--bg) 29%, rgb(28 32 33 / 92%) 39%, rgb(28 32 33 / 18%) 66%, transparent 80%); }
+  .nav-links .appearance-control { padding-inline: .5rem 0; }
+  .nav-links .appearance-control label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media (max-width: 639px) {
+  .admin-topbar { height: 8rem; gap: .75rem; flex-wrap: wrap; padding-block: .875rem; }
+  .admin-topbar .appearance-control { margin-left: auto; }
+  .admin-topbar .appearance-control label { display: inline-flex; }
+  .admin-topbar .admin-user { width: 100%; justify-content: space-between; }
+  .admin-topbar .admin-user > div:not(.appearance-control) { order: -1; margin-right: auto; }
+  .admin-mobile-navigation { top: 8rem; }
+  .admin-sync-bar > span { flex-basis: 100%; }
+  .admin-sync-bar > .btn { flex: 1; margin: 0; width: 100%; padding-inline: 1rem; }
+  .admin-login-toolbar .appearance-control { flex-wrap: wrap; }
+}
+@media (max-width: 479px) {
+  .hero-inner { padding-block: 5.75rem 10.5rem; }
+  .hero { background-size: auto 9.5rem; }
+  .hero-overlay, [data-theme="dark"] .hero-overlay { background: linear-gradient(180deg, var(--bg) 0%, var(--bg) calc(100% - 9.5rem), transparent calc(100% - 8rem)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

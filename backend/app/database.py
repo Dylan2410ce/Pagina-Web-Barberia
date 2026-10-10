@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import config
+from app.services.row_security import ScopedSession
 
 
 class Base(DeclarativeBase):
@@ -42,6 +43,8 @@ engine = create_async_engine(config.DATABASE_URL, hide_parameters=True, **engine
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
+    sync_session_class=ScopedSession,
+    info={"security_scope": "system"},
     expire_on_commit=False,
     autoflush=False,
 )

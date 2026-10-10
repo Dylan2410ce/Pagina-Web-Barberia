@@ -2,7 +2,7 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import config as app_config
@@ -40,6 +40,8 @@ def do_run_migrations(connection) -> None:
         compare_type=True,
     )
     with context.begin_transaction():
+        if connection.dialect.name == "postgresql":
+            connection.execute(text("SELECT set_config('app.security_scope', 'system', true)"))
         context.run_migrations()
 
 

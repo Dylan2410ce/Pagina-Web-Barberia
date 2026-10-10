@@ -4,19 +4,25 @@ export const API_URL = (
 ).replace(/\/+$/, "");
 
 const ADMIN_TOKEN_KEY = "sebas_admin_token";
+const SESSION_KEY = "sebas_admin_session";
+const CSRF_KEY = "sebas_admin_csrf";
 
 export function obtenerToken() {
-  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || "";
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
   localStorage.removeItem(ADMIN_TOKEN_KEY);
-  return token;
+  return sessionStorage.getItem(SESSION_KEY) === "cookie" ? "cookie" : "";
 }
 
-export function guardarToken(token) {
-  sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+export function guardarToken(_token, csrfToken = "") {
+  sessionStorage.setItem(SESSION_KEY, "cookie");
+  sessionStorage.setItem(CSRF_KEY, csrfToken);
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
   localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
 
 export function borrarToken() {
+  sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(CSRF_KEY);
   sessionStorage.removeItem(ADMIN_TOKEN_KEY);
   localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
@@ -39,12 +45,18 @@ async function ejecutarSolicitud(ruta, opciones = {}) {
     ...(opciones.headers || {}),
   };
 
-  if (opciones.token) {
-    headers.Authorization = `Bearer ${opciones.token}`;
+  const esAdmin = ruta.startsWith("/api/admin/");
+  if (esAdmin) {
+    headers["X-Session-Mode"] = "cookie";
+    const csrf = sessionStorage.getItem(CSRF_KEY);
+    if (csrf && !["GET", "HEAD"].includes(metodo)) headers["X-CSRF-Token"] = csrf;
   }
+  const destino = esAdmin && import.meta.env.PROD
+    ? `/api/backend${ruta.slice(4)}`
+    : `${API_URL}${ruta}`;
 
   try {
-    const respuesta = await fetch(`${API_URL}${ruta}`, {
+    const respuesta = await fetch(destino, {
       method: metodo,
       headers,
       body: opciones.body
@@ -52,6 +64,7 @@ async function ejecutarSolicitud(ruta, opciones = {}) {
         : undefined,
       signal: controlador.signal,
       cache: "no-store",
+      credentials: esAdmin ? "include" : "omit",
     });
 
     if (!respuesta.ok) {
@@ -167,7 +180,9 @@ export const adminApi = {
   retirarBarbero: (token, id) => api(`/api/admin/team/${id}`, { method: "DELETE", token }),
   reactivarBarbero: (token, id) => api(`/api/admin/team/${id}/activate`, { method: "POST", token }),
   calendario: (token) => api("/api/admin/integrations/calendar", { token }),
+  seguridad: (token) => api("/api/admin/security-status", { token }),
   login: (datos) => api("/api/admin/login", { method: "POST", body: datos }),
+  logout: () => api("/api/admin/logout", { method: "POST" }),
   perfil: (token) => api("/api/admin/me", { token }),
   dashboard: (token) => api("/api/admin/dashboard", { token }),
   citas: (token, filtros = {}) => api(`/api/admin/appointments${query(filtros)}`, { token }),

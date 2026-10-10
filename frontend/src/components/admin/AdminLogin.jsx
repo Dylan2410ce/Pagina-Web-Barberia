@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Home, Scissors, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import FormField from "../ui/FormField";
+import AppearanceControl from "../ui/AppearanceControl";
 
 export default function Login({ onLogin, onResetPassword }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
@@ -33,7 +34,7 @@ export default function Login({ onLogin, onResetPassword }) {
 
   return (
     <section className="admin-login-page">
-      <a className="btn btn-linea admin-back" href="/"><Home size={16} />Volver a la web</a>
+      <div className="admin-login-toolbar"><a className="btn btn-linea admin-back" href="/"><Home size={16} />Volver a la web</a><AppearanceControl /></div>
       <div className="admin-login-shell">
         <div className="admin-login-copy">
           <span className="admin-login-mark"><Scissors size={26} /></span>

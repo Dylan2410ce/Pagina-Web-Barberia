@@ -58,6 +58,10 @@ async def lifespan(_: FastAPI):
     if not config.DATABASE_MIGRATION_MODE:
         async with AsyncSessionLocal() as db:
             await seed_data(db)
+            from app.services.row_security import verificar_politicas
+            estado_rls = await verificar_politicas(db)
+            if estado_rls.get("supported") and not estado_rls["enforced"]:
+                logger.warning("RLS no está aplicado completamente al rol de ejecución; revisa migraciones y privilegios del rol")
         
     from app.tasks.reminder_cron import start_cron, shutdown_cron
     start_cron()
@@ -120,10 +124,10 @@ app.add_middleware(RequestGuardMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=sorted(allowed_origins),
-    allow_origin_regex=LOCAL_ORIGIN_PATTERN,
-    allow_credentials=False,
+    allow_origin_regex=LOCAL_ORIGIN_PATTERN if config.ENVIRONMENT == "development" else None,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-CSRF-Token", "X-Session-Mode"],
     expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"],
 )
 
@@ -191,8 +195,8 @@ async def unexpected_exception_handler(request: Request, exc: Exception):
     headers = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY",
         "X-Request-ID": getattr(request.state, "request_id", None) or str(uuid4())}
     origin = request.headers.get("origin", "")
-    if origin in allowed_origins or re.fullmatch(LOCAL_ORIGIN_PATTERN, origin):
-        headers.update({"Access-Control-Allow-Origin": origin, "Vary": "Origin"})
+    if origin in allowed_origins or (config.ENVIRONMENT == "development" and re.fullmatch(LOCAL_ORIGIN_PATTERN, origin)):
+        headers.update({"Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true", "Vary": "Origin"})
     return JSONResponse(
         status_code=500,
         content={

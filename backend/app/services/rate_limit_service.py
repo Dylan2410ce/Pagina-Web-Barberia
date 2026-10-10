@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import lru_cache
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -111,6 +111,28 @@ class RateLimiter:
         if request.method == "PATCH" and request.url.path.startswith("/api/public/appointments/"):
             return CLIENT_MUTATION_RULE
         return RULES.get((request.method, request.url.path), GLOBAL_RULE)
+
+    async def check_account(self, username: str, scope: str, limit: int, window_seconds: int):
+        if not config.RATE_LIMIT_ENABLED or config.DATABASE_MIGRATION_MODE:
+            return
+        now = time.time()
+        digest = hmac.new(config.SECRET_KEY.encode(), username.strip().casefold().encode(), hashlib.sha256).hexdigest()
+        window = int(now // window_seconds)
+        expires = datetime.fromtimestamp((window + 1) * window_seconds, timezone.utc)
+        async with self.session_factory() as db:
+            insert = pg_insert if db.bind.dialect.name == "postgresql" else sqlite_insert
+            statement = insert(RateLimitBucket).values(
+                key=f"account-{scope}:{digest}:{window}", count=1, expires_at=expires,
+            )
+            statement = statement.on_conflict_do_update(
+                index_elements=["key"], set_={"count": RateLimitBucket.count + 1},
+                where=RateLimitBucket.count < limit,
+            ).returning(RateLimitBucket.count)
+            count = (await db.execute(statement)).scalar_one_or_none()
+            await db.commit()
+        if count is None:
+            raise HTTPException(status_code=429, detail="Demasiados intentos. Espera unos minutos antes de volver a intentarlo.",
+                headers={"Retry-After": str(max(1, int(expires.timestamp() - now)))})
 
     async def check(self, request):
         rule = self._rule(request)

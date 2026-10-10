@@ -55,6 +55,23 @@ class BarberOut(BaseModel):
     public_message: str | None = None
 
 
+class PublicBarberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    role: str
+    phone: str
+    instagram_url: str | None = None
+    photo_url: str | None = None
+    cancellation_notice_hours: int = 2
+    reschedule_notice_hours: int = 2
+    appointment_buffer_min: int = 0
+    parking_info: str | None = None
+    directions_hint: str | None = None
+    public_message: str | None = None
+
+
 class ServiceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -89,7 +106,7 @@ class BusinessBreakOut(BaseModel):
 
 
 class BootstrapOut(BaseModel):
-    barbers: list[BarberOut]
+    barbers: list[PublicBarberOut]
     services: list[ServiceOut]
     addons: list[ServiceOut]
     business_hours: list[BusinessHourOut]
@@ -155,6 +172,14 @@ class AppointmentOut(BaseModel):
 
 
 class AppointmentCreatedOut(AppointmentOut):
+    access_code: str
+
+
+class ClientAppointmentOut(AppointmentOut):
+    calendar_event_id: str | None = Field(default=None, exclude=True)
+
+
+class ClientAppointmentCreatedOut(ClientAppointmentOut):
     access_code: str
 
 
@@ -277,6 +302,7 @@ class LoginIn(StrictInput):
 
 class TokenOut(BaseModel):
     token: str
+    csrf_token: str | None = None
 
 
 class ServiceCreate(StrictInput):

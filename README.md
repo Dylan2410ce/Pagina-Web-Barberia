@@ -23,6 +23,8 @@ aislamiento en el servidor.
 
 ## Documentación
 
+- [Auditoría de seguridad, cookies, RLS y accesibilidad](docs/SECURITY_AUDIT.md)
+
 | Documento | Contenido |
 | --- | --- |
 | [Arquitectura](docs/ARCHITECTURE.md) | Capas, módulos, flujos y decisiones técnicas |

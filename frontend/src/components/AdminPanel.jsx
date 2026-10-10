@@ -11,6 +11,7 @@ const Equipo = lazy(() => import("./admin/AdminTeam"));
 
 import { LogOut, Scissors, RefreshCw, Plus } from "lucide-react";
 import AdminNavigation from "./admin/AdminNavigation";
+import AppearanceControl from "./ui/AppearanceControl";
 
 import AdminAgenda from "./admin/AdminAgenda";
 const AdminClients = lazy(() => import("./admin/AdminClients"));
@@ -83,6 +84,7 @@ export default function AdminPanel({
           <div><strong>Sebas Barber</strong><small>Panel de control</small></div>
         </a>
         <div className="admin-user">
+          <AppearanceControl compact />
           <div><strong>{admin.perfil?.name || "Sebastián"}</strong><small>{admin.perfil?.role || "Administrador"}</small></div>
           <button className="icon-btn labeled-action" type="button" onClick={onSalir} aria-label="Cerrar sesión" title="Cerrar sesión">
             <LogOut size={18} /><span>Salir</span>

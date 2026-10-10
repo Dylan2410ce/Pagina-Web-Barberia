@@ -1,10 +1,11 @@
 import asyncio
 import hashlib
 import hmac
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,8 +15,10 @@ from app.database import get_db
 from app.models import Barber
 from app.repositories.barber_repository import BarberRepository
 from app.services.password_service import verify_password
+from app.services.session_service import nombre_cookie, validar_csrf
+from app.services.row_security import configurar_contexto
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 DUMMY_PASSWORD_HASH = (
     "$2b$12$VqyDQpsmOujx1STVz9cSXu.pTr.AW3w23DYy5UVoHlLdJ/H8wG7my"
 )
@@ -48,15 +51,21 @@ async def login(db: AsyncSession, username: str, password: str) -> str:
         "aud": config.JWT_AUDIENCE,
         "iat": now,
         "ver": barber.session_version,
+        "csrf": secrets.token_urlsafe(32),
         "exp": now + timedelta(hours=4),
     }
     return jwt.encode(payload, config.SECRET_KEY, algorithm="HS256")
 
 
 async def current_barber(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> Barber:
+    cookie = request.cookies.get(nombre_cookie())
+    token = cookie or (credentials.credentials if credentials else "")
+    if not token:
+        raise HTTPException(status_code=401, detail="Inicia sesión para continuar")
     payload = None
     last_error = None
     for secret in (config.SECRET_KEY, config.SECRET_KEY_PREVIOUS):
@@ -64,7 +73,7 @@ async def current_barber(
             continue
         try:
             payload = jwt.decode(
-                credentials.credentials,
+                token,
                 secret,
                 algorithms=["HS256"],
                 audience=config.JWT_AUDIENCE,
@@ -75,6 +84,8 @@ async def current_barber(
             last_error = exc
     if payload is None:
         raise HTTPException(status_code=401, detail="Token inválido") from last_error
+    if cookie:
+        validar_csrf(request, payload)
     barber_id = payload.get("sub")
 
     barber = await BarberRepository(db).by_id(barber_id)
@@ -90,4 +101,5 @@ async def current_barber(
         raise HTTPException(status_code=401, detail="La sesión ya no es válida")
     if int(payload.get("ver", 0)) != barber.session_version:
         raise HTTPException(status_code=401, detail="La sesión ya no es válida")
+    await configurar_contexto(db, "barber", barber.id)
     return barber

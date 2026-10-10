@@ -12,6 +12,7 @@ from fastapi import (
     Form,
     HTTPException,
     Query,
+    Request,
     Response,
     UploadFile,
 )
@@ -70,6 +71,7 @@ from app.schemas import (
 from app.services.appointment_service import AppointmentService
 from app.services.audit_service import AuditService
 from app.services.auth_service import current_barber, login
+from app.services.session_service import eliminar_cookie, exigir_origen, guardar_cookie
 from app.services.calendar_service import CalendarService, calendar_embed_url
 from app.services.cloudinary_service import CloudinaryError, CloudinaryService
 from app.services.date_service import TZ, as_utc, day_range, range_from_minutes
@@ -114,12 +116,39 @@ def _clean_gallery_text(value: str, field: str) -> str:
 
 
 @router.post("/login", response_model=TokenOut)
-async def admin_login(data: LoginIn, db: AsyncSession = Depends(get_db)):
-    return {"token": await login(db, data.username, data.password)}
+async def admin_login(data: LoginIn, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    from app.services.rate_limit_service import rate_limiter
+    await rate_limiter.check_account(data.username, "login", 10, 900)
+    modo_cookie = request.headers.get("x-session-mode") == "cookie"
+    if modo_cookie:
+        exigir_origen(request)
+    token = await login(db, data.username, data.password)
+    if not modo_cookie:
+        return {"token": token}
+    import jwt
+    claims = jwt.decode(token, config.SECRET_KEY, algorithms=["HS256"],
+        audience=config.JWT_AUDIENCE, issuer=config.JWT_ISSUER)
+    guardar_cookie(response, token)
+    return {"token": "cookie", "csrf_token": claims["csrf"]}
+
+
+@router.post("/logout", status_code=204)
+async def logout(response: Response, barber: Barber = Depends(current_barber), db: AsyncSession = Depends(get_db)):
+    barber.session_version += 1
+    await db.commit()
+    eliminar_cookie(response)
+
+
+@router.get("/security-status")
+async def security_status(barber: Barber = Depends(current_barber), db: AsyncSession = Depends(get_db)):
+    from app.services.row_security import verificar_politicas
+    return {"row_security": await verificar_politicas(db), "session": "http_only_cookie_or_bearer"}
 
 
 @router.post("/reset-password")
 async def reset_password(data: PasswordResetIn, db: AsyncSession = Depends(get_db)):
+    from app.services.rate_limit_service import rate_limiter
+    await rate_limiter.check_account(data.username, "reset", 3, 3600)
     if not compare_digest(data.master_code, config.MASTER_RESET_CODE):
         raise HTTPException(status_code=401, detail="Código maestro inválido")
 
@@ -144,6 +173,7 @@ async def reset_password(data: PasswordResetIn, db: AsyncSession = Depends(get_d
 @router.post("/change-password")
 async def change_password(
     data: PasswordChangeIn,
+    response: Response,
     barber: Barber = Depends(current_barber),
     db: AsyncSession = Depends(get_db),
 ):
@@ -166,6 +196,7 @@ async def change_password(
         details={"actor": "admin"},
     )
     await db.commit()
+    eliminar_cookie(response)
     return {"ok": True, "message": "Contraseña actualizada"}
 
 

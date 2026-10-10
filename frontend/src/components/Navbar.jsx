@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Menu, Scissors, X } from "lucide-react";
+import AppearanceControl from "./ui/AppearanceControl";
 
 const enlaces = [
   { id: "equipo", label: "Equipo" },
@@ -102,6 +103,7 @@ export default function Navbar({ abierto, solida, onToggle, contenidoListo }) {
             </a>
           ))}
           <a href="/admin" onClick={cerrar}>Admin</a>
+          <AppearanceControl />
         </div>
       </nav>
     </header>

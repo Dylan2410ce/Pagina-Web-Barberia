@@ -8,12 +8,16 @@ from app.models import Barber
 from app.schemas_team import CrearBarbero, EditarBarbero, EquipoOut
 from app.services.auth_service import current_barber
 from app.services.team_service import EquipoService, exigir_propietario
+from app.services.row_security import configurar_contexto
 
 router = APIRouter(prefix="/api/admin/team", tags=["Equipo"])
 
 
-async def propietario(barbero: Barber = Depends(current_barber)) -> Barber:
-    return exigir_propietario(barbero)
+async def propietario(barbero: Barber = Depends(current_barber), db: AsyncSession = Depends(get_db)) -> Barber:
+    propietario_verificado = exigir_propietario(barbero)
+    # Solo la gestión de equipo autorizada puede crear horarios de otros perfiles.
+    await configurar_contexto(db, "system")
+    return propietario_verificado
 
 
 @router.get("", response_model=list[EquipoOut])

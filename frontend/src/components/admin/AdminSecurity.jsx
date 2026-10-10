@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { ShieldCheck, LockKeyhole } from "lucide-react";
 import PageHead from "./AdminPageHead";
 import CalendarConnection from "./CalendarConnection";
+import SecurityStatus from "./SecurityStatus";
 
 
 export default function Seguridad({ token, onChangePassword }) {
@@ -59,7 +60,7 @@ export default function Seguridad({ token, onChangePassword }) {
           <span className="security-icon"><ShieldCheck size={20} /></span>
           <div>
             <strong>Acceso del administrador</strong>
-            <p>La clave debe tener al menos 8 caracteres. No compartas el código maestro de recuperación.</p>
+            <p>Usa al menos 12 caracteres, con mayúscula, minúscula, número y símbolo. No compartas el código maestro de recuperación.</p>
           </div>
         </div>
         <form className="formulario security-form grid gap-4" onSubmit={guardar}>
@@ -80,7 +81,8 @@ export default function Seguridad({ token, onChangePassword }) {
             <input
               id="new-password"
               type="password"
-              minLength={8}
+              minLength={12}
+              maxLength={72}
               value={form.new_password}
               autoComplete="new-password"
               onChange={(event) => actualizarCampo("new_password", event.target.value)}
@@ -92,7 +94,8 @@ export default function Seguridad({ token, onChangePassword }) {
             <input
               id="confirm-password"
               type="password"
-              minLength={8}
+              minLength={12}
+              maxLength={72}
               value={form.confirmation}
               autoComplete="new-password"
               onChange={(event) => actualizarCampo("confirmation", event.target.value)}
@@ -104,6 +107,7 @@ export default function Seguridad({ token, onChangePassword }) {
         </form>
       </section>
       <CalendarConnection token={token} />
+      <SecurityStatus token={token} />
     </>
   );
 }

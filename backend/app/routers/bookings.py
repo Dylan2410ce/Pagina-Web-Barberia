@@ -8,8 +8,8 @@ from app.database import get_db
 from app.schemas import (
     AppointmentCancel,
     AppointmentCreate,
-    AppointmentCreatedOut,
-    AppointmentOut,
+    ClientAppointmentCreatedOut,
+    ClientAppointmentOut,
     AppointmentReschedule,
     BookingLookup,
     SlotOut,
@@ -34,7 +34,7 @@ async def availability(
     return await service.availability(barber_id, day, duration)
 
 
-@router.post("/appointments", response_model=AppointmentCreatedOut, status_code=201)
+@router.post("/appointments", response_model=ClientAppointmentCreatedOut, status_code=201)
 async def create_appointment(
     data: AppointmentCreate,
     db: AsyncSession = Depends(get_db),
@@ -42,7 +42,7 @@ async def create_appointment(
     return await AppointmentService(db).create(data)
 
 
-@router.post("/appointments/lookup", response_model=AppointmentOut)
+@router.post("/appointments/lookup", response_model=ClientAppointmentOut)
 async def appointment_by_access_code(
     data: BookingLookup,
     db: AsyncSession = Depends(get_db),
@@ -52,7 +52,7 @@ async def appointment_by_access_code(
 
 @router.post(
     "/appointments/history",
-    response_model=list[AppointmentOut],
+    response_model=list[ClientAppointmentOut],
 )
 async def appointment_history(
     data: BookingLookup,
@@ -61,7 +61,7 @@ async def appointment_history(
     return await AppointmentService(db).history_by_access_code(data.access_code)
 
 
-@router.patch("/appointments/{appointment_id}/cancel", response_model=AppointmentOut)
+@router.patch("/appointments/{appointment_id}/cancel", response_model=ClientAppointmentOut)
 async def cancel_appointment(
     appointment_id: UUID,
     data: AppointmentCancel,
@@ -75,7 +75,7 @@ async def cancel_appointment(
     )
 
 
-@router.patch("/appointments/{appointment_id}/reschedule", response_model=AppointmentOut)
+@router.patch("/appointments/{appointment_id}/reschedule", response_model=ClientAppointmentOut)
 async def reschedule_appointment(
     appointment_id: UUID,
     data: AppointmentReschedule,

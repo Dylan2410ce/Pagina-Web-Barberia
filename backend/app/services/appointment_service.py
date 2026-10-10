@@ -703,10 +703,8 @@ class AppointmentService:
 
     async def history_by_access_code(self, code: str) -> list[Appointment]:
         appointment = await self.get_by_access_code(code)
-        return await self.appointments.history_for_client(
-            appointment.barber_id,
-            appointment.client_phone,
-        )
+        # Un código autoriza una reserva; compartir teléfono no autoriza otras citas.
+        return [appointment]
 
     def enforce_client_notice(
         self,

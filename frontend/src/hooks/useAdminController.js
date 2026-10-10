@@ -13,7 +13,7 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
     setProcesando("Entrando al panel...");
     try {
       const respuesta = await adminApi.login(data);
-      guardarToken(respuesta.token);
+      guardarToken(respuesta.token, respuesta.csrf_token);
       setAdmin((actual) => ({ ...actual, token: respuesta.token }));
       const abierto = await cargarAdmin(respuesta.token, admin.filtros);
       if (!abierto) return false;
@@ -57,7 +57,18 @@ export default function useAdminController({ avisar, setProcesando, setConfirmac
     }
   };
 
-  const cerrarAdmin = () => {
+  const cerrarAdmin = async () => {
+    setProcesando("Cerrando sesión…");
+    try {
+      await adminApi.logout();
+    } catch (error) {
+      if (error.status !== 401) {
+        avisar("error", "No se pudo cerrar la sesión", "Comprueba tu conexión e inténtalo de nuevo.");
+        return;
+      }
+    } finally {
+      setProcesando("");
+    }
     consultaAgenda.current += 1;
     cargaPanel.current += 1;
     borrarToken();
