@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   ChevronLeft,
@@ -53,6 +53,9 @@ export default function AdminClients({
   const [desde, setDesde] = useState("");
   const [seleccionado, setSeleccionado] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [guardando, setGuardando] = useState(false);
+  const [errorGuardado, setErrorGuardado] = useState("");
+  const guardadoPendiente = useRef(false);
   const visibles = useMemo(
     () => clientes.filter((cliente) => coincide(
       cliente,
@@ -70,6 +73,7 @@ export default function AdminClients({
   const clienteActivo = visibles.find(
     (cliente) => cliente.phone === seleccionado,
   ) || paginaVisible[0];
+  const totalCitas = visibles.reduce((total, item) => total + item.appointments, 0);
   const [profileForm, setProfileForm] = useState({
     tags: "",
     preferences: "",
@@ -87,6 +91,7 @@ export default function AdminClients({
   useEffect(() => { setSeleccionado(""); }, [pagina]);
 
   useEffect(() => {
+    setErrorGuardado("");
     setProfileForm({
       tags: (clienteActivo?.tags || []).join(", "),
       preferences: clienteActivo?.preferences || "",
@@ -98,6 +103,27 @@ export default function AdminClients({
     clienteActivo?.preferences,
     clienteActivo?.tags,
   ]);
+
+  const guardarFicha = async (event) => {
+    event.preventDefault();
+    if (guardadoPendiente.current || !clienteActivo?.profile_id) return;
+    guardadoPendiente.current = true;
+    setGuardando(true);
+    setErrorGuardado("");
+    try {
+      const guardado = await onUpdate(clienteActivo.profile_id, {
+        tags: profileForm.tags.split(",").map((item) => item.trim()).filter(Boolean),
+        preferences: profileForm.preferences.trim() || null,
+        internal_notes: profileForm.internal_notes.trim() || null,
+      });
+      if (guardado === false) setErrorGuardado("Los cambios no se guardaron.");
+    } catch (error) {
+      setErrorGuardado(error.message || "No pudimos guardar la ficha.");
+    } finally {
+      guardadoPendiente.current = false;
+      setGuardando(false);
+    }
+  };
 
   const exportar = () => descargarCsv(
     "clientes-sebas-barber.csv",
@@ -163,11 +189,9 @@ export default function AdminClients({
             />
           </div>
           <div className="clients-directory-head">
-            <span>{visibles.length} clientes</span>
+            <span>{visibles.length} {visibles.length === 1 ? "cliente" : "clientes"}</span>
             <span>
-              {visibles.reduce((total, item) => total + item.appointments, 0)}
-              {" "}
-              visitas registradas
+              {totalCitas} {totalCitas === 1 ? "cita registrada" : "citas registradas"}
             </span>
           </div>
           <div className="clients-list">
@@ -225,7 +249,7 @@ export default function AdminClients({
           {!clienteActivo && (
             <div className="admin-empty">
               <CalendarDays size={25} />
-              <span>Aún no hay clientes registrados.</span>
+              <span>{clientes.length ? "Ningún cliente coincide con estos filtros." : "Aún no hay clientes registrados."}</span>
             </div>
           )}
           {clienteActivo && (
@@ -235,7 +259,7 @@ export default function AdminClients({
                 <div>
                   <span>Ficha del cliente</span>
                   <h2>{clienteActivo.name}</h2>
-                  <p>{clienteActivo.completed_appointments || 0} visitas · {dinero(clienteActivo.spent)} generado</p>
+                  <p>{clienteActivo.completed_appointments || 0} {clienteActivo.completed_appointments === 1 ? "visita" : "visitas"} · {dinero(clienteActivo.spent)} generado</p>
                 </div>
                 <div className="client-contact-actions">
                   <a className="icon-btn labeled-action" href={`tel:+506${clienteActivo.phone}`} aria-label={`Llamar a ${clienteActivo.name}`} title="Llamar">
@@ -263,23 +287,14 @@ export default function AdminClients({
                 </article>
                 <article>
                   <span>No asistió</span>
-                  <strong>{clienteActivo.no_show_count || 0} veces</strong>
+                  <strong>{clienteActivo.no_show_count || 0} {clienteActivo.no_show_count === 1 ? "vez" : "veces"}</strong>
                 </article>
               </div>
               {clienteActivo.profile_id && (
                 <form
                   className="client-profile-editor formulario"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    onUpdate(clienteActivo.profile_id, {
-                      tags: profileForm.tags
-                        .split(",")
-                        .map((item) => item.trim())
-                        .filter(Boolean),
-                      preferences: profileForm.preferences.trim() || null,
-                      internal_notes: profileForm.internal_notes.trim() || null,
-                    });
-                  }}
+                  onSubmit={guardarFicha}
+                  aria-busy={guardando}
                 >
                   <div className="campo">
                     <label htmlFor="client-tags"><Tags size={15} />Etiquetas</label>
@@ -321,19 +336,21 @@ export default function AdminClients({
                     />
                   </div>
                   <div className="client-profile-actions">
-                    <button className="btn btn-principal" type="submit">
+                    <button className="btn btn-principal" type="submit" disabled={guardando}>
                       <Save size={16} />
-                      Guardar ficha
+                      {guardando ? "Guardando…" : "Guardar ficha"}
                     </button>
                     <button
                       className="btn btn-peligro"
                       type="button"
+                      disabled={guardando}
                       onClick={() => onAnonymize(clienteActivo)}
                     >
                       <ShieldOff size={16} />
                       Eliminar datos personales
                     </button>
                   </div>
+                  {errorGuardado && <p className="form-error" role="alert">{errorGuardado}</p>}
                 </form>
               )}
               <div className="client-history-list">
