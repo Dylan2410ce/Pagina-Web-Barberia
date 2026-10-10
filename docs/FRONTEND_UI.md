@@ -12,11 +12,23 @@ La API sigue siendo la autoridad para precios, autorización, validación de res
 
 ## Estilos
 
-`src/styles.css` declara el orden de la cascada. Los tokens de color, espaciado y tipografía viven en `styles/base.css`. La capa compartida está en `ui.css`; las composiciones pública y administrativa están en `public-layout.css` y `admin-layout.css`.
+`src/styles.css` declara el orden de la cascada. Espaciado y tipografía viven en
+`styles/base.css`; `styles/appearance.css` define los colores semánticos finales
+y adapta los componentes a claro/oscuro. La capa compartida está en `ui.css`;
+las composiciones pública y administrativa están en `public-layout.css` y
+`admin-layout.css`. Evitar colores fijos en controles nuevos.
 
 Los estilos de mantenimiento deben limitarse a sus clases `maintenance-*`. No agregar allí reglas generales de formularios, secciones o tipografía, pues afectarían el sitio operativo.
 
-Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa. La paleta combina gris mineral `#e9edf1`, superficies `#f3f5f7` y texto tinta `#202833`; las acciones principales usan azul petróleo `#165c72`. Verde confirma una acción y rojo señala errores o acciones destructivas. `light-surfaces.css` unifica los módulos secundarios y diálogos que comparten la misma paleta.
+Se utiliza Inter para títulos y lectura, con fuentes de sistema como alternativa.
+El tema claro combina gris mineral `#eaecea`, superficies `#f4f5f3`, texto
+`#222b2a` y acento verde profundo `#205e53`. El oscuro usa carbón `#1c2021`,
+superficies `#262c2d` y acento `#9bd4bd`. Los estados de éxito/error/advertencia
+tienen colores propios y texto explicativo. `AppearanceControl` ofrece Sistema,
+Claro y Oscuro en la web y el panel; `useAppearance` sincroniza cambios del
+sistema y otras pestañas. `public/theme-init.js` evita un destello del tema
+incorrecto antes de cargar React. Solo la preferencia visual se guarda en
+localStorage; el JWT permanece en una cookie HttpOnly.
 
 Los controles incluyen etiquetas visibles, áreas táctiles de al menos 44 px, foco visible y estados de error con texto, no solo color. Las animaciones respetan `prefers-reduced-motion`. La navegación cambia a menú desplegable por debajo de 960 px; el administrador muestra accesos a Hoy, Bloquear y Clientes, más herramientas agrupadas en Más, por debajo de 1040 px. En escritorio `AdminNavigation` agrupa Día a día, Negocio, Contenido y Mi cuenta. El resumen inicia con las citas por atender; Todas recupera el día completo. El bloqueo rápido confirma antes de bloquear 45 minutos en el siguiente espacio **de hoy**, sin desplazar citas ni bloquear otros días. El catálogo compartido es editable por Sebastián y de lectura para Gabriel; la API valida esta autorización independientemente de los botones.
 

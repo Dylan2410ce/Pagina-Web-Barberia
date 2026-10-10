@@ -20,7 +20,11 @@ Las fotos pueden usar una ruta pública bajo `/assets/` o un enlace HTTPS de Clo
 
 ## API y capas
 
-Todas las rutas requieren `Authorization: Bearer <JWT>` y `username=sebas` verificado en el servidor:
+Todas las rutas requieren sesión autenticada y `username=sebas` verificado en el
+servidor. El navegador usa cookie HttpOnly a través del proxy de Vercel, con
+origen y token anti-CSRF en escrituras. Clientes de API pueden usar
+`Authorization: Bearer <JWT>`. Tras verificar al propietario, estas operaciones
+usan contexto de servicio para administrar perfiles, sin abrir las agendas ajenas:
 
 | Método | Ruta | Resultado |
 | --- | --- | --- |

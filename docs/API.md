@@ -62,7 +62,7 @@ Las respuestas de error siguen esta forma:
 | --- | --- | --- |
 | `POST` | `/api/public/appointments` | Crea una cita con validación transaccional |
 | `POST` | `/api/public/appointments/lookup` | Cuerpo `{ "access_code": "SB-..." }` |
-| `POST` | `/api/public/appointments/history` | Historial autorizado con el mismo cuerpo |
+| `POST` | `/api/public/appointments/history` | Devuelve solo la cita autorizada por ese código; no desbloquea otras reservas por teléfono |
 | `PATCH` | `/api/public/appointments/{appointment_id}/cancel` | Cancela una cita |
 | `PATCH` | `/api/public/appointments/{appointment_id}/reschedule` | Reprograma una cita |
 
@@ -81,7 +81,13 @@ Las consultas de reservas devuelven `Cache-Control: no-store`.
 
 ## Autenticación administrativa
 
-El login devuelve un JWT. En las rutas protegidas se envía:
+El navegador usa `/api/backend/admin/*`, un proxy del mismo origen en Vercel.
+El login lleva `X-Session-Mode: cookie` y un `Origin` permitido. El JWT queda en
+una cookie HttpOnly, Secure y SameSite=Strict en producción; el JSON devuelve
+`token: "cookie"` y `csrf_token`. Las escrituras posteriores necesitan
+`X-CSRF-Token` y el mismo `Origin`. JavaScript no guarda ni lee el JWT.
+
+Los clientes de API que no solicitan el modo cookie conservan el contrato Bearer:
 
 ```http
 Authorization: Bearer <token>
@@ -90,6 +96,7 @@ Authorization: Bearer <token>
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `POST` | `/api/admin/login` | Inicia sesión como `sebas` o `gabriel` |
+| `POST` | `/api/admin/logout` | Invalida las sesiones del barbero y elimina la cookie |
 | `POST` | `/api/admin/reset-password` | Recupera con código maestro |
 | `POST` | `/api/admin/change-password` | Cambia la contraseña autenticada |
 | `GET` | `/api/admin/me` | Devuelve el perfil de sesión |
@@ -106,6 +113,7 @@ Authorization: Bearer <token>
 | `PUT` | `/api/admin/business-hours/{weekday}` | Actualiza horario |
 | `GET` | `/api/admin/clients` | CRM e historial propios |
 | `GET` | `/api/admin/audit-logs` | Bitácora de operaciones propias |
+| `GET` | `/api/admin/security-status` | Estado real de RLS y privilegios del rol PostgreSQL; requiere sesión |
 
 La revisión de bloqueos recibe `start_date`, `end_date`, `all_day`, y para un
 intervalo horario `start_min` y `end_min`. Devuelve `total` y hasta 50 elementos

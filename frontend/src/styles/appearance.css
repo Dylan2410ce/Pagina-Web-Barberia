@@ -65,6 +65,7 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px color-mix(in s
 button:active:not(:disabled), .btn:active { transform: scale(.98); }
 .admin-content, .admin-layout, .admin-user, .nav-contenido, .modal-body { min-width: 0; }
 .admin-user > .appearance-control { display: flex; gap: .625rem; text-align: left; }
+.admin-sidebar button.activo { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 .admin-sync-bar { row-gap: 1rem; }
 .security-diagnostics { margin-top: 2rem; }
 .security-diagnostics summary { min-height: 2.75rem; padding-block: .75rem; cursor: pointer; font-weight: 600; }

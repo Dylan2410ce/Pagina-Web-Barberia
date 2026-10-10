@@ -14,6 +14,7 @@ from app.schemas import AppointmentCreate, ClientAppointmentOut, PublicBarberOut
 from app.services.appointment_service import AppointmentService
 from app.services.password_service import hash_password
 from app.services.rate_limit_service import RateLimiter
+from app.services.session_service import origen_permitido, validar_csrf
 
 
 class SessionTests(unittest.IsolatedAsyncioTestCase):
@@ -87,6 +88,20 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
 
 
 class PrivacyTests(unittest.IsolatedAsyncioTestCase):
+    def test_malformed_origins_and_csrf_are_rejected_without_server_errors(self):
+        from fastapi import HTTPException
+        from starlette.requests import Request
+        with patch.object(config, "ENVIRONMENT", "development"):
+            for origin in ("http://[", "http://localhost@evil.example", "http://localhost/path", "http://localhost?x=1"):
+                request = Request({"type": "http", "method": "POST", "headers": [(b"origin", origin.encode())]})
+                self.assertFalse(origen_permitido(request))
+        request = Request({"type": "http", "method": "POST", "headers": [
+            (b"origin", config.FRONTEND_URL.encode()), (b"x-csrf-token", b"\xff"),
+        ]})
+        with self.assertRaises(HTTPException) as raised:
+            validar_csrf(request, {"csrf": "token"})
+        self.assertEqual(raised.exception.status_code, 403)
+
     def test_public_barber_does_not_serialize_internal_settings(self):
         payload = PublicBarberOut.model_validate({"id": uuid4(), "name": "Prueba", "role": "Barbero", "phone": "88887777",
             "email": "private@example.com", "calendar_sync": True, "daily_summary_enabled": True}).model_dump()

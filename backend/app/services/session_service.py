@@ -18,8 +18,12 @@ def origen_permitido(request: Request) -> bool:
         return True
     if config.ENVIRONMENT == "development":
         from urllib.parse import urlsplit
-        url = urlsplit(origen)
-        return url.scheme == "http" and url.hostname in {"localhost", "127.0.0.1"}
+        try:
+            url = urlsplit(origen)
+            return (url.scheme == "http" and url.hostname in {"localhost", "127.0.0.1"}
+                and not (url.username or url.password or url.path or url.query or url.fragment))
+        except ValueError:
+            return False
     return False
 
 
@@ -34,7 +38,7 @@ def validar_csrf(request: Request, claims: dict):
     exigir_origen(request)
     esperado = claims.get("csrf", "")
     recibido = request.headers.get("x-csrf-token", "")
-    if not esperado or not hmac.compare_digest(esperado, recibido):
+    if not esperado or not hmac.compare_digest(esperado.encode("utf-8"), recibido.encode("utf-8")):
         raise HTTPException(status_code=403, detail="Actualiza el panel antes de continuar")
 
 
